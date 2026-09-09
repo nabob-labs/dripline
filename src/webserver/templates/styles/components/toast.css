@@ -1,0 +1,193 @@
+/**
+ * Toast notices — top-centre, at most three at a time.
+ *
+ * Semantics are carried by the icon glyph and the progress bar colour only:
+ * the icon is a BARE glyph (no tile, ring or glow) and the card carries no
+ * accent bar, so a toast reads as the same surface as every other card in the
+ * dashboard. Motion is limited to enter/exit and the determinate progress bar,
+ * both of which communicate real state.
+ */
+
+.toast-container {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: min(380px, calc(100vw - 24px));
+  pointer-events: none;
+}
+
+.toast {
+  --toast-accent: var(--semantic-info-text);
+
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 28px var(--shadow-lg);
+  padding: 10px 12px;
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition:
+    opacity var(--transition-base),
+    transform var(--transition-base);
+}
+
+.toast--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast--exiting {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.toast[data-type="success"] {
+  --toast-accent: var(--semantic-success-text);
+}
+
+.toast[data-type="error"] {
+  --toast-accent: var(--semantic-error-text);
+}
+
+.toast[data-type="warning"] {
+  --toast-accent: var(--semantic-warning-text);
+}
+
+.toast[data-type="info"],
+.toast[data-type="progress"] {
+  --toast-accent: var(--semantic-info-text);
+}
+
+.toast__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toast__icon {
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--toast-accent);
+}
+
+.toast[data-type="progress"] .toast__icon {
+  animation: toast-spin 1s linear infinite;
+}
+
+.toast__body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.toast__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.toast__message {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  overflow-wrap: break-word;
+}
+
+/* How many times this same notice fired while it was on screen. */
+.toast__repeat {
+  flex-shrink: 0;
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.toast__close {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.toast__close:hover {
+  color: var(--text-primary);
+}
+
+/* On a real pointer the close affordance stays out of the way until needed;
+   touch and keyboard always get it. */
+@media (hover: hover) and (pointer: fine) {
+  .toast__close {
+    opacity: 0;
+  }
+
+  .toast:hover .toast__close,
+  .toast:focus-within .toast__close {
+    opacity: 1;
+  }
+}
+
+.toast__progress {
+  margin-top: 8px;
+  height: 3px;
+  border-radius: var(--radius-full);
+  background: var(--bg-tertiary);
+  overflow: hidden;
+}
+
+.toast__progress-bar {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--toast-accent);
+  transition: width var(--transition-normal);
+}
+
+@keyframes toast-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    transition: opacity var(--transition-base);
+    transform: none;
+  }
+
+  .toast--visible,
+  .toast--exiting {
+    transform: none;
+  }
+
+  .toast[data-type="progress"] .toast__icon {
+    animation: none;
+  }
+
+  .toast__progress-bar {
+    transition: none;
+  }
+}

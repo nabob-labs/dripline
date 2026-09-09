@@ -1,0 +1,131 @@
+/* ============================================================================
+   STATUS BAR - Fixed bottom bar with system metrics
+   Must stay on top of all dialogs (dialogs use z-index: 10000)
+   ============================================================================ */
+
+.status-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 26px;
+  z-index: var(--z-status-bar, 10001);
+  background: var(--header-bg, linear-gradient(135deg, #0d1117 0%, #161b22 50%, #1c2128 100%));
+  border-top: 1px solid var(--header-border, #30363d);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--spacing-md, 16px);
+  font-family: var(--font-mono, "JetBrains Mono", monospace);
+  font-size: 10.5px;
+  color: var(--text-muted, #8b949e);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+}
+
+.status-bar-left,
+.status-bar-center,
+.status-bar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs, 4px);
+}
+
+.status-bar-center {
+  flex-shrink: 0;
+}
+
+.status-bar-right {
+  justify-content: flex-end;
+}
+
+.status-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  opacity: 0.6;
+  vertical-align: middle;
+}
+
+.status-label {
+  color: var(--text-muted, #8b949e);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+}
+
+.status-value {
+  color: var(--text-secondary, #c9d1d9);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.status-separator {
+  color: var(--border-color, #30363d);
+  margin: 0 6px;
+  opacity: 0.5;
+  user-select: none;
+}
+
+/* Health indicator colors */
+.status-health[data-health="good"] .status-value {
+  color: var(--success, #3fb950);
+}
+
+.status-health[data-health="warning"] .status-value {
+  color: #d29922;
+}
+
+.status-health[data-health="error"] .status-value {
+  color: var(--error, #f85149);
+}
+
+.status-health[data-health="unknown"] .status-value {
+  color: var(--text-muted, #8b949e);
+}
+
+/* Trading status indicator */
+.status-trading[data-active="true"] {
+  color: var(--success, #3fb950);
+  font-weight: 600;
+}
+
+.status-trading[data-active="false"] {
+  color: var(--text-muted, #8b949e);
+}
+
+/* The following block is a duplicate and contains syntax errors, so it is removed. */
+
+/* Reserve space for the fixed status bar at the bottom.
+   The status bar is 26px tall, so we need to reduce available
+   height by that amount to prevent content from being hidden. */
+.content {
+  padding-bottom: 26px; /* Height of .status-bar */
+}
+
+/* When featured row is visible, add extra padding to content */
+.content.has-featured-row {
+  padding-bottom: 74px; /* 26px status bar + 48px featured row */
+}
+
+/* Light theme adjustments */
+[data-theme="light"] .status-bar {
+  background: linear-gradient(135deg, #f0f2f6 0%, #e8eaee 100%);
+  border-top-color: #d1d5db;
+  color: #6b7280;
+}
+
+[data-theme="light"] .status-bar-version {
+  color: #374151;
+}

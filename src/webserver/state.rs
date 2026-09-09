@@ -1,0 +1,102 @@
+//! Shared application state for the webserver
+//!
+//! Contains references to core VeloxBot systems and shared resources
+//! that need to be accessed by route handlers.
+
+use std::collections::HashMap;
+use std::sync::{Arc, OnceLock};
+
+/// Shared application state passed to all route handlers
+#[derive(Clone)]
+pub struct AppState {
+    /// Server startup time
+    pub startup_time: chrono::DateTime<chrono::Utc>,
+    /// Model-analysis engine instance (optional, only if LLM analysis is enabled)
+    pub analysis_engine: Option<Arc<crate::llm_analysis::engine::AnalysisEngine>>,
+}
+
+impl AppState {
+    /// Create new application state
+    pub fn new() -> Self {
+        Self {
+            startup_time: chrono::Utc::now(),
+            analysis_engine: None,
+        }
+    }
+
+    /// Create new application state with a model-analysis engine
+    pub fn with_analysis_engine(
+        analysis_engine: Option<Arc<crate::llm_analysis::engine::AnalysisEngine>>,
+    ) -> Self {
+        Self {
+            startup_time: chrono::Utc::now(),
+            analysis_engine,
+        }
+    }
+
+    /// Get server uptime in seconds
+    pub fn uptime_seconds(&self) -> u64 {
+        (chrono::Utc::now() - self.startup_time)
+            .num_seconds()
+            .max(0) as u64
+    }
+
+    /// Get all service names from ServiceManager
+    pub async fn get_all_services(&self) -> Vec<&'static str> {
+        if let Some(manager_ref) = crate::services::get_service_manager().await {
+            if let Some(manager) = manager_ref.read().await.as_ref() {
+                return manager.get_all_service_names();
+            }
+        }
+        vec![]
+    }
+
+    /// Get service health status
+    pub async fn get_service_health(&self, name: &str) -> Option<crate::services::ServiceHealth> {
+        if let Some(manager_ref) = crate::services::get_service_manager().await {
+            if let Some(manager) = manager_ref.read().await.as_ref() {
+                if let Some(service) = manager.get_service(name) {
+                    return Some(service.health().await);
+                }
+            }
+        }
+        None
+    }
+
+    /// Get all services health
+    pub async fn get_all_services_health(
+        &self,
+    ) -> HashMap<&'static str, crate::services::ServiceHealth> {
+        if let Some(manager_ref) = crate::services::get_service_manager().await {
+            if let Some(manager) = manager_ref.read().await.as_ref() {
+                return manager.get_health().await;
+            }
+        }
+        HashMap::new()
+    }
+
+    /// Get service metrics (optimized - uses read lock, not write lock)
+    pub async fn get_service_metrics(
+        &self,
+    ) -> HashMap<&'static str, crate::services::ServiceMetrics> {
+        if let Some(manager_ref) = crate::services::get_service_manager().await {
+            if let Some(manager) = manager_ref.read().await.as_ref() {
+                return manager.get_metrics().await;
+            }
+        }
+        HashMap::new()
+    }
+}
+
+// Global state accessor
+static GLOBAL_APP_STATE: OnceLock<Arc<AppState>> = OnceLock::new();
+
+/// Set global app state (called during webserver initialization)
+pub fn set_global_app_state(state: Arc<AppState>) {
+    GLOBAL_APP_STATE.set(state).ok();
+}
+
+/// Get global app state
+pub async fn get_app_state() -> Option<Arc<AppState>> {
+    GLOBAL_APP_STATE.get().cloned()
+}

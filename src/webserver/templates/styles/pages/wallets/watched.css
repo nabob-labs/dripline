@@ -1,0 +1,30 @@
+/* Wallet observation tab. The panel is a bare DataTable mount (see wallets.html),
+   so only the row-level cell styling lives here. */
+
+.watched-wallet-state {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.watched-wallet-state.is-streaming {
+  color: var(--success-color);
+}
+
+.watched-wallet-state.is-polling {
+  color: var(--warning-color);
+}
+
+.watched-wallet-state.is-paused {
+  color: var(--text-muted);
+}
+
+.watched-wallet-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-xs);
+}

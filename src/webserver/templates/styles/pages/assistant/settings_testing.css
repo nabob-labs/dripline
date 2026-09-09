@@ -1,0 +1,388 @@
+/* ============================================================================
+   Settings Section
+   ============================================================================ */
+
+/* ===== SETTINGS CARDS ===== */
+.settings-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.settings-card-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.settings-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+
+.settings-card-description {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.settings-card-body {
+  padding: 8px 0;
+}
+
+/* ===== SETTING ITEMS ===== */
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid rgb(255, 255, 255, 0.05);
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+}
+
+.setting-item:hover {
+  background: rgb(255, 255, 255, 0.02);
+}
+
+.setting-info {
+  flex: 1;
+  min-width: 0;
+  padding-inline-end: 20px;
+}
+
+.setting-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  cursor: pointer;
+}
+
+.setting-description {
+  display: block;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  opacity: 0.8;
+}
+
+.setting-control {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ===== IMPROVED TOGGLE SWITCHES ===== */
+
+/* ===== IMPROVED SLIDERS ===== */
+.range-slider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 200px;
+}
+
+.range-slider input[type="range"] {
+  flex: 1;
+  height: 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  outline: none;
+  appearance: none;
+}
+
+.range-slider input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  background: var(--primary-color);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgb(0, 0, 0, 0.3);
+  transition: transform var(--transition-fast);
+}
+
+.range-slider input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.range-slider input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  background: var(--primary-color);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgb(0, 0, 0, 0.3);
+  transition: transform var(--transition-fast);
+  border: none;
+}
+
+.range-slider input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.1);
+}
+
+.range-slider .range-value {
+  min-width: 50px;
+  text-align: end;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  font-family: var(--font-mono, monospace);
+}
+
+/* NOTE: the old `.assistant-native-select` CSS-only wrapper (with its own ::after triangle)
+   was removed. Its <select> is now upgraded to the shared CustomSelect by the global
+   enhancer, so the wrapper's triangle painted a SECOND arrow on top of .cs-arrow
+   (the double arrow on the Assistant settings page). Style the dropdown via the shared
+   .custom-select component, never a per-page select wrapper. */
+
+/* ===== IMPROVED TEXT INPUTS ===== */
+.text-input {
+  padding: 10px 14px;
+  font-size: 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  min-width: 120px;
+  transition: all var(--transition-fast);
+}
+
+.text-input:hover {
+  border-color: #4b5563;
+}
+
+.text-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgb(59, 130, 246, 0.15);
+}
+
+.text-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Cache Stats */
+.cache-stats {
+  display: flex;
+  gap: 2rem;
+  padding: 16px 24px;
+  background: rgb(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgb(255, 255, 255, 0.05);
+}
+
+.cache-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cache-stat-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.cache-stat-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font-mono, monospace);
+}
+
+.settings-card-body .btn {
+  margin: 16px 24px;
+}
+
+/* ============================================================================
+   Testing Section
+   ============================================================================ */
+
+.testing-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--assistant-card-radius);
+  padding: var(--assistant-card-padding);
+}
+
+.testing-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 600px;
+}
+
+.form-control {
+  padding: var(--input-padding-y, 8px) var(--input-padding-x, 12px);
+
+  /* background-color (not the `background` shorthand) so a <select class="form-control">
+     keeps the global var(--select-arrow) chevron instead of wiping it to none. */
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--input-border-radius, 6px);
+  color: var(--text-primary);
+  font-size: var(--input-font-size, 0.875rem);
+  font-family: var(--font-mono);
+  transition: border-color var(--transition-base);
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.testing-results {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.result-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.result-item:last-child {
+  border-bottom: none;
+}
+
+.result-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.result-value {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+
+.result-value.decision-pass {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.result-value.decision-reject {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.result-reasoning {
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.result-factors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.factor-badge {
+  padding: 0.35rem 0.65rem;
+  background: var(--primary-alpha-10);
+  border: 1px solid var(--primary-alpha-40);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  color: var(--primary);
+  font-weight: 500;
+}
+
+/* ============================================================================
+   Responsive Design
+   ============================================================================ */
+
+@media (width <= 768px) {
+  .assistant-main-panel {
+    padding: 16px;
+  }
+
+  .metrics-grid,
+  .templates-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .history-table {
+    font-size: 0.85rem;
+  }
+
+  .history-table th,
+  .history-table td {
+    padding: 0.5rem;
+  }
+
+  .modal-dialog.instruction-modal {
+    width: 95vw;
+    max-width: 100%;
+    height: auto;
+    max-height: 90vh;
+    min-width: 0;
+    min-height: 0;
+  }
+}
+
+@media (width <= 640px) {
+  .send-btn i,
+  .cancel-btn i {
+    font-size: 14px;
+  }
+}
+
+@media (width <= 768px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .provider-item {
+    flex-wrap: wrap;
+    padding: 12px 16px;
+  }
+
+  .provider-actions {
+    width: 100%;
+    margin-inline-start: 36px;
+    margin-top: 12px;
+    justify-content: stretch;
+  }
+
+  .provider-btn {
+    flex: 1;
+  }
+
+  .testing-form {
+    max-width: 100%;
+  }
+
+  .cache-stats {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
+/* ============================================================================
+   Dark Theme Enhancements
+   ============================================================================ */
+
+[data-theme="dark"] .setting-item {
+  background: rgb(255, 255, 255, 0.03);
+}

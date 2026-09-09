@@ -1,0 +1,241 @@
+/* =============================================================================
+   PROMO CAPTURE LAYER
+
+   Annotations drawn over the dashboard while a screenshot or promotional
+   recording is being produced. Present only when the binary runs with
+   --promo-capture, so nothing here is reachable in a normal session.
+
+   The annotations are built from the dashboard's own surface, type and spacing
+   tokens on purpose: an annotated frame has to look like the product, not like
+   a screen-recording tool was pointed at it.
+   ============================================================================= */
+
+.promo-layer {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-promo-capture);
+  pointer-events: none;
+}
+
+/* =============================================================================
+   Callout
+   ============================================================================= */
+
+.promo-callout {
+  position: fixed;
+  max-width: 320px;
+  padding: var(--spacing-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-floating-lg);
+  color: var(--text-primary);
+  will-change: opacity, transform;
+}
+
+/* The pointer is the panel's own corner rotated out from under it, so its fill
+   and border always match the panel — including after a theme switch. */
+.promo-callout-pointer {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 2px;
+}
+
+.promo-callout[data-side="bottom"] .promo-callout-pointer {
+  top: -7px;
+  margin-left: -6px;
+  border-right: 0;
+  border-bottom: 0;
+  transform: rotate(45deg);
+}
+
+.promo-callout[data-side="top"] .promo-callout-pointer {
+  bottom: -7px;
+  margin-left: -6px;
+  border-top: 0;
+  border-left: 0;
+  transform: rotate(45deg);
+}
+
+.promo-callout[data-side="right"] .promo-callout-pointer {
+  left: -7px;
+  margin-top: -6px;
+  border-top: 0;
+  border-right: 0;
+  transform: rotate(45deg);
+}
+
+.promo-callout[data-side="left"] .promo-callout-pointer {
+  right: -7px;
+  margin-top: -6px;
+  border-bottom: 0;
+  border-left: 0;
+  transform: rotate(45deg);
+}
+
+.promo-callout-eyebrow {
+  margin: 0 0 var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.promo-callout-title {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.promo-callout-body {
+  margin: var(--spacing-xs) 0 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* Tone tints the eyebrow only. A callout on a BUY control reads as a buy through
+   its label, never by repainting the whole panel green. */
+.promo-callout[data-tone="buy"] .promo-callout-eyebrow {
+  color: var(--success-color);
+}
+
+.promo-callout[data-tone="sell"] .promo-callout-eyebrow {
+  color: var(--danger);
+}
+
+/* =============================================================================
+   Spotlight
+
+   One element, one enormous spread shadow: the shadow dims the entire window
+   and the element's own box is the cut-out.
+   ============================================================================= */
+
+.promo-spotlight {
+  position: fixed;
+  box-shadow: 0 0 0 100vmax rgb(0, 0, 0, 0.62);
+  outline: 1px solid var(--border-color);
+  will-change: opacity;
+}
+
+/* =============================================================================
+   Caption (lower third)
+   ============================================================================= */
+
+.promo-caption {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(680px, calc(100vw - var(--spacing-2xl) * 2));
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-floating-lg);
+  text-align: center;
+  will-change: opacity, transform;
+}
+
+.promo-caption[data-position="bottom"] {
+  bottom: var(--spacing-2xl);
+}
+
+.promo-caption[data-position="top"] {
+  top: var(--spacing-2xl);
+}
+
+.promo-caption-text {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.promo-caption-sub {
+  margin: var(--spacing-xs) 0 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* =============================================================================
+   Title card
+   ============================================================================= */
+
+.promo-title-card {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2xl);
+  background: var(--bg-primary);
+  text-align: center;
+  will-change: opacity;
+}
+
+.promo-title-card-title {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--text-primary);
+}
+
+.promo-title-card-sub {
+  margin: 0;
+  max-width: 46ch;
+  font-size: var(--font-size-lg);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* =============================================================================
+   Cursor
+   ============================================================================= */
+
+.promo-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border-radius: var(--radius-full);
+  background: var(--text-primary);
+  border: 2px solid var(--bg-primary);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.promo-cursor.is-visible {
+  opacity: 1;
+}
+
+.promo-cursor-ring {
+  position: absolute;
+  inset: -14px;
+  border: 2px solid var(--text-primary);
+  border-radius: var(--radius-full);
+  opacity: 0;
+}
+
+/* =============================================================================
+   Frozen capture state
+
+   Everything that would make two captures of the same screen differ. Applied by
+   the runtime's freeze(), removed by thaw().
+   ============================================================================= */
+
+.promo-frozen * {
+  caret-color: transparent !important;
+}

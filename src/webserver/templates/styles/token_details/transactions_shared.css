@@ -1,0 +1,240 @@
+/* Token details — transactions */
+
+.transactions-container {
+  display: grid;
+  grid-template-columns: minmax(280px, 34%) minmax(0, 1fr);
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+.transactions-overview,
+.transactions-list-section {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.transactions-overview {
+  padding: 16px 18px;
+  border-right: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.transactions-list-section {
+  padding: 0 20px 16px;
+}
+
+.transactions-section-heading {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.transactions-section-heading > div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.transactions-section-heading strong {
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.transactions-section-heading span {
+  color: var(--text-muted);
+  font-size: 0.63rem;
+}
+
+.transactions-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-bottom: 1px solid var(--border-color);
+}
+
+.transactions-metrics > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: 12px 0;
+}
+
+.transactions-metrics > div + div {
+  padding-left: 12px;
+  border-left: 1px solid var(--border-color);
+}
+
+.transactions-metrics span {
+  color: var(--text-muted);
+  font-size: 0.6rem;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.transactions-metrics strong {
+  color: var(--text-primary);
+  font-family: var(--font-data);
+  font-size: 1rem;
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+}
+
+.transactions-metrics strong.positive {
+  color: var(--success-color);
+}
+
+.transactions-metrics strong.negative {
+  color: var(--error-color);
+}
+
+.transactions-chart {
+  flex: 1;
+  width: 100%;
+  min-height: 180px;
+  margin-top: 12px;
+}
+
+.transactions-table-shell {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.transactions-table-header,
+.token-transaction-row {
+  display: grid;
+  grid-template-columns: 84px 80px minmax(105px, 1fr) 90px 18px;
+  align-items: center;
+  gap: 10px;
+}
+
+.transactions-table-header {
+  flex: 0 0 auto;
+  min-height: 34px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.6rem;
+  font-weight: 650;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.transactions-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.token-transaction-row {
+  min-height: 40px;
+  border-bottom: 1px solid var(--border-color);
+  color: inherit;
+  font-family: var(--font-data);
+  font-size: 0.7rem;
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+  text-decoration: none;
+}
+
+.token-transaction-row:hover {
+  background: var(--bg-card-hover);
+}
+
+.transaction-time {
+  color: var(--text-secondary);
+}
+
+.transaction-kind {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 0.66rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transaction-kind.buy {
+  color: var(--success-color);
+}
+
+.transaction-kind.sell {
+  color: var(--error-color);
+}
+
+.transaction-price-cell,
+.transaction-total {
+  overflow: hidden;
+  color: var(--text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transaction-external {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.token-transaction-row:hover .transaction-external {
+  opacity: 1;
+}
+
+/* Shared token-dialog responsive framing */
+
+@media (width <= 1200px) {
+  .overview-split-layout {
+    grid-template-columns: 45% 55%;
+  }
+}
+
+@media (width <= 900px) {
+  .overview-split-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .overview-left {
+    max-height: 40vh;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .transactions-container {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(210px, 42%) minmax(0, 1fr);
+  }
+
+  .transactions-overview {
+    border-right: 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+}
+
+@media (width <= 600px) {
+  .transactions-table-header,
+  .token-transaction-row {
+    grid-template-columns: 72px 68px minmax(80px, 1fr) 18px;
+    gap: 8px;
+  }
+
+  .transaction-price-cell {
+    display: none;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .transaction-external {
+    opacity: 1;
+  }
+}

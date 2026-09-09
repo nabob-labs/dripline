@@ -1,0 +1,106 @@
+/* ==========================================================================
+   Global Chat - Floating button & dialog overlay
+   ========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   Header Action Button (Assistant)
+   --------------------------------------------------------------------------- */
+.header-action-btn.global-chat-btn {
+  color: var(--primary-color);
+  gap: 0;
+}
+
+.header-action-btn.global-chat-btn:hover {
+  background: var(--primary-alpha-15);
+  border-color: var(--primary-alpha-40);
+}
+
+.header-action-btn.global-chat-btn.is-open {
+  background: var(--primary-alpha-20);
+  border-color: var(--primary-alpha-50);
+}
+
+/* Hide button on the Assistant page (chat already visible) */
+[data-page="assistant"] .header-action-btn.global-chat-btn,
+.header-action-btn.global-chat-btn.hidden {
+  display: none !important;
+}
+
+/* ---------------------------------------------------------------------------
+   Dialog Overlay
+   --------------------------------------------------------------------------- */
+.global-chat-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease;
+}
+
+.global-chat-overlay.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.global-chat-overlay-bg {
+  position: absolute;
+  inset: 0;
+  background: rgb(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+/* ---------------------------------------------------------------------------
+   Dialog Panel
+   --------------------------------------------------------------------------- */
+.global-chat-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(92vw, 920px);
+  height: min(88vh, 760px);
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 20px 64px rgb(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  transform: scale(0.985) translateY(6px);
+  opacity: 0;
+  transition:
+    transform 0.2s ease-out,
+    opacity 0.18s ease-out;
+}
+
+.global-chat-overlay.is-open .global-chat-dialog {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+
+/* Chat widget area inside dialog */
+.global-chat-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Make the chat-container fill the dialog body */
+.global-chat-body .chat-container {
+  height: 100%;
+}
+
+.global-chat-body .chat-main {
+  height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .global-chat-overlay,
+  .global-chat-dialog {
+    transition: none;
+  }
+}

@@ -1,0 +1,462 @@
+/* Onboarding Flow Styles - Proper grid-based fixed viewport layout */
+
+.onboarding-screen {
+  --onboarding-footer-h: clamp(60px, 8vh, 72px);
+
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-onboarding, 10005);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) var(--onboarding-footer-h);
+  background: radial-gradient(circle at 50% 50%, #161b22 0%, #0d1117 100%);
+  color: #e6edf3;
+  overflow: hidden;
+  isolation: isolate; /* Create new stacking context */
+}
+
+/* macOS Electron: Add titlebar row for traffic lights */
+.electron-macos .onboarding-screen {
+  grid-template-rows: 36px auto minmax(0, 1fr) var(--onboarding-footer-h);
+}
+
+/* Theme definition */
+.onboarding-screen[data-theme="blue"] {
+  --accent-onboarding: #58a6ff;
+  --accent-onboarding-rgb: 88, 166, 255;
+}
+
+.onboarding-screen[data-theme="purple"] {
+  --accent-onboarding: #bc8cff;
+  --accent-onboarding-rgb: 188, 140, 255;
+}
+
+.onboarding-screen[data-theme="green"] {
+  --accent-onboarding: #3fb950;
+  --accent-onboarding-rgb: 63, 185, 80;
+}
+
+.onboarding-screen[data-theme="amber"] {
+  --accent-onboarding: #f59e0b;
+  --accent-onboarding-rgb: 245, 158, 11;
+}
+
+.onboarding-screen[data-theme="cyan"] {
+  --accent-onboarding: #22d3ee;
+  --accent-onboarding-rgb: 34, 211, 238;
+}
+
+/* Window Title Bar - Drag Region (macOS traffic lights only) */
+.onboarding-screen > .window-titlebar {
+  display: none; /* Hidden by default on Windows/Linux/browser */
+  width: 100%;
+  -webkit-app-region: drag;
+  flex-shrink: 0;
+  background: rgb(13, 17, 23, 0.5); /* Solid grounding for traffic lights */
+  backdrop-filter: blur(10px);
+}
+
+/* Show titlebar only on macOS Electron (needed for traffic lights) */
+.electron-macos .onboarding-screen > .window-titlebar {
+  display: block;
+  height: 36px;
+}
+
+/* Hero Section (Logo & Brand) */
+.onboarding-hero {
+  display: flex;
+  flex-direction: row; /* Aligned horizontally */
+  align-items: center;
+  justify-content: flex-start; /* Pulled to the left */
+  padding: clamp(0.5rem, 1.6vh, 1rem) 1.5rem;
+  gap: 0.75rem;
+  width: 100%;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  background: rgb(13 17 23 / 0.6);
+  backdrop-filter: blur(12px);
+  z-index: 10;
+}
+
+.onboarding-logo {
+  width: clamp(24px, 3.4vh, 32px);
+  height: clamp(24px, 3.4vh, 32px);
+}
+
+.onboarding-brand-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.onboarding-brand {
+  font-family: var(--font-brand);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #e6edf3;
+}
+
+.onboarding-version {
+  font-family: var(--font-mono, "JetBrains Mono", monospace);
+  font-size: 0.65rem;
+  color: var(--text-muted, #8b949e);
+  background: var(--bg-tertiary);
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+}
+
+/* Main content area - takes all available space */
+.onboarding-content {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  padding: clamp(0.75rem, 2vh, 1.5rem);
+  overflow: hidden;
+  min-height: 0;
+  height: 100%;
+}
+
+/* Slide container - relative positioning for absolute slides */
+.onboarding-slides {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  align-self: stretch;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Individual slides - absolute positioning within container */
+.onboarding-slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  align-items: center;
+  gap: clamp(0.75rem, 2vh, 1.5rem);
+  text-align: center;
+  padding: clamp(1rem, 4vh, 2.5rem) 2rem;
+  opacity: 0;
+  transform: translateX(30px) scale(0.98);
+  transition:
+    opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  overflow: hidden auto;
+}
+
+.onboarding-slide.active {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+  pointer-events: auto;
+}
+
+.onboarding-slide.prev {
+  transform: translateX(-30px) scale(0.98);
+}
+
+/* Slide content - the glyph sits inline with the title, never on its own row */
+.slide-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  max-width: 800px;
+  min-width: 0;
+}
+
+.slide-icon {
+  font-size: clamp(1.5rem, 3.2vh, 2.25rem);
+  color: var(--accent-onboarding);
+  line-height: 1;
+  flex: 0 0 auto;
+  transition: color 0.5s ease;
+}
+
+.slide-title {
+  font-size: clamp(1.25rem, 2.6vh, 1.75rem);
+  font-weight: 700;
+  margin: 0;
+  color: #e6edf3;
+  line-height: 1.2;
+}
+
+.slide-description {
+  font-size: clamp(0.875rem, 1.7vh, 1rem);
+  line-height: 1.5;
+  color: #8b949e;
+  max-width: 68ch;
+  margin: 0;
+}
+
+/* Feature highlights - 2 column grid */
+.slide-features {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: clamp(0.625rem, 1.6vh, 1.25rem);
+  width: 100%;
+  max-width: 800px;
+  flex: 0 0 auto;
+}
+
+.slide-feature {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+  align-items: start;
+  text-align: left;
+  padding: clamp(0.75rem, 1.8vh, 1.25rem);
+  background: rgb(255 255 255 / 0.04);
+  border: 1px solid rgb(255 255 255 / 0.09);
+  border-radius: var(--radius-xl);
+}
+
+/* Boxed to the title's own first line box and centred in it, so the glyph and
+   the heading share an optical band instead of only a shared top edge. */
+.slide-feature-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(0.9375rem * 1.2);
+  font-size: 1.375rem;
+  line-height: 1;
+  color: var(--accent-onboarding);
+  transition: color 0.5s ease;
+}
+
+.slide-feature-text h4 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #e6edf3;
+  margin: 0 0 0.375rem;
+  line-height: 1.2;
+}
+
+.slide-feature-text p {
+  font-size: 0.8125rem;
+  color: #8b949e;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Progress dots - footer centre slot */
+.onboarding-progress {
+  grid-area: progress;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.progress-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: rgb(255 255 255 / 0.15);
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  padding: 0;
+}
+
+.progress-dot:hover {
+  background: rgb(255 255 255 / 0.3);
+  transform: scale(1.2);
+}
+
+.progress-dot.active {
+  background: var(--accent-onboarding);
+  width: 24px;
+  border-radius: var(--radius-sm);
+}
+
+/* Footer with navigation */
+.onboarding-footer {
+  display: grid;
+  grid-template-areas: "alternate progress nav";
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  height: var(--onboarding-footer-h);
+  min-width: 0;
+  padding: 8px 24px;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+  background: rgb(13 17 23 / 0.3);
+}
+
+.onboarding-setup-shortcut {
+  grid-area: alternate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  gap: 7px;
+  padding: 9px 17px;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: #e6edf3;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  justify-self: start;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    filter var(--transition-fast);
+}
+
+.onboarding-setup-shortcut[hidden] {
+  display: none;
+}
+
+.onboarding-setup-shortcut:hover {
+  background: rgb(255 255 255 / 0.1);
+  border-color: rgb(255 255 255 / 0.2);
+}
+
+.onboarding-nav {
+  grid-area: nav;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  justify-self: end;
+}
+
+.onboarding-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 9px 17px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    filter var(--transition-fast);
+  gap: 7px;
+  white-space: nowrap;
+}
+
+#onboardingNext {
+  min-width: 118px;
+}
+
+.onboarding-btn-secondary {
+  background: rgb(255 255 255 / 0.05);
+  border: 1px solid rgb(255 255 255 / 0.08);
+  color: #e6edf3;
+}
+
+.onboarding-btn-secondary:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.1);
+  border-color: rgb(255 255 255 / 0.2);
+}
+
+.onboarding-btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.onboarding-btn-primary {
+  background: var(--accent-onboarding);
+  border-color: var(--accent-onboarding);
+  color: #0d1117;
+}
+
+.onboarding-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+/* Stagger animation for feature cards */
+@keyframes slideFeatureEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-feature-enter {
+  animation: slideFeatureEnter 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* Narrow viewports: one feature column, and a footer that stacks its three
+   groups instead of letting them collide. */
+@media (width <= 768px) {
+  .onboarding-hero,
+  .onboarding-footer {
+    padding-inline: 1rem;
+  }
+
+  .onboarding-slide {
+    padding-inline: 1rem;
+  }
+}
+
+@media (width <= 640px) {
+  .onboarding-screen {
+    --onboarding-footer-h: auto;
+  }
+
+  .onboarding-footer {
+    grid-template-areas:
+      "alternate nav"
+      "progress progress";
+    grid-template-columns: 1fr auto;
+    row-gap: 0.5rem;
+    padding-block: 10px;
+  }
+
+  .slide-features {
+    grid-template-columns: 1fr;
+  }
+
+  .slide-feature-text p {
+    font-size: 0.75rem;
+  }
+}
+
+/* Short viewports: the type and card padding already track height through
+   clamp(), so only the feature copy needs a discrete step. */
+@media (height <= 620px) {
+  .slide-feature-text h4 {
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .slide-feature-text p {
+    font-size: 0.75rem;
+    line-height: 1.3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-screen *,
+  .onboarding-screen *::before,
+  .onboarding-screen *::after {
+    scroll-behavior: auto !important;
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .onboarding-slide,
+  .onboarding-slide.prev {
+    transform: none;
+  }
+}

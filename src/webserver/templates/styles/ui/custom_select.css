@@ -1,0 +1,393 @@
+/* =============================================================================
+   Custom Select Component
+   The trigger and menu form one continuous control in every dashboard surface.
+   ============================================================================= */
+
+/* The native <select> that was enhanced into a CustomSelect. Hard-hidden so it can
+   never repaint the global var(--select-arrow) chevron under the wrapper's .cs-arrow
+   (the double/native-looking arrow). !important defeats page logic / CSS that toggles
+   `display` on the select to show a field. Single-arrow-source rule (commit 20626fd4). */
+select.cs-enhanced-source {
+  display: none !important;
+}
+
+/* The host the enhancer inserts around every select. It is frequently a grid or
+   flex item (form field, toolbar cell), where the default `min-width: auto` floors
+   it at its content and lets it push out of its track. Zero that floor here, once,
+   so no surface has to remember to. */
+.custom-select-host {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Wrapper */
+.custom-select {
+  position: relative;
+
+  /* A select is as wide as the slot it sits in -- NEVER as wide as the label it
+     currently shows. As a shrink-to-fit `inline-flex` it grew with the selected
+     option, so picking a long value ("Disabled for this task") pushed the control
+     out of its grid column and over the control beside it -- and the portaled menu,
+     which is sized and placed from the trigger's rect, was dragged over with it.
+     A long value now ellipsizes in `.cs-value` instead of widening the box. */
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+
+  /* Reset styles that might be inherited from native select classes (like .settings-select) */
+  background-image: none !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Trigger area - sleek minimal design */
+.cs-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  transition:
+    background-color var(--transition-base),
+    border-color var(--transition-base);
+}
+
+.custom-select:hover .cs-trigger {
+  background: var(--bg-card-hover);
+  border-color: var(--text-muted);
+}
+
+.custom-select.open .cs-trigger {
+  background: var(--bg-card-hover);
+  border-color: var(--primary-color);
+  box-shadow: none;
+}
+
+.custom-select.closing .cs-trigger {
+  background: var(--bg-card-hover);
+  border-color: var(--primary-color);
+  box-shadow: none;
+}
+
+.custom-select.open:not(.dropdown-above) .cs-trigger,
+.custom-select.closing:not(.dropdown-above) .cs-trigger {
+  border-bottom-color: transparent;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.custom-select.open.dropdown-above .cs-trigger,
+.custom-select.closing.dropdown-above .cs-trigger {
+  border-top-color: transparent;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+/* Value display */
+.cs-value {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  font-size: 0.8125rem;
+  letter-spacing: -0.01em;
+}
+
+.cs-value.placeholder {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* Arrow indicator - SVG chevron */
+.cs-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--text-secondary);
+  transition:
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.2s ease;
+}
+
+.cs-arrow svg {
+  width: 12px;
+  height: 12px;
+}
+
+.custom-select:hover .cs-arrow {
+  color: var(--text-primary);
+}
+
+.custom-select.open .cs-arrow {
+  transform: rotate(180deg);
+  color: var(--primary-color);
+}
+
+.custom-select.closing .cs-arrow {
+  transform: rotate(180deg);
+  color: var(--primary-color);
+}
+
+/* Dropdown container — visually continues the trigger instead of floating. */
+.cs-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: var(--z-select);
+  margin-top: 0;
+  max-height: var(--floating-panel-max-height);
+  overflow: hidden auto;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-top: 0;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  box-shadow: var(--shadow-floating-sm);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-4px) scaleY(0.985);
+  transform-origin: top center;
+  transition:
+    opacity var(--floating-duration) var(--floating-easing),
+    transform var(--floating-duration) var(--floating-easing),
+    visibility var(--floating-duration);
+}
+
+.cs-dropdown.cs-portal.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scaleY(1);
+}
+
+/* Search container */
+.cs-search-container {
+  padding: 8px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  position: sticky;
+  top: 0;
+}
+
+.cs-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  outline: none;
+  transition: border-color var(--transition-base);
+}
+
+.cs-search-input:focus {
+  border-color: var(--primary-color);
+}
+
+/* Options container */
+.cs-options-container {
+  padding: 4px 0;
+}
+
+/* No results message */
+.cs-no-results {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+}
+
+/* A portaled menu cannot match ancestor state, so opening direction lives on
+   the menu itself. */
+.cs-dropdown.cs-portal.cs-dropdown--above {
+  border-top: 1px solid var(--border-color);
+  border-bottom: 0;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  transform: translateY(4px) scaleY(0.985);
+  transform-origin: bottom center;
+}
+
+.cs-dropdown.cs-portal.cs-dropdown--above.is-open {
+  transform: translateY(0) scaleY(1);
+}
+
+/* A portal exists only while its trigger is opening or closing. Keep its outline
+   active for that full lifecycle so the joined control never flashes gray. */
+.cs-dropdown.cs-portal {
+  position: fixed;
+  z-index: var(--z-select-portal);
+  margin-top: 0;
+  border-color: var(--primary-color);
+}
+
+/* Options are edge-to-edge rows; inset pills would make the menu look unrelated. */
+.cs-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--cs-control-height, 36px);
+
+  /* The label box mirrors the trigger's: same leading padding, and a trailing column
+     the exact width of the trigger's chevron column, reserved for the checkmark.
+     Both are measured off the live trigger by `_syncMenuMetrics()`, so a surface that
+     restyles `.cs-trigger` padding never needs its select widths hand-compensated. */
+  padding: 0.375rem var(--cs-pad-right, 2.25rem) 0.375rem var(--cs-pad-left, 0.75rem);
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+  font-weight: 450;
+  line-height: 1.4;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+  margin: 0;
+  border-radius: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cs-option:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+/* Keyboard focused option */
+.cs-option.focused {
+  background: var(--bg-card-hover);
+  color: var(--primary-color);
+}
+
+/* Selected option - with checkmark */
+.cs-option.selected {
+  color: var(--primary-color);
+  font-weight: 600;
+  background: var(--bg-card-hover);
+}
+
+.cs-option.selected::after {
+  content: "";
+  position: absolute;
+  right: var(--cs-check-right, 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  width: var(--cs-check-size, 16px);
+  height: var(--cs-check-size, 16px);
+  background-color: var(--primary-color);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") no-repeat center / contain;
+  animation: cs-check-in 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes cs-check-in {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.5);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+}
+
+.cs-option.selected.focused {
+  background: var(--bg-card-hover);
+}
+
+/* Disabled option */
+.cs-option.disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* Disabled state for entire select */
+.custom-select.disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.custom-select.disabled .cs-trigger {
+  background: var(--bg-primary);
+}
+
+/* Scrollbar styling - inherits from global scrollbar-dropdown pattern */
+
+/* Note: Uses global scrollbar system in scrollbar.css */
+
+/* Size variants */
+.custom-select.cs-sm {
+  font-size: 0.75rem;
+}
+
+.custom-select.cs-sm .cs-trigger {
+  padding: 6px 10px;
+}
+
+.custom-select.cs-sm .cs-arrow svg {
+  width: 12px;
+  height: 12px;
+}
+
+.custom-select.cs-lg {
+  font-size: 0.9375rem;
+}
+
+.custom-select.cs-lg .cs-trigger {
+  padding: 12px 16px;
+}
+
+/* Touch-friendly: ensure minimum touch target */
+@media (pointer: coarse) {
+  .cs-trigger {
+    min-height: 44px;
+  }
+
+  .cs-option {
+    min-height: 44px;
+  }
+}
+
+/* Focus visible for keyboard users */
+html[data-input="keyboard"] .custom-select:focus-visible .cs-trigger {
+  outline: none !important;
+  box-shadow:
+    0 0 0 var(--input-focus-ring-width, 3px) var(--input-focus-ring-color, var(--primary-alpha-10)),
+    0 0 0 2px var(--primary-color);
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .cs-trigger,
+  .cs-arrow,
+  .cs-dropdown,
+  .cs-option {
+    transition: none;
+  }
+}

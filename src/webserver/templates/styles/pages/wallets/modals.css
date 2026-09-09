@@ -1,0 +1,152 @@
+/* Warning/Danger Banners */
+.warning-banner,
+.danger-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+}
+
+.warning-banner {
+  background: var(--warning-alpha-10);
+  border: 1px solid var(--warning-alpha-30);
+}
+
+.warning-banner i {
+  color: var(--warning-color);
+  font-size: 1rem;
+  margin-top: 2px;
+}
+
+.danger-banner {
+  background: var(--danger-alpha-10);
+  border: 1px solid var(--danger-alpha-30);
+}
+
+.danger-banner i {
+  color: var(--error-color);
+  font-size: 1rem;
+  margin-top: 2px;
+}
+
+.warning-banner strong,
+.danger-banner strong {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.warning-banner p,
+.danger-banner p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* Form Styles */
+.wallet-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.wallets-page .form-group label .required {
+  color: var(--error-color);
+}
+
+.wallets-page .form-group small {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* Password/Secure Input */
+.password-input-wrapper {
+  position: relative;
+}
+
+.password-input-wrapper textarea.secure-input {
+  padding-right: 40px;
+}
+
+.password-input-wrapper .toggle-visibility {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.password-input-wrapper .toggle-visibility:hover {
+  background: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+}
+
+/* Export Key Display */
+.export-key-display {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.export-key-display
+  label:not(.checkbox-label, :has(> input[type="checkbox"]), :has(> input[type="radio"])) {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.key-display {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.key-display code {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  word-break: break-all;
+  color: var(--text-primary);
+}
+
+.confirm-text {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.confirm-text strong {
+  color: var(--text-primary);
+}
+
+.info-text {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}

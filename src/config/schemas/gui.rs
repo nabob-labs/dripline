@@ -1,0 +1,352 @@
+//! GUI appearance and display preference configuration.
+
+// GUI configuration schema
+
+use crate::config_struct;
+use std::collections::HashMap;
+
+config_struct! {
+    /// GUI/Desktop application configuration
+    pub struct GuiConfig {
+        /// Zoom level for the Electron webview (0.5 = 50%, 1.0 = 100%, 3.0 = 300%)
+        zoom_level: f64 = 1.0,
+
+        /// Dashboard interface settings
+        dashboard: DashboardConfig = DashboardConfig::default(),
+    }
+}
+
+config_struct! {
+    /// Dashboard UI settings
+    pub struct DashboardConfig {
+        /// Interface settings
+        interface: InterfaceConfig = InterfaceConfig::default(),
+
+        /// Startup behavior settings
+        startup: StartupConfig = StartupConfig::default(),
+
+        /// Navigation tab settings
+        navigation: NavigationConfig = NavigationConfig::default(),
+
+        /// Lockscreen security settings
+        lockscreen: LockscreenConfig = LockscreenConfig::default(),
+    }
+}
+
+config_struct! {
+    /// Lockscreen security settings
+    pub struct LockscreenConfig {
+        /// Whether lockscreen is enabled
+        enabled: bool = false,
+
+        /// Password type: "pin4", "pin6", "text"
+        password_type: String = "pin6".to_owned(),
+
+        /// Hashed password (BLAKE3 hash, base64-encoded)
+        password_hash: String = String::new(),
+
+        /// Password salt (random, base64-encoded)
+        password_salt: String = String::new(),
+
+        /// Auto-lock timeout in seconds (0 = never)
+        auto_lock_timeout_secs: u64 = 300,
+
+        /// Lock on app minimize/blur (Electron only)
+        lock_on_blur: bool = false,
+    }
+}
+
+config_struct! {
+    /// Interface customization settings
+    pub struct InterfaceConfig {
+        /// Theme preference (dark, light, system)
+        theme: String = "dark".to_owned(),
+
+        /// Token logo shape ("circle" or "rounded-square")
+        token_logo_shape: String = "circle".to_owned(),
+
+        /// Default polling interval in milliseconds (minimum 1000)
+        polling_interval_ms: u64 = 5000,
+
+        /// Show live ticker bar in header
+        show_ticker_bar: bool = true,
+
+        /// Enable animations and transitions
+        enable_animations: bool = true,
+
+        /// Compact mode reduces padding and spacing
+        compact_mode: bool = false,
+
+        /// Auto-expand sidebar categories
+        auto_expand_categories: bool = false,
+
+        /// Default table page size
+        table_page_size: u32 = 25,
+
+        /// Show contextual help hints throughout the dashboard
+        show_hints: bool = true,
+
+        /// Show the featured row (boosted and trending tokens) on Home and Tokens
+        show_featured_row: bool = true,
+
+        /// Enable sound effects throughout the dashboard
+        sounds_enabled: bool = true,
+    }
+}
+
+config_struct! {
+    /// Startup behavior settings
+    pub struct StartupConfig {
+        /// Auto-start trader on application launch (disabled - for future use)
+        auto_start_trader: bool = false,
+
+        /// Default page to show on startup
+        default_page: String = "dashboard".to_owned(),
+
+        /// Show notifications for background events
+        show_background_notifications: bool = true,
+
+        /// Whether onboarding has been completed (set true after first-time onboarding)
+        onboarding_complete: bool = false,
+
+        /// Whether the user chose Explore Mode instead of wallet + RPC setup.
+        /// The alias keeps existing installations that persisted the former key compatible.
+        #[serde(alias = "setup_skipped")]
+        explore_mode_enabled: bool = false,
+    }
+}
+
+config_struct! {
+    /// Navigation configuration for dashboard tabs
+    pub struct NavigationConfig {
+        /// List of navigation tabs with order and visibility
+        tabs: Vec<TabConfig> = default_tabs(),
+    }
+}
+
+config_struct! {
+    /// Single navigation tab configuration
+    pub struct TabConfig {
+        /// Tab identifier (e.g., "home", "positions")
+        id: String = "".to_owned(),
+        /// Display label
+        label: String = "".to_owned(),
+        /// Icon class name (e.g., "icon-home")
+        icon: String = "".to_owned(),
+        /// Sort order (lower = first)
+        order: u32 = 0,
+        /// Whether tab is visible/enabled
+        enabled: bool = true,
+    }
+}
+
+/// Returns the default tab configuration
+pub fn default_tabs() -> Vec<TabConfig> {
+    vec![
+        TabConfig {
+            id: "home".into(),
+            label: "Home".into(),
+            icon: "icon-house".into(),
+            order: 0,
+            enabled: true,
+        },
+        TabConfig {
+            id: "assistant".into(),
+            label: "Assistant".into(),
+            icon: "icon-bot-message-square".into(),
+            order: 1,
+            enabled: true,
+        },
+        TabConfig {
+            id: "positions".into(),
+            label: "Positions".into(),
+            icon: "icon-chart-candlestick".into(),
+            order: 2,
+            enabled: true,
+        },
+        TabConfig {
+            id: "tokens".into(),
+            label: "Tokens".into(),
+            icon: "icon-coins".into(),
+            order: 3,
+            enabled: true,
+        },
+        TabConfig {
+            id: "filtering".into(),
+            label: "Filtering".into(),
+            icon: "icon-list-filter".into(),
+            order: 4,
+            enabled: true,
+        },
+        TabConfig {
+            id: "trader".into(),
+            label: "Auto Trader".into(),
+            icon: "icon-bot".into(),
+            order: 5,
+            enabled: true,
+        },
+        TabConfig {
+            id: "wallets".into(),
+            label: "Wallets".into(),
+            icon: "icon-wallet".into(),
+            order: 7,
+            enabled: true,
+        },
+        TabConfig {
+            id: "transactions".into(),
+            label: "Transactions".into(),
+            icon: "icon-activity".into(),
+            order: 8,
+            enabled: true,
+        },
+        TabConfig {
+            id: "tools".into(),
+            label: "Tools".into(),
+            icon: "icon-wrench".into(),
+            order: 9,
+            enabled: true,
+        },
+        TabConfig {
+            id: "services".into(),
+            label: "Services".into(),
+            icon: "icon-server".into(),
+            order: 10,
+            enabled: true,
+        },
+        TabConfig {
+            id: "events".into(),
+            label: "Events".into(),
+            icon: "icon-radio-tower".into(),
+            order: 11,
+            enabled: true,
+        },
+        TabConfig {
+            id: "config".into(),
+            label: "Config".into(),
+            icon: "icon-settings".into(),
+            order: 12,
+            enabled: true,
+        },
+    ]
+}
+
+/// Ensures all default tabs exist in the provided tabs list.
+/// Also handles migration from old tab IDs (e.g., "wallet" -> "wallets").
+/// Forces icons and labels from defaults - only order and enabled are user-configurable.
+/// Returns the merged list with missing tabs added and old IDs migrated.
+pub fn ensure_all_tabs_present(mut tabs: Vec<TabConfig>) -> Vec<TabConfig> {
+    let defaults = default_tabs();
+
+    // Migration: rename old tab IDs to their current names, preserving the
+    // user's saved order/enabled for that tab. "wallet" -> "wallets" and the
+    // catch-all "ai" page -> "assistant".
+    for tab in &mut tabs {
+        if tab.id == "wallet" {
+            tab.id = "wallets".into();
+        }
+        if tab.id == "ai" {
+            tab.id = "assistant".into();
+        }
+    }
+    // A config that carried both the legacy "ai" id and a fresh "assistant" id
+    // would now hold a duplicate; keep the first (the user-ordered one).
+    {
+        let mut seen = std::collections::HashSet::new();
+        tabs.retain(|t| seen.insert(t.id.clone()));
+    }
+
+    // Create a map of default tabs for quick lookup
+    let default_map: HashMap<String, &TabConfig> =
+        defaults.iter().map(|t| (t.id.clone(), t)).collect();
+
+    // Drop any saved tab that is no longer a known default (e.g. the removed
+    // "strategies" tab, now a subtab of Auto Trader). The tab set is fixed —
+    // there are no user-defined tabs — so pruning unknowns is safe.
+    tabs.retain(|t| default_map.contains_key(&t.id));
+
+    // Force icons and labels from defaults for existing tabs
+    for tab in &mut tabs {
+        if let Some(default_tab) = default_map.get(&tab.id) {
+            tab.icon = default_tab.icon.clone();
+            tab.label = default_tab.label.clone();
+        }
+    }
+
+    // Find max order to add new tabs after existing ones
+    let max_order = tabs.iter().map(|t| t.order).max().unwrap_or_default();
+    let mut next_order = max_order + 1;
+
+    // Add any missing tabs from defaults
+    for default_tab in defaults {
+        let exists = tabs.iter().any(|t| t.id == default_tab.id);
+        if !exists {
+            let mut new_tab = default_tab;
+            new_tab.order = next_order;
+            next_order += 1;
+            tabs.push(new_tab);
+        }
+    }
+
+    // Sort by order
+    tabs.sort_by_key(|t| t.order);
+
+    tabs
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ensure_all_tabs_present, StartupConfig, TabConfig};
+
+    fn tab(id: &str, order: u32, enabled: bool) -> TabConfig {
+        TabConfig {
+            id: id.into(),
+            label: String::new(),
+            icon: String::new(),
+            order,
+            enabled,
+        }
+    }
+
+    #[test]
+    fn legacy_ai_tab_id_migrates_to_assistant_preserving_order_and_enabled() {
+        let migrated = ensure_all_tabs_present(vec![
+            tab("home", 0, true),
+            tab("ai", 1, false),
+            tab("config", 2, true),
+        ]);
+        let assistant = migrated
+            .iter()
+            .find(|t| t.id == "assistant")
+            .expect("ai tab migrated to assistant");
+        assert_eq!(assistant.order, 1);
+        assert!(!assistant.enabled, "user's disabled state is preserved");
+        assert!(
+            !migrated.iter().any(|t| t.id == "ai"),
+            "no legacy id remains"
+        );
+        assert_eq!(
+            migrated.iter().filter(|t| t.id == "assistant").count(),
+            1,
+            "exactly one assistant tab"
+        );
+    }
+
+    #[test]
+    fn ai_and_assistant_both_present_collapses_to_one() {
+        let migrated =
+            ensure_all_tabs_present(vec![tab("ai", 1, true), tab("assistant", 5, false)]);
+        assert_eq!(migrated.iter().filter(|t| t.id == "assistant").count(), 1);
+    }
+
+    #[test]
+    fn startup_config_reads_legacy_explore_marker_and_writes_canonical_name() {
+        let config: StartupConfig =
+            toml::from_str("setup_skipped = true").expect("legacy startup key should deserialize");
+
+        assert!(config.explore_mode_enabled);
+
+        let serialized = toml::to_string(&config).expect("startup config should serialize");
+        assert!(serialized.contains("explore_mode_enabled = true"));
+        assert!(!serialized.contains("setup_skipped"));
+    }
+}

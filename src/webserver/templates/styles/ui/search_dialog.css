@@ -1,0 +1,391 @@
+/**
+ * Search Dialog Styles
+ * Uses centralized floating.css variables
+ *
+ * Global token search modal with glassmorphic design
+ * matching confirmation dialog and toast patterns.
+ */
+
+/* ============================================
+   OVERLAY / BACKDROP
+   ============================================ */
+
+.search-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--floating-overlay-bg);
+  backdrop-filter: var(--floating-blur-sm);
+  display: none;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 12vh;
+  z-index: var(--z-search-dialog);
+  opacity: 0;
+  transition: opacity var(--floating-duration) var(--floating-easing);
+}
+
+.search-dialog-overlay.visible {
+  display: flex;
+  opacity: 1;
+}
+
+/* ============================================
+   DIALOG CONTAINER
+   ============================================ */
+
+.search-dialog {
+  width: 100%;
+  max-width: 520px;
+  background: var(--floating-bg-blur);
+  backdrop-filter: var(--floating-blur-md);
+  border: 1px solid var(--floating-border);
+  border-radius: var(--floating-panel-radius);
+  box-shadow: var(--shadow-floating-md);
+  overflow: hidden;
+  transform: translateY(-6px) scale(0.99);
+  transition:
+    transform var(--floating-duration) var(--floating-easing),
+    opacity var(--floating-duration) var(--floating-easing);
+}
+
+.search-dialog-overlay.visible .search-dialog {
+  transform: translateY(0) scale(1);
+}
+
+/* ============================================
+   HEADER / SEARCH INPUT — minimal coding bar
+   ============================================ */
+
+.search-dialog-header {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.search-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+}
+
+.search-input-wrapper:focus-within {
+  /* custom focus handled globally via form_controls + our vars */
+}
+
+.search-icon {
+  font-size: 15px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  outline: none;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.search-input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+/* ============================================
+   BODY / RESULTS
+   ============================================ */
+
+.search-dialog-body {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.search-results {
+  padding: 2px;
+}
+
+/* Empty / Loading / Error States — ultra minimal */
+.search-empty,
+.search-loading,
+.search-error {
+  padding: 18px 12px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.search-hint {
+  margin: 0;
+  opacity: 0.65;
+}
+
+.search-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.search-loading-icon {
+  animation: spin 1s linear infinite;
+  font-size: 14px;
+  opacity: 0.6;
+}
+
+.search-error {
+  color: var(--error-color);
+}
+
+/* ============================================
+   RESULT ITEMS — tight coding style, minimal
+   ============================================ */
+
+.search-result {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  min-height: 36px;
+  font-size: 0.8125rem;
+}
+
+.search-result:hover {
+  background: rgb(255, 255, 255, 0.04);
+}
+
+.search-result.selected {
+  background: rgb(88, 166, 255, 0.1);
+}
+
+.search-result-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.search-result-logo,
+.search-result-logo-placeholder {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--token-logo-radius, 3px);
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.search-result-logo-placeholder {
+  background: rgb(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.search-result-info {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.search-result-name {
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.1;
+}
+
+.search-result-symbol {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.search-result-data {
+  text-align: right;
+  flex-shrink: 0;
+  margin-left: auto;
+  min-width: 78px;
+  font-family: var(--font-mono);
+}
+
+.search-result-price {
+  font-weight: 500;
+  color: var(--text-primary);
+  font-feature-settings: "tnum" 1;
+  line-height: 1.1;
+}
+
+.search-result-mcap {
+  font-size: 0.625rem;
+  color: var(--text-secondary);
+  font-feature-settings: "tnum" 1;
+  line-height: 1;
+  opacity: 0.8;
+}
+
+.search-result-actions {
+  display: flex;
+  gap: 1px;
+  flex-shrink: 0;
+  margin-left: 6px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.search-result:hover .search-result-actions,
+.search-result.selected .search-result-actions {
+  opacity: 1;
+}
+
+/* Minimal icon actions — inherit btn-icon but even tighter for coding density */
+.search-action-btn {
+  width: 20px;
+  height: 20px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  border-color: transparent;
+  background: transparent;
+}
+
+.search-action-btn:hover {
+  color: var(--text-primary);
+  background: rgb(255, 255, 255, 0.08);
+}
+
+/* Special action tints — subtle */
+.search-action-btn.action-favorite:hover {
+  color: #f0b429;
+}
+.search-action-btn.action-favorite.active {
+  color: #f0b429;
+}
+
+.search-action-btn.action-blacklist:hover {
+  color: #f85149;
+}
+.search-action-btn.action-blacklist.active {
+  color: #f85149;
+}
+
+.search-action-btn.loading {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.search-action-btn.loading i {
+  animation: spin 1s linear infinite;
+}
+
+/* ============================================
+   FOOTER — minimal coding hint bar
+   ============================================ */
+
+.search-dialog-footer {
+  padding: 4px 10px;
+  border-top: 1px solid var(--border-color);
+  background: transparent;
+  font-size: 0.625rem;
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+.search-tip {
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+
+/* ============================================
+   SCROLLBAR STYLING
+   ============================================ */
+
+/* Search dialog uses global scrollbar-dialog pattern */
+
+/* Note: Inherits from global scrollbar system in scrollbar.css */
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (width <= 640px) {
+  .search-dialog-overlay {
+    padding-top: 6vh;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .search-dialog {
+    max-width: 100%;
+  }
+
+  .search-dialog-body {
+    max-height: 42vh;
+  }
+
+  .search-result-data {
+    display: none; /* keep ultra minimal on small screens */
+  }
+
+  .search-result-actions {
+    opacity: 1;
+  }
+
+  .search-result {
+    min-height: 32px;
+    padding: 3px 6px;
+  }
+}
+
+/* ============================================
+   THEME SUPPORT (light mode)
+   ============================================ */
+
+[data-theme="light"] .search-dialog {
+  background: #fff;
+  border-color: var(--border-color);
+  box-shadow: 0 8px 32px -8px rgb(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .search-dialog-header,
+[data-theme="light"] .search-dialog-footer {
+  border-color: var(--border-color);
+}
+
+[data-theme="light"] .search-result:hover {
+  background: var(--bg-card-hover);
+}
+
+[data-theme="light"] .search-result.selected {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+[data-theme="light"] .search-result-name {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .search-result-symbol,
+[data-theme="light"] .search-result-mcap,
+[data-theme="light"] .search-icon,
+[data-theme="light"] .search-hint,
+[data-theme="light"] .search-tip {
+  color: var(--text-secondary);
+}
+

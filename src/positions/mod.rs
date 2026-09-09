@@ -1,0 +1,93 @@
+//! Position lifecycle management — opening, tracking, closing, and DCA operations.
+pub mod apply;
+pub mod database;
+pub use database as db;
+mod error;
+pub use error::{Error, Result};
+pub mod helpers;
+pub use helpers as lib; // Backward compatibility alias
+pub mod ledger;
+pub mod loss_detection;
+pub mod metrics;
+pub mod operations;
+pub mod pnl;
+pub mod price_resolution;
+pub mod price_updater;
+pub mod queue;
+pub mod state;
+pub mod state_pending;
+pub mod tracking;
+pub mod transitions;
+pub mod types;
+pub mod verifier;
+pub mod worker;
+
+// Suffix appended to closed_reason while exit verification is pending
+pub const PENDING_VERIFICATION_SUFFIX: &str = "_pending_verification";
+
+// Public API exports
+pub use operations::{
+    add_to_position, close_position_direct, open_position_direct, open_position_with_size,
+    partial_close_position, update_position_price,
+};
+
+pub use state::{
+    acquire_position_lock, get_active_frozen_cooldowns, get_archived_positions,
+    get_closed_positions, get_open_mints, get_open_positions, get_open_positions_count,
+    get_pending_dca_swaps_for_mint, get_pending_partial_exits_for_mint, get_position_by_id,
+    get_position_by_mint, init_global_position_semaphore, is_open_position,
+    is_partial_exit_pending, is_token_in_cooldown, reconcile_global_position_semaphore,
+    remove_position_by_id, set_position_archived_in_memory, set_position_management_in_memory,
+    MINT_TO_POSITION_INDEX, POSITIONS, SIG_TO_MINT_INDEX,
+};
+
+pub use tracking::update_position_tracking;
+
+pub use metrics::get_verification_metrics;
+
+pub use metrics::get_proceeds_metrics_snapshot;
+
+pub use worker::{initialize_positions_system, start_positions_manager_service};
+
+pub use price_updater::start_price_updater;
+
+pub use loss_detection::{
+    get_loss_thresholds, is_loss_blacklisting_enabled, process_position_loss_detection,
+};
+
+// Database and library exports
+pub use db::{
+    delete_archived_positions, delete_position_by_id, force_database_sync,
+    get_all_positions_for_mint, get_closed_positions as get_db_closed_positions,
+    get_closed_positions_count_since as get_db_closed_positions_count_since,
+    get_closed_positions_since as get_db_closed_positions_since, get_daily_trading_stats,
+    get_entry_history, get_exit_history,
+    get_latest_position_by_mint as get_db_latest_position_by_mint,
+    get_open_positions as get_db_open_positions, get_period_trading_stats,
+    get_position_by_id as get_db_position_by_id, get_positions_database,
+    get_recent_closed_positions_for_mint, get_token_snapshot, get_token_snapshots,
+    initialize_positions_database, load_all_positions, save_entry_record, save_exit_record,
+    save_position, save_token_snapshot, set_position_archived_db, set_position_management_db,
+    update_position, update_position_price_fields, with_positions_database,
+    with_positions_database_async, DailyTradingStats, PeriodTradingStats, PositionState,
+    PositionStateHistory, PositionTracking, PositionsDatabase, PositionsDatabaseStats,
+    TokenSnapshot,
+};
+
+pub use helpers::{
+    add_signature_to_index, calculate_position_pnl, calculate_position_pnl_safe,
+    calculate_position_total_fees, calculate_split_pnl, get_position_index_by_mint,
+    remove_position_by_signature, save_position_token_snapshot, sync_position_to_database,
+    update_mint_position_index,
+};
+
+// Core types re-exports
+pub use metrics::ProceedsMetricsSnapshot;
+pub use queue::{enqueue_verification, VerificationItem};
+pub use state::PositionLockGuard;
+pub use transitions::PositionTransition;
+pub use types::{
+    EntryRecord, EntrySubmission, ExitRecord, GiveUpReason, PendingDcaSwap, PendingPartialExit,
+    Position, PositionManagement, PositionOrigin, PriceSource, TradeOrigin, VerificationKind,
+    VerificationOutcome,
+};

@@ -1,0 +1,403 @@
+//! Token metadata storage — persists name, symbol, decimals, and URI information.
+
+use crate::errors::DatabaseError;
+use chrono::Utc;
+use rusqlite::{params, params_from_iter};
+use std::collections::HashMap;
+
+use crate::tokens::types::{TokenMetadata, TokenResult};
+use crate::tokens::Error;
+
+use super::TokenDatabase;
+
+impl TokenDatabase {
+    // ========================================================================
+    // TOKEN METADATA OPERATIONS
+    // ========================================================================
+
+    /// Insert or update token metadata in the database
+    pub fn upsert_token(
+        &self,
+        mint: &str,
+        symbol: Option<&str>,
+        name: Option<&str>,
+        decimals: Option<u8>,
+    ) -> TokenResult<()> {
+        let conn = self.conn()?;
+
+        let now = Utc::now().timestamp();
+
+        conn.execute(
+            "INSERT INTO tokens (chain_id, mint, symbol, name, decimals, first_discovered_at, metadata_last_fetched_at, decimals_last_fetched_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6, ?6)
+             ON CONFLICT(chain_id, mint) DO UPDATE SET
+                symbol = COALESCE(?3, symbol),
+                name = COALESCE(?4, name),
+                decimals = COALESCE(?5, decimals),
+                metadata_last_fetched_at = CASE
+                    WHEN ?3 IS NOT NULL OR ?4 IS NOT NULL THEN ?6
+                    ELSE metadata_last_fetched_at
+                END,
+                decimals_last_fetched_at = CASE WHEN ?5 IS NOT NULL THEN ?6 ELSE decimals_last_fetched_at END",
+            params![self.chain_id(), mint, symbol, name, decimals.map(|d| d as i64), now],
+        )
+        .map_err(|e| Error::Database(DatabaseError::Query { operation: "Failed to upsert token".to_owned(), message: e.to_string() }))?;
+
+        // Ensure tracking entry exists
+        conn.execute(
+            "INSERT OR IGNORE INTO update_tracking (chain_id, mint, priority) VALUES (?1, ?2, 10)",
+            params![self.chain_id(), mint],
+        )
+        .map_err(|e| {
+            Error::Database(DatabaseError::Query {
+                operation: "Failed to create tracking".to_owned(),
+                message: e.to_string(),
+            })
+        })?;
+
+        // CRITICAL: Update in-memory cache immediately after successful DB write
+        // This ensures the cache stays synchronized with the database
+        // Pool decoders rely on cached decimals being available
+        if let Some(d) = decimals {
+            if d > 0 {
+                crate::tokens::decimals::cache(self.chain(), mint, d);
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Get token metadata
+    pub fn get_token(&self, mint: &str) -> TokenResult<Option<TokenMetadata>> {
+        let conn = self.conn()?;
+
+        let mut stmt = conn.prepare(
+            "SELECT mint, symbol, name, decimals, first_discovered_at, metadata_last_fetched_at FROM tokens WHERE chain_id = ?1 AND mint = ?2"
+        ).map_err(|e| Error::Database(DatabaseError::Query { operation: "Failed to prepare".to_owned(), message: e.to_string() }))?;
+
+        let result = stmt.query_row(params![self.chain_id(), mint], |row| {
+            Ok(TokenMetadata {
+                mint: row.get(0)?,
+                symbol: row.get(1)?,
+                name: row.get(2)?,
+                decimals: row.get::<_, Option<i64>>(3)?.map(|d| d as u8),
+                first_discovered_at: row.get(4)?,
+                metadata_last_fetched_at: row.get(5)?,
+            })
+        });
+
+        match result {
+            Ok(token) => Ok(Some(token)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(Error::Database(DatabaseError::Query {
+                operation: "Query failed".to_owned(),
+                message: e.to_string(),
+            })),
+        }
+    }
+
+    /// Check if token exists
+    pub fn token_exists(&self, mint: &str) -> TokenResult<bool> {
+        Ok(self.get_token(mint)?.is_some())
+    }
+
+    /// List all tokens with limit
+    pub fn list_tokens(&self, limit: usize) -> TokenResult<Vec<TokenMetadata>> {
+        let conn = self.conn()?;
+
+        let mut stmt = conn
+            .prepare(
+                "SELECT mint, symbol, name, decimals, first_discovered_at, metadata_last_fetched_at 
+             FROM tokens WHERE chain_id = ?1
+             ORDER BY metadata_last_fetched_at DESC 
+             LIMIT ?2",
+            )
+            .map_err(|e| Error::Database(DatabaseError::Query { operation: "Failed to prepare".to_owned(), message: e.to_string() }))?;
+
+        let tokens = stmt
+            .query_map(params![self.chain_id(), limit], |row| {
+                Ok(TokenMetadata {
+                    mint: row.get(0)?,
+                    symbol: row.get(1)?,
+                    name: row.get(2)?,
+                    decimals: row.get::<_, Option<i64>>(3)?.map(|d| d as u8),
+                    first_discovered_at: row.get(4)?,
+                    metadata_last_fetched_at: row.get(5)?,
+                })
+            })
+            .map_err(|e| {
+                Error::Database(DatabaseError::Query {
+                    operation: "Query failed".to_owned(),
+                    message: e.to_string(),
+                })
+            })?;
+
+        tokens.collect::<Result<Vec<_>, _>>().map_err(|e| {
+            Error::Database(DatabaseError::Query {
+                operation: "Failed to collect".to_owned(),
+                message: e.to_string(),
+            })
+        })
+    }
+
+    /// Get tokens with valid decimals for cache preloading, most important LAST.
+    ///
+    /// `limit` MUST be the decimals cache capacity (or less). The cache is a bounded LRU
+    /// and its consumers are the SYNCHRONOUS pool decoders, which have no fallback: a miss
+    /// makes the decoder skip the pool entirely, so the token loses its live price. Loading
+    /// more rows than the cache can hold therefore does not "warm" it, it evicts three out
+    /// of four pool mints at random and silently drops their prices.
+    ///
+    /// Ordering puts the mints that must be resident at the END of the result, so they are
+    /// the most recently used once the caller inserts in order: tokens with a pool first,
+    /// then the most recently refreshed. Junk decimals (`> MAX_DECIMALS`, seen in
+    /// production) and the `0` placeholder are excluded here rather than at every reader.
+    pub fn get_tokens_with_decimals_for_preload(
+        &self,
+        limit: usize,
+    ) -> TokenResult<Vec<(String, u8)>> {
+        let conn = self.conn()?;
+
+        let mut stmt = conn
+            .prepare(
+                "SELECT mint, decimals FROM (
+                     SELECT t.mint AS mint,
+                            t.decimals AS decimals,
+                            EXISTS(SELECT 1 FROM token_pools p WHERE p.chain_id = t.chain_id AND p.mint = t.mint) AS pooled,
+                            t.metadata_last_fetched_at AS refreshed
+                     FROM tokens t
+                     WHERE t.chain_id = ?1 AND t.decimals IS NOT NULL AND t.decimals > 0 AND t.decimals <= ?2
+                     ORDER BY pooled DESC, refreshed DESC
+                     LIMIT ?3
+                 )
+                 ORDER BY pooled ASC, refreshed ASC",
+            )
+            .map_err(|e| Error::Database(DatabaseError::Query { operation: "Failed to prepare".to_owned(), message: e.to_string() }))?;
+
+        let rows = stmt
+            .query_map(
+                rusqlite::params![
+                    self.chain_id(),
+                    crate::tokens::MAX_DECIMALS as i64,
+                    limit as i64
+                ],
+                |row| {
+                    let mint: String = row.get(0)?;
+                    let decimals: i64 = row.get(1)?;
+                    Ok((mint, decimals as u8))
+                },
+            )
+            .map_err(|e| {
+                Error::Database(DatabaseError::Query {
+                    operation: "Query failed".to_owned(),
+                    message: e.to_string(),
+                })
+            })?;
+
+        let result = rows.collect::<Result<Vec<_>, _>>().map_err(|e| {
+            Error::Database(DatabaseError::Query {
+                operation: "Failed to collect".to_owned(),
+                message: e.to_string(),
+            })
+        })?;
+
+        crate::logger::debug(
+            crate::logger::LogTag::Tokens,
+            &format!(
+                "[PRELOAD] Successfully collected {} decimals from database",
+                result.len()
+            ),
+        );
+
+        Ok(result)
+    }
+
+    // ========================================================================
+    // TOKEN INFO BATCH QUERIES
+    // ========================================================================
+
+    /// Fetch image URLs for multiple tokens in a single query
+    pub fn get_token_images_batch(&self, mints: &[String]) -> TokenResult<HashMap<String, String>> {
+        if mints.is_empty() {
+            return Ok(HashMap::new());
+        }
+
+        let conn = self.conn()?;
+
+        // Build placeholders for IN clause
+        let placeholders: String = mints.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+
+        // Query: DexScreener images first, then GeckoTerminal for any missing
+        // Uses UNION to combine results, with DexScreener taking priority
+        let query = format!(
+            r#"
+            SELECT mint, image_url FROM market_dexscreener 
+            WHERE chain_id = ? AND mint IN ({}) AND image_url IS NOT NULL AND image_url != ''
+            UNION ALL
+            SELECT g.mint, g.image_url FROM market_geckoterminal g
+            WHERE g.chain_id = ? AND g.mint IN ({})
+              AND g.image_url IS NOT NULL AND g.image_url != ''
+              AND g.mint NOT IN (
+                SELECT mint FROM market_dexscreener 
+                WHERE chain_id = ? AND mint IN ({}) AND image_url IS NOT NULL AND image_url != ''
+              )
+            "#,
+            placeholders, placeholders, placeholders
+        );
+
+        let mut stmt = conn.prepare(&query).map_err(|e| {
+            Error::Database(DatabaseError::Query {
+                operation: "Failed to prepare batch image query".to_owned(),
+                message: e.to_string(),
+            })
+        })?;
+
+        // Build params: mints repeated 3 times for the 3 IN clauses
+        let all_mints: Vec<&str> = std::iter::once(self.chain_id())
+            .chain(mints.iter().map(String::as_str))
+            .chain(std::iter::once(self.chain_id()))
+            .chain(mints.iter().map(String::as_str))
+            .chain(std::iter::once(self.chain_id()))
+            .chain(mints.iter().map(String::as_str))
+            .collect();
+
+        let rows = stmt
+            .query_map(params_from_iter(all_mints), |row| {
+                let mint: String = row.get(0)?;
+                let image_url: String = row.get(1)?;
+                Ok((mint, image_url))
+            })
+            .map_err(|e| {
+                Error::Database(DatabaseError::Query {
+                    operation: "Batch image query failed".to_owned(),
+                    message: e.to_string(),
+                })
+            })?;
+
+        let mut result = HashMap::with_capacity(mints.len());
+        for row in rows {
+            let (mint, image_url) = row.map_err(|e| Error::RowDecode {
+                detail: e.to_string(),
+            })?;
+            result.insert(mint, image_url);
+        }
+
+        Ok(result)
+    }
+
+    /// Get token decimals for multiple mints in a single query.
+    /// Returns HashMap<mint, decimals> (only mints with a non-null decimals value).
+    pub fn get_token_decimals_batch(&self, mints: &[String]) -> TokenResult<HashMap<String, u8>> {
+        if mints.is_empty() {
+            return Ok(HashMap::new());
+        }
+
+        let conn = self.conn()?;
+
+        let placeholders: String = mints.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+        let query = format!(
+            "SELECT mint, decimals FROM tokens WHERE chain_id = ? AND mint IN ({placeholders}) AND decimals IS NOT NULL"
+        );
+
+        let mut stmt = conn.prepare(&query).map_err(|e| {
+            Error::Database(DatabaseError::Query {
+                operation: "Failed to prepare batch decimals query".to_owned(),
+                message: e.to_string(),
+            })
+        })?;
+
+        let mint_refs: Vec<&str> = std::iter::once(self.chain_id())
+            .chain(mints.iter().map(String::as_str))
+            .collect();
+        let rows = stmt
+            .query_map(params_from_iter(mint_refs), |row| {
+                let mint: String = row.get(0)?;
+                let decimals: u8 = row.get(1)?;
+                Ok((mint, decimals))
+            })
+            .map_err(|e| {
+                Error::Database(DatabaseError::Query {
+                    operation: "Batch decimals query failed".to_owned(),
+                    message: e.to_string(),
+                })
+            })?;
+
+        let mut result = HashMap::with_capacity(mints.len());
+        for row in rows {
+            let (mint, decimals) = row.map_err(|e| Error::RowDecode {
+                detail: e.to_string(),
+            })?;
+            result.insert(mint, decimals);
+        }
+
+        Ok(result)
+    }
+
+    /// Get basic token info (symbol, name, image_url) for multiple tokens in a single query
+    /// Returns HashMap<mint, (symbol, name, image_url)> - optimized for display purposes
+    pub fn get_token_info_batch(
+        &self,
+        mints: &[String],
+    ) -> TokenResult<HashMap<String, (Option<String>, Option<String>, Option<String>)>> {
+        if mints.is_empty() {
+            return Ok(HashMap::new());
+        }
+
+        let conn = self.conn()?;
+
+        let placeholders: String = mints.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+
+        // Join tokens table with market data to get symbol, name, and image
+        // Priority: DexScreener image > GeckoTerminal image
+        let query = format!(
+            r#"
+            SELECT 
+                t.mint,
+                t.symbol,
+                t.name,
+                COALESCE(d.image_url, g.image_url) as image_url
+            FROM tokens t
+            LEFT JOIN market_dexscreener d ON t.chain_id = d.chain_id AND t.mint = d.mint
+            LEFT JOIN market_geckoterminal g ON t.chain_id = g.chain_id AND t.mint = g.mint
+            WHERE t.chain_id = ? AND t.mint IN ({})
+            "#,
+            placeholders
+        );
+
+        let mut stmt = conn.prepare(&query).map_err(|e| {
+            Error::Database(DatabaseError::Query {
+                operation: "Failed to prepare batch token info query".to_owned(),
+                message: e.to_string(),
+            })
+        })?;
+
+        let mint_refs: Vec<&str> = std::iter::once(self.chain_id())
+            .chain(mints.iter().map(String::as_str))
+            .collect();
+
+        let rows = stmt
+            .query_map(params_from_iter(mint_refs), |row| {
+                let mint: String = row.get(0)?;
+                let symbol: Option<String> = row.get(1)?;
+                let name: Option<String> = row.get(2)?;
+                let image_url: Option<String> = row.get(3)?;
+                Ok((mint, symbol, name, image_url))
+            })
+            .map_err(|e| {
+                Error::Database(DatabaseError::Query {
+                    operation: "Batch token info query failed".to_owned(),
+                    message: e.to_string(),
+                })
+            })?;
+
+        let mut result = HashMap::with_capacity(mints.len());
+        for row in rows {
+            let (mint, symbol, name, image_url) = row.map_err(|e| Error::RowDecode {
+                detail: e.to_string(),
+            })?;
+            result.insert(mint, (symbol, name, image_url));
+        }
+
+        Ok(result)
+    }
+}

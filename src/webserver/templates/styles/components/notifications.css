@@ -1,0 +1,684 @@
+/* =============================================================================
+   Notification Panel - Compact, Modern, Minimal Design
+   Uses centralized floating.css variables
+   Professional trading dashboard notification system
+   ============================================================================= */
+
+/* -----------------------------------------------------------------------------
+   Drawer Layout - Full-screen overlay with wide slide-in panel
+   ----------------------------------------------------------------------------- */
+
+.notification-drawer {
+  position: fixed;
+
+  /* Stop above the bottom status bar (26px) so the bar stays fully visible and
+     the panel's footer/list are never hidden behind it. */
+  inset: 0 0 26px;
+  z-index: var(--z-notification-panel);
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-fast)-out;
+}
+
+.notification-drawer[data-state="open"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+body.notification-drawer-open {
+  overflow: hidden;
+}
+
+/* Backdrop */
+.notification-drawer__backdrop {
+  flex: 1 1 auto;
+  background: var(--floating-overlay-bg);
+  backdrop-filter: var(--floating-blur-sm);
+  opacity: 0;
+  transition: opacity var(--floating-duration) ease-out;
+}
+
+.notification-drawer[data-state="open"] .notification-drawer__backdrop {
+  opacity: 1;
+}
+
+/* Main Panel - Wider and more minimal */
+.notification-drawer__panel {
+  position: relative;
+  width: min(560px, 96vw);
+  max-width: 600px;
+  background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transform: translateX(100%);
+  transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+  border-left: 1px solid var(--border-color);
+}
+
+.notification-drawer[data-state="open"] .notification-drawer__panel {
+  transform: translateX(0);
+}
+
+/* -----------------------------------------------------------------------------
+   Compact Header
+   ----------------------------------------------------------------------------- */
+
+.notification-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+.notification-panel-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.notification-panel-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+/* Action Buttons */
+.notification-panel-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.panel-action-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-muted);
+  transition: all var(--transition-fast);
+}
+
+.panel-action-btn:hover {
+  background: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+.panel-close-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: transparent;
+  border: 1px solid transparent;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.panel-close-btn:hover {
+  background: var(--danger-alpha-10);
+  color: var(--error-color);
+}
+
+/* -----------------------------------------------------------------------------
+   Compact Tabs
+   ----------------------------------------------------------------------------- */
+
+.notification-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  overflow-x: auto;
+  flex-shrink: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hidden scrollbar - uses global scrollbar-hidden pattern */
+
+.notification-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.notification-tab:hover {
+  background: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+.notification-tab.active {
+  background: var(--primary-color);
+  color: white;
+  font-weight: 600;
+}
+
+/* Tab count badge */
+.tab-count {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 5px;
+  background: var(--bg-card-hover);
+  border-radius: var(--radius-lg);
+  font-size: 10px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-data);
+}
+
+.notification-tab.active .tab-count {
+  background: rgb(255, 255, 255, 0.25);
+  color: white;
+}
+
+/* -----------------------------------------------------------------------------
+   Compact Filters
+   ----------------------------------------------------------------------------- */
+
+.notification-filters {
+  display: none;
+  padding: 8px 12px;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.filter-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.filter-select {
+  flex: 1;
+  padding: 6px 10px;
+  padding-right: 24px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+
+  /* background-color (not the `background` shorthand) so the global select arrow survives. */
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+
+  /* Arrow inherited from global `select {}` (form_controls.css). */
+}
+
+.filter-select:hover {
+  border-color: var(--primary-color);
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.filter-clear-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.filter-clear-btn:hover {
+  background: var(--danger-alpha-10);
+  border-color: var(--error-color);
+  color: var(--error-color);
+}
+
+/* -----------------------------------------------------------------------------
+   Notification List - Scrollable with tighter spacing
+   ----------------------------------------------------------------------------- */
+
+.notification-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+
+/* Scrollbar styling - inherits from global scrollbar system */
+
+/* Note: Uses global thin scrollbar pattern from scrollbar.css */
+
+/* -----------------------------------------------------------------------------
+   Compact Notification Item
+   ----------------------------------------------------------------------------- */
+
+.notification-item {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  overflow: hidden;
+}
+
+.notification-item:last-child {
+  margin-bottom: 0;
+}
+
+.notification-item:hover {
+  background: var(--hover-bg);
+  border-color: var(--primary-color);
+}
+
+/* Status indicator - removed for minimal design */
+
+/* Unread indicator */
+.notification-item.unread {
+  background: var(--primary-alpha-5);
+}
+
+/* Notification header */
+.notification-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notification-icon {
+  font-size: 14px;
+  line-height: 1;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.notification-item.in-progress .notification-icon {
+  color: var(--warning-color);
+}
+
+.notification-item.completed .notification-icon {
+  color: var(--success-color);
+}
+
+.notification-item.failed .notification-icon {
+  color: var(--error-color);
+}
+
+.notification-icon .icon-loader {
+  animation: spin 1s linear infinite;
+}
+
+
+
+.notification-title {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.3;
+  min-width: 0;
+}
+
+.notification-title strong {
+  font-weight: 600;
+}
+
+.notification-symbol {
+  font-weight: 600;
+  color: var(--primary-color);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--primary-alpha-10);
+  padding: 2px 5px;
+  border-radius: var(--radius-sm);
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Dismiss button */
+.notification-dismiss {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.1s ease;
+  flex-shrink: 0;
+  opacity: 0;
+}
+
+.notification-item:hover .notification-dismiss {
+  opacity: 1;
+}
+
+.notification-dismiss:hover {
+  background: var(--danger-alpha-10);
+  color: var(--error-color);
+}
+
+/* Source tag (auto / manual) shown next to the title */
+.notification-source {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
+  line-height: 1.4;
+}
+
+.notification-source--auto {
+  color: var(--primary-color);
+  background: var(--primary-alpha-10);
+}
+
+.notification-source--manual {
+  color: var(--text-secondary);
+  background: var(--bg-card-hover);
+}
+
+/* Detail chips row (amount, %, reason, strategy) */
+.notification-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 5px 0 0;
+  padding-left: 22px;
+}
+
+.notification-chip {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-card-hover);
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-data);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+}
+
+/* -----------------------------------------------------------------------------
+   Compact Progress Bar
+   ----------------------------------------------------------------------------- */
+
+.notification-progress {
+  margin: 6px 0 0;
+  padding-left: 22px;
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 3px;
+  background: var(--bg-card-hover);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--warning-color);
+  border-radius: var(--radius-xs);
+  transition: width var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgb(255, 255, 255, 0.3), transparent);
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.progress-text {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  line-height: 1.2;
+}
+
+/* -----------------------------------------------------------------------------
+   Compact Error State
+   ----------------------------------------------------------------------------- */
+
+.notification-error {
+  margin: 6px 0 0;
+  margin-left: 22px;
+  padding: 6px 8px;
+  background: var(--danger-alpha-10);
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--error-color);
+  line-height: 1.3;
+}
+
+/* -----------------------------------------------------------------------------
+   Timestamp
+   ----------------------------------------------------------------------------- */
+
+.notification-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding-left: 22px;
+}
+
+.notification-time {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: var(--font-data);
+}
+
+.notification-duration {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: var(--font-data);
+  opacity: 0.8;
+}
+
+.notification-duration::before {
+  content: "·";
+  margin-right: 8px;
+}
+
+/* -----------------------------------------------------------------------------
+   Empty State - Compact
+   ----------------------------------------------------------------------------- */
+
+.notification-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.notification-empty i {
+  font-size: 32px;
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+
+.notification-empty p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* -----------------------------------------------------------------------------
+   Loading & Back to Top
+   ----------------------------------------------------------------------------- */
+
+.notification-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.notification-loading i {
+  animation: spin 1s linear infinite;
+}
+
+.back-to-top-btn {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: 0 2px 8px var(--shadow-sm);
+  z-index: 10;
+}
+
+.back-to-top-btn:hover {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--shadow-md);
+}
+
+/* -----------------------------------------------------------------------------
+   Responsive
+   ----------------------------------------------------------------------------- */
+
+@media (width <= 768px) {
+  .notification-drawer__panel {
+    width: 100vw;
+    max-width: 100vw;
+  }
+
+  .notification-panel-header {
+    padding: 10px 12px;
+  }
+
+  .notification-summary {
+    gap: 0;
+  }
+
+  .summary-stat {
+    padding: 8px;
+  }
+
+  .notification-tabs {
+    padding: 6px 10px;
+  }
+
+  .notification-list {
+    padding: 6px 10px;
+  }
+
+  .notification-item {
+    padding: 8px 10px;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Notification Trigger Button (in header)
+   ----------------------------------------------------------------------------- */
+
+.notification-trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes pulse-badge {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+.action-badge {
+  animation: pulse-badge 2s ease-in-out infinite;
+}

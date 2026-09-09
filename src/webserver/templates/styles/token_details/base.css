@@ -1,0 +1,976 @@
+/* Token Details Dialog Styles - Redesigned */
+
+/* =============================================================================
+   BASE DIALOG STRUCTURE - Full Screen Desktop App Style
+   Platform-aware layout:
+   - Browser/Windows/Linux: No title bar offset, full height
+   - macOS Electron: 28px title bar for traffic lights + window drag
+   Status bar (24px) at bottom for version info
+   ============================================================================= */
+
+.token-details-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog); /* Above header, below trade-action-dialog */
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.token-details-dialog.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* The dialog header paints the Electron title-bar pixels too. This pseudo
+   element is only the transparent drag target over those pixels. */
+.token-details-dialog::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 0;
+  background: transparent;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.electron-macos .token-details-dialog::before {
+  height: 28px;
+  -webkit-app-region: drag;
+  pointer-events: auto;
+}
+
+/* Backdrop - full coverage by default */
+.dialog-backdrop {
+  position: absolute;
+  inset: 0 0 24px;
+  background: transparent;
+  cursor: default;
+}
+
+/* Dialog container - full height by default */
+.token-details-dialog .dialog-container {
+  position: relative;
+  margin-top: 0;
+  margin-bottom: 24px;
+  background: var(--bg-primary);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  width: 100%;
+  flex: 1;
+  max-width: none;
+  max-height: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: dialog-fade-in 0.25s ease-out;
+  z-index: 2;
+}
+
+@keyframes dialog-fade-in {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+/* =============================================================================
+   HEADER - Data-first desktop layout
+   ============================================================================= */
+
+.token-details-dialog .dialog-header {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+/* Identity, market data and controls remain distinct regions. */
+.token-details-dialog .header-top-row {
+  display: grid;
+  grid-template-areas: "identity market actions";
+  grid-template-columns: minmax(160px, 0.68fr) minmax(460px, 1.55fr) max-content;
+  align-items: center;
+  gap: clamp(12px, 1.35vw, 26px);
+  min-height: 76px;
+  padding: 10px clamp(16px, 1.4vw, 24px) 8px;
+  -webkit-app-region: no-drag;
+}
+
+.electron-macos .token-details-dialog .header-top-row {
+  padding-top: 38px;
+}
+
+/* Left section - Token identity */
+.token-details-dialog .header-left {
+  grid-area: identity;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.token-details-dialog .header-logo {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border-radius: var(--token-logo-radius, 3px);
+  background: var(--bg-card-hover);
+}
+
+.token-details-dialog .header-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.token-details-dialog .header-logo.clickable-logo:has(img) {
+  cursor: zoom-in;
+  transition: opacity var(--transition-fast);
+}
+
+.token-details-dialog .header-logo.clickable-logo:has(img):hover {
+  opacity: 0.82;
+}
+
+.token-details-dialog .logo-placeholder {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.token-details-dialog .header-title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.token-details-dialog .title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.token-details-dialog .title-main {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: clamp(1.12rem, 1.15vw, 1.28rem);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.token-details-dialog .title-sub {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Supporting facts and source health sit on one quiet secondary line. */
+.token-details-dialog .header-badges-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  min-height: 30px;
+  padding: 0 clamp(16px, 1.4vw, 24px) 7px;
+}
+
+.token-details-dialog .header-badge-group,
+.token-details-dialog .header-status-area {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.token-details-dialog .header-badge-group {
+  gap: 10px;
+  flex: 1 1 auto;
+}
+
+.token-details-dialog .title-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+  flex-wrap: nowrap;
+}
+
+.token-details-dialog .title-badges::-webkit-scrollbar {
+  display: none;
+}
+
+.token-details-dialog .header-status-area {
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.token-details-dialog .header-meta-label,
+.token-details-dialog .last-updated-label,
+.token-details-dialog .market-value-label {
+  color: var(--text-muted);
+  font-size: 0.6rem;
+  font-weight: 650;
+  letter-spacing: 0.07em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.token-details-dialog .last-updated {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.token-details-dialog .last-updated-value {
+  color: var(--text-secondary);
+}
+
+.token-details-dialog .badge {
+  padding: 4px 8px;
+  border: 0;
+  border-radius: var(--radius-md);
+  font-size: 0.65rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.token-details-dialog .badge-success {
+  background: var(--success-alpha-20);
+  color: var(--semantic-success-text);
+}
+
+.token-details-dialog .badge-info {
+  background: var(--primary-alpha-20);
+  color: var(--semantic-info-text);
+}
+
+.token-details-dialog .badge-danger {
+  background: var(--danger-alpha-20);
+  color: var(--semantic-error-text);
+}
+
+.token-details-dialog .badge-warning {
+  background: var(--warning-alpha-20);
+  color: var(--semantic-warning-text);
+}
+
+.token-details-dialog .badge-secondary {
+  background: var(--bg-card-hover);
+  color: var(--text-secondary);
+}
+
+/* Center section - quote first, then comparable market metrics. */
+.token-details-dialog .header-center {
+  grid-area: market;
+  min-width: 0;
+}
+
+.token-details-dialog .header-price {
+  display: grid;
+  grid-template-columns: minmax(150px, auto) minmax(300px, 1fr);
+  align-items: center;
+  gap: clamp(12px, 1.35vw, 24px);
+  min-width: 0;
+}
+
+.token-details-dialog .price-skeleton {
+  display: flex;
+  align-items: center;
+  grid-column: 1 / -1;
+  gap: 14px;
+}
+
+.token-details-dialog .price-skel {
+  display: inline-block;
+  background: var(--bg-card-hover);
+  border-radius: var(--radius-md);
+}
+
+.token-details-dialog .price-skel-main {
+  width: 104px;
+  height: 22px;
+}
+
+.token-details-dialog .price-skel-sub {
+  width: 58px;
+  height: 14px;
+}
+
+.token-details-dialog .price-skel-badge {
+  width: 62px;
+  height: 26px;
+  border-radius: var(--radius-lg);
+}
+
+.token-details-dialog .price-quote {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.token-details-dialog .price-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
+}
+
+.token-details-dialog .price-sol-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.token-details-dialog .price-sol {
+  color: var(--text-primary);
+  font-family: var(--font-data);
+  font-size: clamp(1.08rem, 1.25vw, 1.38rem);
+  font-weight: 700;
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+}
+
+.token-details-dialog .price-sol-unit {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.token-details-dialog .price-usd {
+  color: var(--text-secondary);
+  font-family: var(--font-data);
+  font-size: 0.78rem;
+  font-weight: 500;
+  font-feature-settings: "tnum" 1;
+}
+
+.token-details-dialog .price-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 4px 8px;
+  border-radius: var(--radius-md);
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.token-details-dialog .price-change[hidden] {
+  display: none;
+}
+
+.token-details-dialog .price-change-period {
+  font-family: var(--font-sans);
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  opacity: 0.7;
+}
+
+.token-details-dialog .price-change-value {
+  font-family: var(--font-data);
+  font-feature-settings: "tnum" 1;
+}
+
+.token-details-dialog .price-change.positive {
+  color: var(--semantic-success-text);
+  background: var(--success-alpha-15);
+}
+
+.token-details-dialog .price-change.negative {
+  color: var(--semantic-error-text);
+  background: var(--danger-alpha-15);
+}
+
+.token-details-dialog .price-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(10px, 1.15vw, 22px);
+  min-width: 0;
+}
+
+.token-details-dialog .metric-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.token-details-dialog .metric-label {
+  color: var(--text-muted);
+  font-size: 0.59rem;
+  font-weight: 650;
+  letter-spacing: 0.055em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.token-details-dialog .metric-value {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-family: var(--font-data);
+  font-size: clamp(0.78rem, 0.78vw, 1rem);
+  font-weight: 650;
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Right section - Trade actions & controls */
+.token-details-dialog .header-right {
+  grid-area: actions;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: end;
+}
+
+.token-details-dialog .header-trade-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.token-details-dialog .trade-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    opacity var(--transition-fast);
+}
+
+.token-details-dialog .trade-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.46;
+}
+
+.token-details-dialog .trade-btn.buy-btn {
+  color: var(--header-text);
+  background: var(--success-color);
+}
+
+.token-details-dialog .trade-btn.buy-btn:hover:not(:disabled) {
+  background: var(--success-hover);
+}
+
+.token-details-dialog .trade-btn.sell-btn {
+  color: var(--header-text);
+  background: var(--danger);
+}
+
+.token-details-dialog .trade-btn.sell-btn:hover:not(:disabled) {
+  background: var(--danger-hover);
+}
+
+.token-details-dialog .trade-btn i {
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* Static, semantic source health. Labels lead; bare glyphs communicate state
+   without blinking dots, decorative borders or a redundant LIVE badge. */
+.token-details-dialog .data-sources-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 24px;
+  overflow: hidden;
+}
+
+.token-details-dialog .source-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 24px;
+  white-space: nowrap;
+}
+
+.token-details-dialog .source-status .status-label {
+  color: var(--text-muted);
+  font-size: 0.59rem;
+  font-weight: 650;
+  letter-spacing: 0.045em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.token-details-dialog .source-status .status-icon {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1;
+  transition: color var(--transition-fast);
+}
+
+.token-details-dialog .source-status .status-icon.loading {
+  color: var(--semantic-warning-text);
+}
+
+.token-details-dialog .source-status .status-icon.success {
+  color: var(--semantic-success-text);
+}
+
+.token-details-dialog .source-status .status-icon.error {
+  color: var(--semantic-error-text);
+}
+
+.token-details-dialog .source-status .status-icon.cached {
+  color: var(--semantic-info-text);
+}
+
+/* Changed-character movement mirrors the Terminal: stable characters retain
+   their nodes while only the digits that moved roll and briefly take direction
+   colour. No whole-number flash or shine effect. */
+.token-details-dialog .live-number {
+  white-space: nowrap;
+}
+
+.token-details-dialog .live-number-char {
+  display: inline-block;
+  transform: translateZ(0);
+}
+
+.token-details-dialog .live-number-char--up {
+  animation: token-number-up 1200ms cubic-bezier(0.16, 0.84, 0.44, 1);
+}
+
+.token-details-dialog .live-number-char--down {
+  animation: token-number-down 1200ms cubic-bezier(0.16, 0.84, 0.44, 1);
+}
+
+@keyframes token-number-up {
+  0% {
+    color: var(--semantic-success-text);
+    opacity: 0;
+    transform: translateY(0.55em) translateZ(0);
+  }
+
+  14% {
+    color: var(--semantic-success-text);
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+    animation-timing-function: linear;
+  }
+
+  72% {
+    color: var(--semantic-success-text);
+    transform: translateY(0) translateZ(0);
+    animation-timing-function: ease-in;
+  }
+
+  100% {
+    color: inherit;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+@keyframes token-number-down {
+  0% {
+    color: var(--semantic-error-text);
+    opacity: 0;
+    transform: translateY(-0.55em) translateZ(0);
+  }
+
+  14% {
+    color: var(--semantic-error-text);
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+    animation-timing-function: linear;
+  }
+
+  72% {
+    color: var(--semantic-error-text);
+    transform: translateY(0) translateZ(0);
+    animation-timing-function: ease-in;
+  }
+
+  100% {
+    color: inherit;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+@media (width <= 1280px) {
+  .token-details-dialog .header-top-row {
+    grid-template-columns: minmax(145px, 0.55fr) minmax(430px, 1.55fr) max-content;
+    gap: 10px;
+    padding-inline: 16px;
+  }
+
+  .token-details-dialog .header-left {
+    gap: 10px;
+  }
+
+  .token-details-dialog .header-logo {
+    width: 44px;
+    height: 44px;
+  }
+
+  .token-details-dialog .header-price {
+    grid-template-columns: minmax(140px, 0.52fr) minmax(0, 1.48fr);
+    gap: 12px;
+  }
+
+  .token-details-dialog .trade-btn {
+    padding-inline: 10px;
+  }
+}
+
+@media (width <= 1040px) {
+  .token-details-dialog .header-top-row {
+    grid-template-areas:
+      "identity actions"
+      "market market";
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 20px;
+    min-height: 0;
+    padding: 8px 16px 7px;
+  }
+
+  .electron-macos .token-details-dialog .header-top-row {
+    padding-top: 36px;
+  }
+
+  .token-details-dialog .header-price {
+    grid-template-columns: minmax(160px, 0.55fr) minmax(0, 1.45fr);
+  }
+}
+
+@media (width <= 680px) {
+  .token-details-dialog .header-badges-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+    padding: 0 16px 7px;
+  }
+
+  .token-details-dialog .header-status-area {
+    justify-content: flex-start;
+    gap: 8px 10px;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+  }
+
+  .token-details-dialog .header-status-area::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (width <= 600px) {
+  .token-details-dialog .header-top-row {
+    grid-template-areas:
+      "identity"
+      "market"
+      "actions";
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 8px 16px 7px;
+  }
+
+  .electron-macos .token-details-dialog .header-top-row {
+    padding-top: 36px;
+  }
+
+  .token-details-dialog .header-right {
+    width: 100%;
+    justify-content: flex-start;
+    justify-self: stretch;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+  }
+
+  .token-details-dialog .header-right::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (width <= 480px) {
+  .token-details-dialog .price-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 20px;
+  }
+
+  .token-details-dialog .last-updated {
+    width: 100%;
+  }
+}
+
+@media (pointer: coarse) {
+  .token-details-dialog .trade-btn {
+    min-height: 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .token-details-dialog .live-number-char--up,
+  .token-details-dialog .live-number-char--down {
+    animation-duration: 1ms;
+  }
+}
+
+/* =============================================================================
+  TAB BAR - Improved UI/UX (Clean Pill Style)
+  - Click focus highlight should not look like selected
+  - Keep keyboard accessibility via :focus-visible
+  ============================================================================= */
+
+/* Thin per-source "no data / unavailable" row between the header and the tabs.
+   Explains blanks (token not on DexScreener/GeckoTerminal, no Rugcheck report,
+   no chart yet) instead of leaving the user with a silent empty view. */
+.source-issues-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  padding: 6px 24px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/* `display: flex` above beats the bare [hidden] attribute, so the row would
+   still occupy space (padding + bottom border) when empty. Guard it. */
+.source-issues-row[hidden] {
+  display: none;
+}
+
+.source-issues-lead {
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.source-issue {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.source-issue i {
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.source-issue--no_data i {
+  color: var(--text-tertiary, var(--text-secondary));
+}
+
+.source-issue--unavailable {
+  color: var(--warning, #d29922);
+}
+
+.source-issue--unavailable i {
+  color: var(--warning, #d29922);
+}
+
+/* =============================================================================
+   BODY & TAB CONTENT
+   ============================================================================= */
+
+.dialog-body {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  background: var(--bg-primary);
+}
+
+.token-details-dialog .tab-content {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  overflow: hidden;
+  display: none;
+}
+
+.token-details-dialog .tab-content.active {
+  display: block;
+}
+
+/* These tabs own their internal scrolling so headers/columns stay stable. */
+.token-details-dialog .tab-content[data-tab-content="positions"],
+.token-details-dialog .tab-content[data-tab-content="pools"],
+.token-details-dialog .tab-content[data-tab-content="links"],
+.token-details-dialog .tab-content[data-tab-content="transactions"] {
+  overflow: hidden;
+  padding: 0;
+}
+
+/* Security clips instead of scrolling: its two columns scroll INDEPENDENTLY
+   (see .security-left-col / .security-right-col), so the left summary stays put
+   while the right details list scrolls. */
+.token-details-dialog .tab-content[data-tab-content="security"] {
+  overflow: hidden;
+  padding: 0;
+}
+
+/* =============================================================================
+   Shared tab state blocks (loading / empty / error) + connection chip
+   Used by every tab so all full-tab placeholders present state the
+   same way and a dropped connection is shown without wiping content.
+   ============================================================================= */
+.tdd-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: min(300px, 100%);
+  padding: clamp(24px, 6vh, 64px) var(--spacing-lg);
+  gap: var(--spacing-sm);
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.tdd-state-icon {
+  margin-bottom: 2px;
+  color: var(--text-muted);
+  font-size: 1.75rem;
+  opacity: 0.75;
+}
+
+.tdd-state-error .tdd-state-icon {
+  color: var(--warning-color);
+}
+
+.tdd-state-title {
+  font-size: 0.95rem;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.tdd-state-message {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  max-width: 360px;
+}
+
+.tdd-state-retry {
+  margin-top: var(--spacing-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.tdd-state-retry:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--primary-alpha-30);
+}
+
+/* Connection warning in the header status area. It is static and text-led,
+   using a bare glyph rather than a pulsing dot or a decorated chip. */
+.token-details-dialog .tdd-connection-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.token-details-dialog .tdd-connection-chip[hidden] {
+  display: none;
+}
+
+.token-details-dialog .tdd-connection-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.token-details-dialog .tdd-connection-chip[data-state="reconnecting"] {
+  color: var(--semantic-warning-text);
+}
+
+.token-details-dialog .tdd-connection-chip[data-state="offline"] {
+  color: var(--semantic-error-text);
+}
+
+.badge-profile {
+  border-color: color-mix(in srgb, var(--accent-primary) 35%, transparent);
+  background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
+  color: var(--accent-primary);
+}

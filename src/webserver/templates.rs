@@ -1,0 +1,444 @@
+//! HTML template rendering for the webserver dashboard
+//!
+//! This module provides functions to render HTML pages by combining templates with dynamic data.
+//! All embedded assets (HTML, CSS, JS) are imported from the `embeds` module.
+
+use crate::version;
+
+// Import all embedded assets from the embeds module
+use super::embeds::*;
+
+/// Return the complete stylesheet bundle owned by a routable dashboard page.
+///
+/// Shared primitives and overlays are part of the base template. Page styles are
+/// deliberately separate so a page cannot change another page through the global
+/// cascade merely because it was visited earlier.
+pub fn page_styles(page: &str) -> Option<String> {
+    let styles = match page {
+        "services" => SERVICES_PAGE_STYLES.to_string(),
+        "transactions" => TRANSACTIONS_PAGE_STYLES.to_string(),
+        "events" => EVENTS_PAGE_STYLES.to_string(),
+        "tokens" => TOKENS_PAGE_STYLES.to_string(),
+        "positions" => POSITIONS_PAGE_STYLES.to_string(),
+        "filtering" => [
+            // The source sub-tabs render the same settings rows as the
+            // Configuration page, from the same stylesheet.
+            CONFIG_FIELDS_STYLES,
+            FILTERING_BASE_STYLES,
+            FILTERING_RESULTS_STYLES,
+            FILTERING_RESULTS_EXPLORER_STYLES,
+        ]
+        .join("\n"),
+        "config" => [
+            CONFIG_PAGE_STYLES,
+            CONFIG_SIDEBAR_STYLES,
+            CONFIG_FIELDS_STYLES,
+            CONFIG_RESPONSIVE_STYLES,
+        ]
+        .join("\n"),
+        "trader" => [
+            STRATEGIES_PAGE_STYLES,
+            STRATEGIES_CONDITION_CARDS_STYLES,
+            STRATEGIES_MODALS_STYLES,
+            STRATEGIES_EDITOR_STYLES,
+            STRATEGIES_UI_COMPONENTS_STYLES,
+            TRADER_PAGE_STYLES,
+            TRADER_CONFIG_COMPONENTS_STYLES,
+            TRADER_CONTROLS_STYLES,
+            TRADER_METRICS_STYLES,
+            TRADER_WALLET_COPY_STYLES,
+        ]
+        .join("\n"),
+        "wallets" => [
+            WALLETS_PAGE_STYLES,
+            WALLETS_MAIN_WALLET_STYLES,
+            WALLETS_MODALS_STYLES,
+            WALLETS_IMPORT_EXPORT_STYLES,
+            WALLETS_WATCHED_STYLES,
+        ]
+        .join("\n"),
+        "tools" => [
+            TOOLS_BASE_STYLES,
+            TOOLS_CONTENT_STYLES,
+            TOOLS_COMPONENTS_STYLES,
+            TOOLS_WALLET_STYLES,
+            TOOLS_TOKEN_STYLES,
+            TOOLS_TRADING_STYLES,
+        ]
+        .join("\n"),
+        "assistant" => [
+            ASSISTANT_BASE_STYLES,
+            ASSISTANT_SETTINGS_TESTING_STYLES,
+            ASSISTANT_PROVIDERS_STYLES,
+            ASSISTANT_INSTRUCTIONS_STYLES,
+            ASSISTANT_AUTOMATION_STYLES,
+        ]
+        .join("\n"),
+        "home" => [HOME_PAGE_STYLES, HOME_CALENDAR_STYLES].join("\n"),
+        "initialization" => String::new(),
+        _ => return None,
+    };
+    Some(styles)
+}
+
+/// Render the base layout with shared chrome and inject the requested content.
+pub fn base_template(title: &str, active_tab: &str, content: &str) -> String {
+    use crate::global;
+
+    let asset_version = option_env!("ASSET_VERSION_TS")
+        .map(|ts| format!("{}-{}", version::get_version(), ts))
+        .unwrap_or_else(|| version::get_version().to_string());
+
+    let mut html = BASE_TEMPLATE.replace("{{TITLE}}", title);
+    html = html.replace("{{NAV_TABS}}", &nav_tabs(active_tab));
+    html = html.replace("{{CONTENT}}", content);
+
+    // Inject security credentials for GUI mode
+    let is_gui = global::is_gui_mode();
+    let security_token = if is_gui {
+        global::get_security_token().unwrap_or_default()
+    } else {
+        String::new()
+    };
+    let port = global::get_webserver_port();
+
+    html = html.replace("{{SECURITY_TOKEN}}", &security_token);
+    html = html.replace("{{WEBSERVER_PORT}}", &port.to_string());
+    html = html.replace("{{IS_GUI_MODE}}", if is_gui { "true" } else { "false" });
+    html = html.replace("{{ASSET_VERSION}}", asset_version.as_str());
+
+    let token_logo_shape = if crate::config::is_config_initialized() {
+        crate::config::with_config(|cfg| {
+            if cfg.gui.dashboard.interface.token_logo_shape == "rounded-square" {
+                "rounded-square"
+            } else {
+                "circle"
+            }
+        })
+    } else {
+        "circle"
+    };
+    html = html.replace("{{TOKEN_LOGO_SHAPE}}", token_logo_shape);
+
+    // Inject initialization state for early DOM setup (prevents dashboard flash).
+    // Explore Mode shows the dashboard immediately, so it does not "need init".
+    let needs_initialization = !global::is_initialization_complete() && !global::is_explore_mode();
+    html = html.replace(
+        "{{NEEDS_INITIALIZATION}}",
+        if needs_initialization {
+            "true"
+        } else {
+            "false"
+        },
+    );
+
+    // Inject splash, onboarding, setup, and lockscreen screens
+    html = html.replace("{{SPLASH_SCREEN}}", SPLASH_PAGE);
+    html = html.replace("{{ONBOARDING_SCREEN}}", ONBOARDING_PAGE);
+    html = html.replace("{{SETUP_SCREEN}}", SETUP_PAGE);
+    html = html.replace("{{LOCKSCREEN}}", LOCKSCREEN_PAGE);
+
+    // Prepare Lucide icon font CSS with corrected paths
+    let lucide_css = LUCIDE_ICON_CSS
+        .replace("url('lucide.eot", "url('/assets/fonts/lucide.eot")
+        .replace("url('lucide.woff2", "url('/assets/fonts/lucide.woff2")
+        .replace("url('lucide.woff", "url('/assets/fonts/lucide.woff")
+        .replace("url('lucide.ttf", "url('/assets/fonts/lucide.ttf")
+        .replace("url('lucide.svg", "url('/assets/fonts/lucide.svg");
+
+    let combined_styles = [
+        FOUNDATION_STYLES,
+        SCROLLBAR_STYLES, // Global scrollbar system - must be early to set defaults
+        FLOATING_STYLES,  // Global floating UI system (dropdowns, popovers, dialogs)
+        &lucide_css,
+        LAYOUT_STYLES,
+        HEADER_STYLES,
+        HEADER_RESPONSIVE_STYLES,
+        COMPONENT_STYLES,
+        DROPDOWN_STYLES,
+        COMMON_STYLES,
+        FORM_CONTROLS_STYLES,
+        NOTIFICATION_STYLES,
+        TOAST_STYLES,
+        DATA_TABLE_STYLES,
+        DATA_TABLE_CORE_STYLES,
+        DATA_TABLE_COLUMN_TYPES_STYLES,
+        DATA_TABLE_PAGINATION_STYLES,
+        TABLE_TOOLBAR_STYLES,
+        EVENTS_DIALOG_STYLES,
+        TRADE_ACTION_DIALOG_STYLES,
+        QUICK_TRADE_STYLES,
+        INPUT_DIALOG_STYLES,
+        TAB_BAR_STYLES,
+        DIALOG_TAB_BAR_STYLES,
+        DIALOG_HEADER_ACTIONS_STYLES,
+        ACTION_BAR_STYLES,
+        EXPAND_TOGGLE_STYLES,
+        TABLE_SETTINGS_DIALOG_STYLES,
+        CONFIRMATION_DIALOG_STYLES,
+        POSITION_REMOVE_DIALOG_STYLES,
+        SETUP_DIALOG_STYLES,
+        CONTEXT_MENU_STYLES,
+        ADVANCED_CHART_STYLES,
+        CHART_SHELL_STYLES,
+        TOKEN_DETAILS_BASE_STYLES,
+        TOKEN_DETAILS_OVERVIEW_STYLES,
+        TOKEN_DETAILS_SECURITY_STYLES,
+        TOKEN_DETAILS_SECURITY_HOLDERS_STYLES,
+        TOKEN_DETAILS_SECURITY_RISKS_STYLES,
+        TOKEN_DETAILS_POSITIONS_STYLES,
+        TOKEN_DETAILS_POOLS_STYLES,
+        TOKEN_DETAILS_LINKS_STYLES,
+        TOKEN_DETAILS_TRANSACTIONS_SHARED_STYLES,
+        TOKEN_IDENTITY_STYLES,
+        TRANSACTION_DETAILS_DIALOG_STYLES,
+        TRANSACTION_DETAILS_TAB_CONTENT_STYLES,
+        TRANSACTION_DETAILS_BALANCES_STYLES,
+        TRANSACTION_DETAILS_OVERVIEW_STYLES,
+        POSITION_DETAILS_HEADER_STYLES,
+        POSITION_DETAILS_BASE_STYLES,
+        POSITION_DETAILS_OVERVIEW_STYLES,
+        POSITION_DETAILS_CHART_STYLES,
+        POSITION_DETAILS_ACTIVITY_STYLES,
+        POSITION_DETAILS_ACTIVITY_DETAILS_STYLES,
+        SETTINGS_BASE_STYLES,
+        SETTINGS_TABS_STYLES,
+        SETTINGS_SECURITY_STYLES,
+        SETTINGS_UPDATES_STYLES,
+        SETTINGS_DATA_STYLES,
+        SETTINGS_AGENT_CONNECTIONS_STYLES,
+        HINT_POPOVER_STYLES,
+        SEARCH_DIALOG_STYLES,
+        CUSTOM_SELECT_STYLES,
+        FEATURED_DIALOG_STYLES,
+        FEATURED_ROW_STYLES,
+        BOOST_MARK_STYLES,
+        POOL_SELECTOR_STYLES,
+        EXIT_DIALOG_STYLES,
+        CHAT_WIDGET_LAYOUT_STYLES,
+        CHAT_WIDGET_MESSAGES_STYLES,
+        CHAT_WIDGET_INPUT_STYLES,
+        GLOBAL_CHAT_STYLES,
+        CONFIG_IMPORT_EXPORT_DIALOG_STYLES,
+        // Splash, onboarding, and setup screens (always included for proper transitions)
+        SPLASH_PAGE_STYLES,
+        ONBOARDING_PAGE_STYLES,
+        SETUP_PAGE_STYLES,
+        SETUP_STEPS_STYLES,
+        ACCOUNT_PANEL_STYLES,
+        // Lockscreen overlay (security)
+        LOCKSCREEN_PAGE_STYLES,
+        // Status bar (always visible at bottom)
+        STATUS_BAR_STYLES,
+    ];
+    // The Promo Studio layer is appended to the global bundle, and its module is
+    // the last script in the document — both only under --promo-capture, so a
+    // normal session ships neither the styles nor the runtime.
+    let promo_capture = super::promo::is_promo_capture_enabled();
+    let global_styles = if promo_capture {
+        [combined_styles.join("\n"), PROMO_CAPTURE_STYLES.to_string()].join("\n")
+    } else {
+        combined_styles.join("\n")
+    };
+    html = html.replace("/*__GLOBAL_STYLES__*/", &global_styles);
+    html = html.replace(
+        "/*__INITIAL_PAGE_STYLES__*/",
+        &page_styles(active_tab).unwrap_or_default(),
+    );
+    html = html.replace("{{ACTIVE_TAB}}", active_tab);
+    html = html.replace("/*__THEME_SCRIPTS__*/", THEME_SCRIPTS);
+    html = html.replace(
+        "<!--__PROMO_CAPTURE_SCRIPTS__-->",
+        &if promo_capture {
+            format!(
+                "<script type=\"module\" src=\"/scripts/promo/runtime.js?v={}\"></script>",
+                asset_version
+            )
+        } else {
+            String::new()
+        },
+    );
+    html
+}
+
+fn nav_tabs(active: &str) -> String {
+    use crate::config;
+    use crate::global;
+
+    // In initialization mode (before config is loaded), return minimal nav.
+    // Explore Mode is exempt: the user skipped setup to browse, so they get the
+    // full configured navigation (token/filtering pages work without a wallet).
+    if !global::is_initialization_complete() && !global::is_explore_mode() {
+        // Only show initialization tab during setup
+        let active_class = if active == "initialization" {
+            " active"
+        } else {
+            ""
+        };
+        let aria_current = if active == "initialization" {
+            " aria-current=\"page\""
+        } else {
+            ""
+        };
+        return format!(
+            "<a href=\"/initialization\" data-page=\"initialization\" class=\"tab{}\"{}><i class=\"icon-settings\"></i> Setup</a>",
+            active_class, aria_current
+        );
+    }
+
+    // Get tabs from config, filter enabled ones, and sort by order
+    let mut tabs = config::with_config(|cfg| cfg.gui.dashboard.navigation.tabs.clone());
+    tabs.retain(|t| t.enabled);
+    tabs.sort_by_key(|t| t.order);
+
+    tabs.iter()
+        .map(|tab| {
+            let active_class = if tab.id == active { " active" } else { "" };
+            let aria_current = if tab.id == active {
+                " aria-current=\"page\""
+            } else {
+                ""
+            };
+            // Real hrefs preserve expected link behavior; data-page keeps SPA routing fast.
+            format!(
+                "<a href=\"/{}\" data-page=\"{}\" class=\"tab{}\"{}><i class=\"{}\"></i> {}</a>",
+                tab.id, tab.id, active_class, aria_current, tab.icon, tab.label
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n        ")
+}
+
+fn render_page(template: &str) -> String {
+    template.to_string()
+}
+
+pub fn tokens_content() -> String {
+    render_page(TOKENS_PAGE)
+}
+
+pub fn events_content() -> String {
+    render_page(EVENTS_PAGE)
+}
+
+pub fn services_content() -> String {
+    render_page(SERVICES_PAGE)
+}
+
+pub fn transactions_content() -> String {
+    render_page(TRANSACTIONS_PAGE)
+}
+
+pub fn positions_content() -> String {
+    render_page(POSITIONS_PAGE)
+}
+
+pub fn filtering_content() -> String {
+    render_page(FILTERING_PAGE)
+}
+
+pub fn config_content() -> String {
+    render_page(CONFIG_PAGE)
+}
+
+pub fn trader_content() -> String {
+    // The Strategies subtab embeds the full strategy-editor markup (formerly its
+    // own page) into the trader page via the {{STRATEGIES_PANEL}} placeholder.
+    let html = TRADER_PAGE.replace("{{STRATEGIES_PANEL}}", STRATEGIES_PAGE);
+    render_page(&html)
+}
+
+pub fn wallets_content() -> String {
+    render_page(WALLETS_PAGE)
+}
+
+pub fn tools_content() -> String {
+    render_page(TOOLS_PAGE)
+}
+
+pub fn assistant_content() -> String {
+    render_page(ASSISTANT_PAGE)
+}
+
+pub fn initialization_content() -> String {
+    // Legacy redirect - initialization now uses the setup screen
+    render_page(SETUP_PAGE)
+}
+
+pub fn home_content() -> String {
+    render_page(HOME_PAGE)
+}
+
+pub fn login_content() -> String {
+    render_page(LOGIN_PAGE)
+}
+
+/// Render the login page template (minimal template without navigation)
+pub fn login_template(title: &str, content: &str) -> String {
+    use crate::version;
+
+    let asset_version = option_env!("ASSET_VERSION_TS")
+        .map(|ts| format!("{}-{}", version::get_version(), ts))
+        .unwrap_or_else(|| version::get_version().to_string());
+
+    // Prepare Lucide icon font CSS with corrected paths
+    let lucide_css = LUCIDE_ICON_CSS
+        .replace("url('lucide.eot", "url('/assets/fonts/lucide.eot")
+        .replace("url('lucide.woff2", "url('/assets/fonts/lucide.woff2")
+        .replace("url('lucide.woff", "url('/assets/fonts/lucide.woff")
+        .replace("url('lucide.ttf", "url('/assets/fonts/lucide.ttf")
+        .replace("url('lucide.svg", "url('/assets/fonts/lucide.svg");
+
+    // Minimal styles for login page
+    let combined_styles = [FOUNDATION_STYLES, &lucide_css, LOGIN_PAGE_STYLES].join("\n");
+
+    format!(
+        r#"<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{} - VeloxBot</title>
+    <style>{}</style>
+</head>
+<body>
+    {}
+    <script src="/scripts/core/brand_text.js?v={}"></script>
+    <script type="module" src="/scripts/pages/login.js?v={}"></script>
+</body>
+</html>"#,
+        title, combined_styles, content, asset_version, asset_version
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::page_styles;
+
+    #[test]
+    fn every_spa_page_has_an_explicit_style_bundle() {
+        let pages = [
+            "home",
+            "services",
+            "transactions",
+            "events",
+            "tokens",
+            "positions",
+            "filtering",
+            "config",
+            "trader",
+            "wallets",
+            "tools",
+            "assistant",
+            "initialization",
+        ];
+
+        for page in pages {
+            assert!(
+                page_styles(page).is_some(),
+                "missing page CSS bundle for {page}"
+            );
+        }
+        assert!(page_styles("unknown-page").is_none());
+    }
+}

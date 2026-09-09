@@ -1,0 +1,294 @@
+//! Wallet watch API routes — list / add / remove / enable / status for watch
+//! targets, mounted under the `wallets` router (`/api/wallets/watch/*`) rather than
+//! a copy-trading router: observation is a wallet-system feature and alert-only
+//! watching must not require a copy task (PLAN.md §11.1).
+
+use axum::{
+    extract::Path,
+    http::StatusCode,
+    response::Response,
+    routing::{delete, get, post},
+    Json, Router,
+};
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+
+use crate::logger::{self, LogTag};
+use crate::wallets::watch::{self, WatchTarget};
+use crate::wallets::Error as WalletsError;
+use crate::webserver::state::AppState;
+use crate::webserver::utils::{error_response, status_for, success_response};
+
+pub fn routes() -> Router<Arc<AppState>> {
+    Router::new()
+        .route("/", get(list_targets))
+        .route("/", post(add_target))
+        .route("/:id", delete(remove_target))
+        .route("/:id/enabled", post(set_target_enabled))
+        .route("/:id/status", get(get_status))
+}
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+#[derive(Serialize)]
+struct TargetListResponse {
+    targets: Vec<WatchTarget>,
+    total: usize,
+}
+
+#[derive(Deserialize)]
+struct AddTargetRequest {
+    address: String,
+    #[serde(default)]
+    label: Option<String>,
+}
+
+#[derive(Serialize)]
+struct TargetResponse {
+    message: String,
+    target: WatchTarget,
+}
+
+#[derive(Deserialize)]
+struct SetEnabledRequest {
+    enabled: bool,
+}
+
+#[derive(Serialize)]
+struct MessageResponse {
+    message: String,
+}
+
+// =============================================================================
+// HANDLERS
+// =============================================================================
+
+/// List every watch target (alert-only in this phase; the own wallet is not a row
+/// here, see `wallets::watch`'s module doc).
+async fn list_targets() -> Response {
+    // Return promotional fixtures only for owner-initiated media capture. The real
+    // call also fails outright when the watch database was never opened, which is
+    // what puts "Watched addresses could not be loaded" on the tab.
+    if crate::webserver::promo::are_promo_fixtures_enabled() {
+        let targets = crate::webserver::promo::get_promo_watch_targets();
+        let total = targets.len();
+        return success_response(TargetListResponse { targets, total });
+    }
+
+    match watch::list_targets().await {
+        Ok(targets) => {
+            let total = targets.len();
+            success_response(TargetListResponse { targets, total })
+        }
+        Err(e) => {
+            logger::error(
+                LogTag::WalletWatch,
+                &format!("Failed to list watch targets: {e}"),
+            );
+            error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "LIST_ERROR",
+                "Failed to list watch targets",
+                Some(&e.to_string()),
+            )
+        }
+    }
+}
+
+/// Add a new watch target. Base58 address validation, the self-copy guard (rejects
+/// one of our own wallets) and `wallet.watch_max_targets` enforcement all happen
+/// inside `watch::add_target`.
+async fn add_target(Json(request): Json<AddTargetRequest>) -> Response {
+    let address = request.address.trim();
+    if address.is_empty() {
+        return error_response(
+            StatusCode::BAD_REQUEST,
+            "INVALID_ADDRESS",
+            "Address cannot be empty",
+            None,
+        );
+    }
+
+    let label = request
+        .label
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+
+    match watch::add_target(address, label).await {
+        Ok(target) => success_response(TargetResponse {
+            message: format!("Now watching {address}"),
+            target,
+        }),
+        Err(e) => {
+            logger::warning(
+                LogTag::WalletWatch,
+                &format!("Failed to add watch target {address}: {e}"),
+            );
+            let msg = e.to_string();
+            error_response(
+                status_for(&e),
+                add_target_error_code(&e),
+                "Failed to add watch target",
+                Some(&msg),
+            )
+        }
+    }
+}
+
+/// The dashboard's error code for a failed add. The status comes from the
+/// error itself; only the code — which the UI reads — is chosen here.
+fn add_target_error_code(error: &WalletsError) -> &'static str {
+    match error {
+        WalletsError::WatchTargetAlreadyWatched { .. }
+        | WalletsError::WatchTargetIsOwnWallet { .. } => "DUPLICATE",
+        WalletsError::InvalidWatchAddress { .. } => "INVALID_ADDRESS",
+        WalletsError::WatchDisabled | WalletsError::WatchTargetLimitReached { .. } => "REJECTED",
+        _ => "ADD_ERROR",
+    }
+}
+
+/// Remove a watch target permanently (also drops its cursor).
+async fn remove_target(Path(id): Path<i64>) -> Response {
+    match watch::remove_target(id).await {
+        Ok(()) => success_response(MessageResponse {
+            message: "Watch target removed".to_owned(),
+        }),
+        Err(e) => {
+            logger::warning(
+                LogTag::WalletWatch,
+                &format!("Failed to remove watch target {id}: {e}"),
+            );
+            let msg = e.to_string();
+            error_response(
+                status_for(&e),
+                "REMOVE_ERROR",
+                "Failed to remove watch target",
+                Some(&msg),
+            )
+        }
+    }
+}
+
+/// Enable or disable a target without deleting it (keeps its cursor, so
+/// re-enabling resumes rather than re-scanning history).
+async fn set_target_enabled(
+    Path(id): Path<i64>,
+    Json(request): Json<SetEnabledRequest>,
+) -> Response {
+    match watch::set_target_enabled(id, request.enabled).await {
+        Ok(()) => success_response(MessageResponse {
+            message: if request.enabled {
+                "Watch target enabled".to_owned()
+            } else {
+                "Watch target disabled".to_owned()
+            },
+        }),
+        Err(e) => {
+            logger::warning(
+                LogTag::WalletWatch,
+                &format!("Failed to update watch target {id}: {e}"),
+            );
+            let msg = e.to_string();
+            error_response(
+                status_for(&e),
+                "UPDATE_ERROR",
+                "Failed to update watch target",
+                Some(&msg),
+            )
+        }
+    }
+}
+
+/// Per-target status: whether the shared transport is connected, when its cursor
+/// last advanced, and to what.
+async fn get_status(Path(id): Path<i64>) -> Response {
+    // Return promotional fixtures only for owner-initiated media capture.
+    if crate::webserver::promo::are_promo_fixtures_enabled() {
+        return match crate::webserver::promo::get_promo_watch_status(id) {
+            Some(status) => success_response(status),
+            None => error_response(
+                StatusCode::NOT_FOUND,
+                "STATUS_ERROR",
+                "Failed to get watch status",
+                Some("Watch target not found"),
+            ),
+        };
+    }
+
+    match watch::get_status(id).await {
+        Ok(status) => success_response(status),
+        Err(e) => {
+            let msg = e.to_string();
+            error_response(
+                status_for(&e),
+                "STATUS_ERROR",
+                "Failed to get watch status",
+                Some(&msg),
+            )
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The statuses the dashboard depends on, asserted against the typed value
+    /// rather than the sentence it renders to: `watched.js` reads 409 to say
+    /// "that wallet is already watched", and a missing target must be a 404 so
+    /// a stale row in the list is distinguishable from a server fault.
+    #[test]
+    fn watch_failures_map_to_their_documented_statuses() {
+        let cases = [
+            (
+                WalletsError::WatchTargetAlreadyWatched {
+                    address: "addr".to_owned(),
+                },
+                StatusCode::CONFLICT,
+                "DUPLICATE",
+            ),
+            (
+                WalletsError::WatchTargetIsOwnWallet {
+                    address: "addr".to_owned(),
+                },
+                StatusCode::CONFLICT,
+                "DUPLICATE",
+            ),
+            (
+                WalletsError::InvalidWatchAddress {
+                    value: "nope".to_owned(),
+                },
+                StatusCode::BAD_REQUEST,
+                "INVALID_ADDRESS",
+            ),
+            (
+                WalletsError::WatchDisabled,
+                StatusCode::BAD_REQUEST,
+                "REJECTED",
+            ),
+            (
+                WalletsError::WatchTargetLimitReached { max: 5 },
+                StatusCode::BAD_REQUEST,
+                "REJECTED",
+            ),
+        ];
+
+        for (error, status, code) in cases {
+            assert_eq!(status_for(&error), status, "status for {error}");
+            assert_eq!(add_target_error_code(&error), code, "code for {error}");
+        }
+    }
+
+    /// A target that is gone is a 404 on every endpoint addressed by id —
+    /// remove, enable/disable and status all read the same typed variant.
+    #[test]
+    fn a_missing_watch_target_is_not_a_server_error() {
+        let error = WalletsError::WatchTargetNotFound {
+            address: "id=7".to_owned(),
+        };
+        assert_eq!(status_for(&error), StatusCode::NOT_FOUND);
+    }
+}

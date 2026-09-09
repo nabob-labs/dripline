@@ -1,0 +1,435 @@
+/**
+ * Featured Row Styles
+ *
+ * Clean, minimal horizontal row for featured + trending tokens.
+ * Blends with the dashboard; text + logo focused; no heavy chrome.
+ * Follows 8px scale, flat cards, mono data.
+ */
+
+/* ============================================
+   CONTAINER
+   ============================================ */
+
+.featured-row {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 26px;
+  z-index: var(--z-featured-row);
+  width: 100%;
+  height: 48px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.featured-row-inner {
+  width: 100%;
+  padding: 0 var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+/* ============================================
+   HEADER (inline with cards)
+   ============================================ */
+
+.featured-row-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
+}
+
+.featured-row-label {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.featured-row-view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--link-color);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  height: 22px;
+}
+
+.featured-row-view-all:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--link-color);
+}
+
+.featured-row-view-all i {
+  font-size: 0.625rem;
+}
+
+/* ============================================
+   SCROLL CONTAINER + ARROWS (minimal, clean)
+   ============================================ */
+
+.featured-row-scroll {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.featured-row-tokens {
+  display: flex;
+  gap: var(--spacing-xs);
+  overflow: hidden auto;
+  scroll-behavior: smooth;
+  padding: 2px 0;
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Use global hidden scrollbar from scrollbar.css */
+
+/* Scroll arrows - subtle */
+.featured-row-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  cursor: pointer;
+  z-index: 10;
+  transition: all var(--transition-fast);
+}
+
+.featured-row-arrow:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--link-color);
+}
+
+.featured-row-arrow-left {
+  left: 0;
+}
+
+.featured-row-arrow-right {
+  right: 0;
+}
+
+.featured-row-arrow.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.featured-row-arrow i {
+  font-size: 0.625rem;
+}
+
+/* ============================================
+   TOKEN CARDS - clean flat cards, consistent with app
+   Logo + name; featured gets subtle treatment (no accent bar)
+   ============================================ */
+
+.featured-row-card {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 3px 8px 3px 4px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+  position: relative;
+  min-height: 28px;
+}
+
+.featured-row-card:hover {
+  border-color: var(--link-color);
+  background: var(--bg-card-hover);
+  transform: translateY(-1px);
+}
+
+/* Boosted: gold edge and a faint wash. The band leads the row, so the treatment
+   only has to say "paid", not shout -- the position already did that. */
+.featured-row-card.boosted {
+  border-color: var(--boost-edge);
+  background-image: linear-gradient(var(--boost-wash), var(--boost-wash));
+}
+
+.featured-row-card.boosted:hover {
+  border-color: var(--boost-gold);
+}
+
+.featured-row-card.boosted.golden {
+  border-color: var(--boost-edge-golden);
+  background-image: linear-gradient(var(--boost-wash-golden), var(--boost-wash-golden));
+}
+
+.featured-row-card.boosted.golden:hover {
+  border-color: var(--boost-gold-bright);
+}
+
+/* Closes off the boosted band. A rule, not a gap: a gap in a scroller reads as a
+   loading hole, and a label would cost more width than the cards it introduces. */
+.featured-row-divider {
+  flex: 0 0 auto;
+  align-self: center;
+  width: 1px;
+  height: 18px;
+  margin: 0 var(--spacing-xs);
+  background: var(--border-color);
+}
+
+/* Logo */
+.featured-row-card-logo {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--token-logo-radius, 3px);
+  object-fit: cover;
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+  border: 1px solid var(--border-color);
+}
+
+/* Logo placeholder */
+.featured-row-card-logo-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--token-logo-radius, 3px);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.featured-row-card-logo-placeholder span {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.featured-row-card-logo-placeholder i {
+  font-size: 0.625rem;
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+/* Token name - mono, compact */
+.featured-row-card-name {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* Inline metric for compact row */
+.row-metric {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  margin-left: 4px;
+  padding: 0 3px;
+  border-radius: 3px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-feature-settings: "tnum";
+  line-height: 1;
+}
+
+.row-metric.pos { color: var(--success-color, #10b981); }
+.row-metric.neg { color: var(--error-color, #ef4444); }
+
+/* Active boost count, in place of the market metric an organic card shows. */
+.featured-row-boost {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  font-weight: 600;
+  margin-left: 4px;
+  color: var(--boost-gold);
+  font-feature-settings: "tnum";
+  line-height: 1;
+}
+
+.featured-row-card.golden .featured-row-boost,
+.featured-row-card.golden .featured-row-card-boost-mark {
+  color: var(--boost-gold-bright);
+}
+
+/* Bare gold glyph. No tile, no ring, no glow -- house rule. */
+.featured-row-card-boost-mark {
+  font-size: 0.5625rem;
+  color: var(--boost-gold);
+  flex-shrink: 0;
+  margin-left: 2px;
+}
+
+/* ============================================
+   EMPTY STATE + SKELETON (minimal, integrated)
+   ============================================ */
+
+.featured-row-empty {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex: 1;
+  padding-left: var(--spacing-xs);
+}
+
+.featured-row-empty-cards {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.featured-row-card-placeholder {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+  background: transparent;
+  border-color: var(--border-color);
+}
+
+.featured-row-card-placeholder:hover {
+  transform: none;
+  border-color: var(--border-color);
+  background: transparent;
+}
+
+.featured-row-empty-text {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--text-secondary);
+  opacity: 0.5;
+  white-space: nowrap;
+}
+
+/* Skeleton */
+.featured-row-skeleton {
+  pointer-events: none;
+}
+
+.featured-row-skeleton .featured-row-card-logo-placeholder {
+  background: var(--bg-secondary);
+  border-color: transparent;
+}
+
+.featured-row-skeleton .featured-row-card-name {
+  width: 42px;
+  height: 9px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-pulse {
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+
+  50% {
+    opacity: 0.75;
+  }
+}
+
+/* ============================================
+   RESPONSIVE + HINT
+   ============================================ */
+
+@media (width <= 768px) {
+  .featured-row-inner {
+    padding: 0 var(--spacing-sm);
+    gap: var(--spacing-xs);
+  }
+
+  .featured-row-label {
+    font-size: 0.5625rem;
+  }
+
+  .featured-row-view-all span {
+    display: none;
+  }
+
+  .featured-row-view-all {
+    padding: 2px;
+    min-width: 18px;
+    min-height: 18px;
+    justify-content: center;
+  }
+
+  .featured-row-view-all i {
+    font-size: 0.625rem;
+  }
+
+  .featured-row-arrow {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+@media (width <= 480px) {
+  .featured-row {
+    height: 42px;
+  }
+
+  .featured-row-card {
+    padding: 3px 8px 3px 3px;
+    gap: 4px;
+    min-height: 28px;
+  }
+
+  .featured-row-card-logo,
+  .featured-row-card-logo-placeholder {
+    width: 18px;
+    height: 18px;
+  }
+
+  .featured-row-card-name {
+    font-size: 0.625rem;
+  }
+
+  .featured-row-empty-text {
+    display: none;
+  }
+}
+
+.featured-row-header .hint-trigger {
+  margin-left: var(--spacing-xs);
+  opacity: 0.65;
+}
+
+.featured-row-header .hint-trigger:hover {
+  opacity: 1;
+}

@@ -1,0 +1,407 @@
+/* Account panel shared by setup and Settings. Keep the component quiet: one
+ * explanation, plain actions, and no decorative icon treatments. */
+
+.account-panel,
+.account-panel-signed-out,
+.account-panel-signed-in,
+.account-unavailable {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.account-panel {
+  gap: 14px;
+}
+
+.account-panel-signed-out,
+.account-panel-signed-in,
+.account-unavailable {
+  gap: 12px;
+}
+
+.account-panel-title {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  gap: 10px;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.02rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.account-optional {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.account-loading,
+.account-lead,
+.account-note {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.account-loading,
+.account-note {
+  color: var(--text-muted);
+}
+
+.account-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.account-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  padding: 10px 12px;
+  gap: 10px;
+  color: var(--text-primary);
+  text-align: left;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.account-option:hover:not(:disabled) {
+  background: var(--bg-card-hover);
+  border-color: var(--primary-alpha-40);
+}
+
+.account-option:disabled,
+.account-btn:disabled,
+.account-link:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.account-google-mark {
+  flex: 0 0 auto;
+  width: 18px;
+  height: auto;
+}
+
+.account-option-title {
+  min-width: 0;
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.account-email-form {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 10px;
+}
+
+.account-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.account-field-label {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.account-input {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  color: var(--text-primary);
+  font-size: 0.86rem;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition-fast);
+}
+
+.account-input::placeholder {
+  color: var(--text-muted);
+}
+
+.account-input:hover {
+  border-color: var(--primary-alpha-30);
+}
+
+.account-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-size: 0.84rem;
+  font-weight: 700;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    filter var(--transition-fast);
+}
+
+.account-btn-primary {
+  width: 100%;
+  color: var(--bg-secondary);
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.account-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.account-btn-ghost {
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+}
+
+.account-btn-ghost:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+}
+
+.account-link {
+  padding: 0;
+  color: var(--link-color);
+  font: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.account-link:hover:not(:disabled) {
+  color: var(--link-hover);
+  text-decoration: underline;
+}
+
+.account-signup-note {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.account-signup-note .account-link {
+  font-weight: 650;
+}
+
+.account-back {
+  align-self: flex-start;
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.account-identity {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.account-identity-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.account-identity-name,
+.account-identity-email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-identity-name {
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.account-identity-email {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.account-unlocks {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 6px;
+}
+
+.account-unlocks-title {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.account-scopes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  padding: 0;
+  margin: 0;
+  gap: 5px 10px;
+  list-style: none;
+}
+
+.account-scope {
+  position: relative;
+  padding-left: 10px;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.account-scope::before {
+  content: "";
+  position: absolute;
+  top: 0.58em;
+  left: 1px;
+  width: 3px;
+  height: 3px;
+  background: var(--text-muted);
+  border-radius: var(--radius-full);
+}
+
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* VeloxBot data availability. A statement of fact, not an alert: a plain
+ * surface with a bare leading glyph, tinted only enough to separate "working"
+ * from "needs something from you". */
+.account-data {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px;
+  gap: 4px;
+  background: var(--bg-card-hover);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.account-data-headline {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  gap: 7px;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.account-data-headline i {
+  flex: none;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  line-height: 1;
+}
+
+.account-data[data-state="ready"] .account-data-headline i {
+  color: var(--semantic-success-text);
+}
+
+.account-data[data-state="unreachable"] .account-data-headline i,
+.account-data[data-state="version_unsupported"] .account-data-headline i,
+.account-data[data-state="reauthorization_required"] .account-data-headline i {
+  color: var(--semantic-warning-text);
+}
+
+/* The same block inside a Settings section, which owns its own rhythm. */
+.settings-data-access:not(:empty) {
+  margin-block: 10px;
+}
+
+.account-data-detail {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.account-error,
+.account-notice {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.account-error {
+  color: var(--semantic-error-text);
+}
+
+.account-notice {
+  color: var(--semantic-info-text);
+}
+
+@media (width <= 760px), (height <= 680px) {
+  .account-panel,
+  .account-panel-signed-out,
+  .account-panel-signed-in,
+  .account-unavailable {
+    gap: 9px;
+  }
+
+  .account-option {
+    min-height: 42px;
+    padding-block: 8px;
+  }
+
+  .account-panel-title {
+    font-size: 0.94rem;
+  }
+
+  .account-loading,
+  .account-lead,
+  .account-note,
+  .account-unlocks-title,
+  .account-option-title {
+    font-size: 0.78rem;
+  }
+
+  .account-data {
+    padding: 8px 10px;
+  }
+
+  .account-data-detail {
+    font-size: 0.74rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .account-panel *,
+  .account-panel *::before,
+  .account-panel *::after {
+    transition-duration: 0.01ms !important;
+  }
+}

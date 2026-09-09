@@ -1,0 +1,235 @@
+//! Webserver service — runs the HTTP dashboard and API server.
+
+use crate::logger::{self, LogTag};
+use crate::services::{log_service_notice, Service, ServiceHealth};
+use async_trait::async_trait;
+use std::sync::Arc;
+use std::time::Duration;
+use tokio::sync::Notify;
+use tokio::task::JoinHandle;
+
+pub struct WebserverService;
+
+#[async_trait]
+impl Service for WebserverService {
+    fn name(&self) -> &'static str {
+        "webserver"
+    }
+
+    fn priority(&self) -> i32 {
+        30
+    }
+
+    fn dependencies(&self) -> Vec<&'static str> {
+        // Webserver MUST have no dependencies so it can start during pre-initialization
+        // (before credentials validation when INITIALIZATION_COMPLETE is false)
+        vec![]
+    }
+
+    fn is_enabled(&self) -> bool {
+        // Webserver is ALWAYS enabled (even before initialization)
+        // This allows users to access the initialization dialog
+        true
+    }
+
+    async fn initialize(&mut self) -> crate::Result<()> {
+        // Enable promotional fixtures when requested. --promo-capture implies
+        // them: the capture runtime only ever drives showcase data, never
+        // a real wallet.
+        let capture = crate::arguments::is_promo_capture_enabled();
+        if crate::arguments::is_promo_fixtures_enabled() || capture {
+            crate::webserver::promo::enable_promo_fixtures();
+            logger::info(LogTag::Webserver, "Promotional dashboard fixtures enabled");
+        }
+        if capture {
+            crate::webserver::promo::enable_promo_capture();
+            logger::info(LogTag::Webserver, "Promo Studio capture runtime enabled");
+        }
+        if crate::arguments::is_promo_freeze_enabled() {
+            crate::webserver::promo::enable_promo_freeze();
+            logger::info(
+                LogTag::Webserver,
+                "Promo freeze enabled — live values pinned to fixture constants",
+            );
+        }
+        Ok(())
+    }
+
+    async fn start(
+        &mut self,
+        shutdown: Arc<Notify>,
+        monitor: tokio_metrics::TaskMonitor,
+    ) -> crate::Result<Vec<JoinHandle<()>>> {
+        logger::debug(
+            LogTag::System,
+            "[PRE-FLIGHT] Webserver service start() called",
+        );
+
+        // Get CLI overrides from arguments module
+        let port_override = crate::arguments::get_port_override();
+        let host_override = crate::arguments::get_host_override();
+
+        logger::debug(
+            LogTag::System,
+            &format!(
+                "[PRE-FLIGHT] CLI overrides: port={:?}, host={:?}",
+                port_override, host_override
+            ),
+        );
+
+        // Check GUI mode state before pre-flight
+        let is_gui = crate::global::is_gui_mode();
+        logger::debug(
+            LogTag::System,
+            &format!("[PRE-FLIGHT] GUI mode state: {is_gui}"),
+        );
+
+        // Pre-flight check: test port binding BEFORE spawning background task
+        // This ensures any binding errors are caught and propagated to ServiceManager,
+        // which will stop bot initialization immediately (no silent failures)
+        logger::debug(
+            LogTag::System,
+            "[PRE-FLIGHT] Calling test_port_binding()...",
+        );
+
+        let test_result =
+            crate::webserver::test_port_binding(port_override, host_override.clone()).await;
+
+        logger::debug(
+            LogTag::System,
+            &format!(
+                "[PRE-FLIGHT] test_port_binding() returned: {:?}",
+                test_result
+            ),
+        );
+
+        if let Err(e) = test_result {
+            logger::error(
+                LogTag::System,
+                &format!(
+                    "[PRE-FLIGHT] ❌ FAILED - Webserver pre-flight check failed: {}",
+                    e
+                ),
+            );
+            return Err(crate::Error::Service(crate::errors::ServiceError::Start {
+                service: "webserver".to_owned(),
+                message: format!("Failed to bind webserver port: {e}"),
+            }));
+        }
+
+        logger::debug(
+            LogTag::System,
+            "[PRE-FLIGHT] ✅ PASSED - Pre-flight check succeeded",
+        );
+
+        // Pre-flight passed, spawn background task with CLI overrides
+        logger::debug(
+            LogTag::System,
+            "[PRE-FLIGHT] Spawning background webserver task...",
+        );
+
+        crate::webserver::prepare_startup_signal();
+        let handle = tokio::spawn(monitor.instrument(async move {
+            logger::debug(
+                LogTag::System,
+                "[WEBSERVER] Background task started, calling start_server()...",
+            );
+
+            if let Err(e) = crate::webserver::start_server(port_override, host_override).await {
+                crate::webserver::report_startup(Err(e.to_string()));
+                logger::error(
+                    LogTag::System,
+                    &format!("[WEBSERVER] ❌ start_server() FAILED: {e}"),
+                );
+            } else {
+                logger::debug(
+                    LogTag::System,
+                    "[WEBSERVER] ✅ start_server() completed successfully",
+                );
+            }
+        }));
+
+        tokio::time::timeout(
+            Duration::from_secs(10),
+            crate::webserver::wait_for_startup(),
+        )
+        .await
+        .map_err(|_| {
+            crate::Error::Service(crate::errors::ServiceError::Start {
+                service: "webserver".to_owned(),
+                message: "Timed out waiting for the HTTP listener to bind".to_owned(),
+            })
+        })?
+        .map_err(|message| {
+            crate::Error::Service(crate::errors::ServiceError::Start {
+                service: "webserver".to_owned(),
+                message,
+            })
+        })?;
+
+        // Get actual configured host and port (not the defaults)
+        let host = crate::global::get_webserver_host();
+        let port = crate::global::get_webserver_port();
+
+        log_service_notice(
+            self.name(),
+            "ready",
+            Some(&format!(
+                "endpoint=http://{}:{}",
+                if host.is_empty() {
+                    crate::webserver::DEFAULT_HOST
+                } else {
+                    &host
+                },
+                if port == 0 {
+                    crate::webserver::DEFAULT_PORT
+                } else {
+                    port
+                }
+            )),
+            true,
+        );
+
+        let mut handles = vec![handle];
+
+        // Promotional fixtures normally run webserver-only (no wallet/RPC), so the SOL price
+        // service never starts and the header would show a stale hardcoded price.
+        // Start a lightweight SOL price service + the SOL/USD reference chart mirror
+        // so the promo header shows a genuinely LIVE price whenever the network is
+        // reachable (it still falls back to a constant when offline).
+        if crate::webserver::promo::are_promo_fixtures_enabled() {
+            match crate::sol_price::start_sol_price_service(shutdown.clone(), monitor.clone()).await
+            {
+                Ok(h) => {
+                    handles.push(h);
+                    handles.push(crate::ohlcvs::sol_usd_chart::start(
+                        shutdown.clone(),
+                        monitor.clone(),
+                    ));
+                    logger::info(
+                        LogTag::Webserver,
+                        "Promo fixtures: live SOL price service started",
+                    );
+                }
+                Err(e) => logger::warning(
+                    LogTag::Webserver,
+                    &format!("Promo fixtures: could not start live SOL price service: {e}"),
+                ),
+            }
+        }
+
+        Ok(handles)
+    }
+
+    async fn stop(&mut self) -> crate::Result<()> {
+        // Trigger the webserver module's latched shutdown signal. Axum and every
+        // persistent SSE handler subscribe to this same signal, so graceful
+        // shutdown cannot miss an edge or wait for stream timeouts.
+        crate::webserver::shutdown();
+        Ok(())
+    }
+
+    async fn health(&self) -> ServiceHealth {
+        ServiceHealth::Healthy
+    }
+}

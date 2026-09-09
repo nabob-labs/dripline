@@ -1,0 +1,301 @@
+/* Home portfolio activity calendar. */
+
+/* ===== Calendar card ===== */
+.calendar-header {
+  gap: 0.5rem;
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.calendar-month-label {
+  /* Fixed width sized for the longest label ("September 2026") so the prev/next
+     buttons never shift when the month name length changes. */
+  width: 15ch;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: var(--font-data);
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  margin-bottom: 1px;
+  flex-shrink: 0;
+}
+
+.calendar-weekdays span {
+  padding-left: 0.4rem;
+  font-size: 0.56rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 1px;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--border-color);
+}
+
+.calendar-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0.3rem 0.4rem;
+  background: var(--bg-secondary);
+  border: 0;
+  overflow: hidden;
+  transition: background-color var(--transition-fast);
+}
+
+/* In light theme --bg-secondary == --bg-card (both white), so give cells a
+   subtle fill + darker border to define the grid. Tinted (profit/loss) cells
+   keep their inline heatmap background, which wins over this rule. */
+[data-theme="light"] .calendar-cell {
+  background: var(--bg-card-hover);
+}
+
+.calendar-cell:not(.blank, .future):hover {
+  background-color: var(--bg-card-hover);
+  z-index: 1;
+}
+
+.calendar-cell.blank {
+  background: var(--bg-primary);
+  border: none;
+}
+
+.calendar-cell.empty,
+.calendar-cell.skeleton {
+  opacity: 0.7;
+}
+
+.calendar-cell.future {
+  opacity: 0.28;
+}
+
+/* Day number: top-left marker; today gets an accent pill instead of a heavy
+   full-cell outline so it reads cleanly alongside the heatmap tints. */
+.calendar-cell .cell-day {
+  align-self: flex-start;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  line-height: 1.15;
+}
+
+.calendar-cell.today .cell-day {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  margin: -0.1rem 0 0 -0.1rem;
+  padding: 0 0.2rem;
+  background: var(--link-color);
+  color: #fff;
+  font-weight: 700;
+  border-radius: 999px;
+}
+
+/* P&L is the hero metric — pushed to the bottom with the portfolio value under it. */
+.calendar-cell .cell-pnl {
+  margin-top: auto;
+  font-family: var(--font-data);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+}
+
+.calendar-cell .cell-value {
+  margin-top: 0.1rem;
+  font-family: var(--font-data);
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  line-height: 1.2;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Empty days (no trades) show only the portfolio value — keep it bottom-aligned. */
+.calendar-cell.empty .cell-value {
+  margin-top: auto;
+}
+
+/* Profit/loss cells carry a saturated heatmap tint (the JS raises the alpha
+   floor in light theme so the fill stays a solid colour, not a pale pastel), so
+   white text reads on the coloured cells in BOTH themes. Empty/no-trade cells
+   have no tint and keep their dark --text-muted for contrast on the light card. */
+.calendar-cell.profit .cell-pnl,
+.calendar-cell.loss .cell-pnl {
+  color: #fff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+}
+
+.calendar-cell.profit .cell-day,
+.calendar-cell.loss .cell-day {
+  color: rgb(255 255 255 / 0.9);
+}
+
+.calendar-cell.profit .cell-value,
+.calendar-cell.loss .cell-value {
+  color: rgb(255 255 255 / 0.85);
+}
+
+/* ===== Calendar month summary ===== */
+.calendar-summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0;
+  margin-top: 0;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border-color);
+}
+
+.calendar-summary-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.55rem 0;
+}
+
+.calendar-summary-stat:first-child {
+  padding-right: 1rem;
+}
+
+.calendar-summary-stat + .calendar-summary-stat {
+  padding-left: 1rem;
+  border-left: 1px solid var(--border-color);
+}
+
+.calendar-summary-label {
+  font-size: var(--label-size);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.calendar-summary-value {
+  font-family: var(--font-data);
+  font-size: var(--value-size);
+  font-weight: 700;
+  color: var(--text-primary);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+}
+
+.calendar-summary-value.profit {
+  color: var(--badge-online);
+}
+
+.calendar-summary-value.loss {
+  color: var(--badge-error);
+}
+
+/* ===== Day detail popover (hover, traded days only) ===== */
+.cal-day-popover {
+  position: fixed;
+  z-index: var(--z-app-tooltip, 10090);
+  min-width: 12rem;
+  max-width: min(16rem, calc(100vw - 16px));
+  background: var(--bg-card, #161b22);
+  color: var(--text-primary, #e6edf3);
+  border: 1px solid var(--border-color, #30363d);
+  border-radius: var(--radius-lg, 8px);
+  box-shadow: var(--shadow-floating-md, 0 8px 24px rgb(0 0 0 / 0.35));
+  font-family: var(--font-data, var(--font-mono));
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(3px);
+  transition:
+    opacity var(--transition-fast, 0.15s) ease,
+    transform var(--transition-fast, 0.15s) ease;
+}
+
+.cal-day-popover--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.cal-pop-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid var(--border-color, #30363d);
+}
+
+.cal-pop-date {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-primary, #e6edf3);
+}
+
+.cal-pop-year {
+  font-size: 0.62rem;
+  font-weight: 600;
+  opacity: 0.55;
+}
+
+.cal-pop-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.55rem 0.7rem;
+}
+
+.cal-pop-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cal-pop-label {
+  color: var(--text-secondary, #8b949e);
+  opacity: 0.85;
+  font-size: 0.58rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cal-pop-val {
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+}
+
+/* Popover now follows the theme surface (--bg-card), so use the semantic P&L
+   tokens which flip readable in both light and dark. */
+.cal-pop-val.profit {
+  color: var(--badge-online, #3fb950);
+}
+
+.cal-pop-val.loss {
+  color: var(--badge-error, #f85149);
+}

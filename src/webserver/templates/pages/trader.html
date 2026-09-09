@@ -1,0 +1,1666 @@
+<div class="page-table trader-page">
+  <div id="trader-content">
+    <!-- Stats Tab -->
+    <div id="stats-tab" class="trader-tab-content" style="display: none">
+      <div class="stats-layout">
+        <!-- LEFT COLUMN — Controlling -->
+        <div class="stats-col stats-col-left">
+          <!-- Auto Trader Status Control -->
+          <div class="trader-status-bar" id="trader-status-bar">
+            <div class="status-bar-main">
+              <div class="status-bar-icon" id="trader-status-icon">
+                <i class="icon-bot"></i>
+              </div>
+              <div class="status-bar-info">
+                <span class="status-bar-title">Auto Trader</span>
+                <span class="status-bar-status" id="trader-status-text">Loading...</span>
+              </div>
+            </div>
+            <label class="toggle" data-level="root">
+              <input type="checkbox" id="stats-trader-toggle" disabled />
+              <span class="toggle-track"></span>
+              <span class="toggle-state" id="stats-toggle-label">OFF</span>
+            </label>
+          </div>
+
+          <!-- Trading Controls Section -->
+          <div class="stats-section stats-section-controls">
+            <div class="section-header">
+              <h3><i class="icon-sliders-horizontal"></i> Trading Controls</h3>
+            </div>
+
+            <!-- Force Stop Banner (shown only when active) -->
+            <div class="force-stop-banner" id="force-stop-banner" style="display: none">
+              <div class="force-stop-icon"><i class="icon-octagon-alert"></i></div>
+              <div class="force-stop-info">
+                <span class="force-stop-title">TRADING HALTED</span>
+                <span class="force-stop-reason" id="force-stop-reason">Manual force stop</span>
+              </div>
+              <button type="button" class="btn btn-sm btn-success" id="resume-trading-btn">
+                <i class="icon-play"></i> Resume
+              </button>
+            </div>
+
+            <!-- Monitor Controls Grid -->
+            <div class="controls-grid">
+              <!-- Entry Monitor Card -->
+              <div class="control-card">
+                <div class="control-header">
+                  <i class="icon-log-in"></i>
+                  <span>Entry Monitor</span>
+                </div>
+                <div class="control-status" id="entry-monitor-status">—</div>
+                <label class="toggle">
+                  <input type="checkbox" id="entry-monitor-toggle" />
+                  <span class="toggle-track"></span>
+                </label>
+              </div>
+
+              <!-- Exit Monitor Card -->
+              <div class="control-card">
+                <div class="control-header">
+                  <i class="icon-log-out"></i>
+                  <span>Exit Monitor</span>
+                </div>
+                <div class="control-status" id="exit-monitor-status">—</div>
+                <label class="toggle">
+                  <input type="checkbox" id="exit-monitor-toggle" />
+                  <span class="toggle-track"></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Loss Limit Panel -->
+            <div class="loss-limit-panel" id="loss-limit-panel" style="display: none">
+              <div class="loss-limit-header">
+                <span class="loss-limit-label">
+                  <i class="icon-shield"></i> Period Loss Limit
+                </span>
+                <span class="loss-limit-value" id="loss-limit-value">0.00 / 0.10 SOL</span>
+              </div>
+              <div class="loss-limit-bar">
+                <div class="loss-limit-progress" id="loss-limit-progress" style="width: 0%"></div>
+              </div>
+              <div class="loss-limit-footer">
+                <span class="loss-limit-period" id="loss-limit-period">Resets in —</span>
+                <span class="loss-limit-status" id="loss-limit-status"></span>
+              </div>
+            </div>
+
+            <!-- Force Stop Button -->
+            <button type="button" class="btn btn-danger btn-force-stop" id="force-stop-btn">
+              <i class="icon-octagon"></i> Force Stop Everything
+            </button>
+          </div>
+        </div>
+        <!-- /LEFT COLUMN -->
+
+        <!-- RIGHT COLUMN — Analysis & Current Config -->
+        <div class="stats-col stats-col-right">
+          <div class="stats-grid">
+            <!-- Key Performance Indicators -->
+            <div class="stats-section stats-section-primary">
+              <div class="section-header">
+                <div>
+                  <h3><i class="icon-chart-bar"></i> Performance Overview</h3>
+                  <p class="section-subtitle">Last 30 days trading performance</p>
+                </div>
+                <div class="stats-period" id="stats-period">Loading...</div>
+              </div>
+              <div class="metrics-grid">
+                <div class="metric-card metric-card--with-icon metric-card-primary">
+                  <div class="metric-icon">
+                    <i class="icon-trending-up"></i>
+                  </div>
+                  <div class="metric-content">
+                    <div class="metric-label">Win Rate</div>
+                    <div class="metric-value" id="win-rate">—</div>
+                    <div class="metric-detail" id="win-rate-detail">—</div>
+                  </div>
+                </div>
+                <div class="metric-card metric-card--with-icon metric-card-primary">
+                  <div class="metric-icon">
+                    <i class="icon-activity"></i>
+                  </div>
+                  <div class="metric-content">
+                    <div class="metric-label">Total P&amp;L</div>
+                    <div class="metric-value" id="total-pnl">—</div>
+                    <div class="metric-detail" id="total-pnl-detail">—</div>
+                  </div>
+                </div>
+                <div class="metric-card metric-card--with-icon">
+                  <div class="metric-icon">
+                    <i class="icon-repeat"></i>
+                  </div>
+                  <div class="metric-content">
+                    <div class="metric-label">Total Trades</div>
+                    <div class="metric-value" id="total-trades">—</div>
+                    <div class="metric-detail" id="total-trades-detail">—</div>
+                  </div>
+                </div>
+                <div class="metric-card metric-card--with-icon">
+                  <div class="metric-icon">
+                    <i class="icon-clock"></i>
+                  </div>
+                  <div class="metric-content">
+                    <div class="metric-label">Avg Hold Time</div>
+                    <div class="metric-value" id="avg-hold-time">—</div>
+                    <div class="metric-detail" id="avg-hold-time-detail">—</div>
+                  </div>
+                </div>
+                <div class="metric-card metric-card--with-icon metric-highlight-success">
+                  <div class="metric-icon">
+                    <i class="icon-arrow-up"></i>
+                  </div>
+                  <div class="metric-content">
+                    <div class="metric-label">Best Trade</div>
+                    <div class="metric-value" id="best-trade">—</div>
+                    <div class="metric-detail" id="best-trade-detail">—</div>
+                  </div>
+                </div>
+                <div class="metric-card metric-card--with-icon metric-highlight-danger">
+                  <div class="metric-icon">
+                    <i class="icon-arrow-down"></i>
+                  </div>
+                  <div class="metric-content">
+                    <div class="metric-label">Worst Trade</div>
+                    <div class="metric-value" id="worst-trade">—</div>
+                    <div class="metric-detail" id="worst-trade-detail">—</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Configuration Snapshot -->
+            <div class="stats-section stats-section-config">
+              <div class="section-header">
+                <h3><i class="icon-settings"></i> Active Configuration</h3>
+                <button
+                  type="button"
+                  class="btn btn-link btn-sm"
+                  id="expand-config"
+                  title="View details in other tabs"
+                >
+                  <i class="icon-maximize-2"></i>
+                  <span>View Details</span>
+                </button>
+              </div>
+              <div class="config-overview-grid">
+                <!-- Exit Strategies Column -->
+                <div class="config-column">
+                  <div class="config-column-header">Exit Strategies</div>
+                  <div class="config-items-compact">
+                    <div class="config-item-compact" id="stop-loss-status">
+                      <i class="icon-circle status-icon"></i>
+                      <span class="label">Stop Loss:</span>
+                      <span class="value">—</span>
+                    </div>
+                    <div class="config-item-compact" id="roi-status">
+                      <i class="icon-circle status-icon"></i>
+                      <span class="label">ROI Exit:</span>
+                      <span class="value">—</span>
+                    </div>
+                    <div class="config-item-compact" id="trailing-status">
+                      <i class="icon-circle status-icon"></i>
+                      <span class="label">Trailing Stop:</span>
+                      <span class="value">—</span>
+                    </div>
+                    <div class="config-item-compact" id="time-status">
+                      <i class="icon-circle status-icon"></i>
+                      <span class="label">Time Override:</span>
+                      <span class="value">—</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Position Management Column -->
+                <div class="config-column">
+                  <div class="config-column-header">Position Management</div>
+                  <div class="config-items-compact">
+                    <div class="config-item-compact">
+                      <i class="icon-layers status-icon enabled"></i>
+                      <span class="label">Max Positions:</span>
+                      <span class="value" id="config-max-positions">—</span>
+                    </div>
+                    <div class="config-item-compact">
+                      <i class="icon-dollar-sign status-icon enabled"></i>
+                      <span class="label">Trade Size:</span>
+                      <span class="value" id="config-trade-size">—</span>
+                    </div>
+                    <div class="config-item-compact" id="dca-status">
+                      <i class="icon-circle status-icon"></i>
+                      <span class="label">DCA:</span>
+                      <span class="value">—</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Risk Controls Column -->
+                <div class="config-column">
+                  <div class="config-column-header">Risk Controls</div>
+                  <div class="config-items-compact">
+                    <div class="config-item-compact">
+                      <i class="icon-pause status-icon enabled"></i>
+                      <span class="label">Close Cooldown:</span>
+                      <span class="value" id="config-close-cooldown">—</span>
+                    </div>
+                    <div class="config-item-compact">
+                      <i class="icon-zap status-icon enabled"></i>
+                      <span class="label">Entry Concurrency:</span>
+                      <span class="value" id="config-entry-concurrency">—</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Exit Strategy Performance -->
+            <div class="stats-section">
+              <div class="section-header">
+                <h3><i class="icon-trending-up"></i> Exit Strategy Breakdown</h3>
+                <p class="section-subtitle">How positions were closed and their outcomes</p>
+              </div>
+              <div id="exit-breakdown" class="exit-breakdown">
+                <div class="loading-state">
+                  <i class="icon-loader"></i>
+                  <span>Loading exit data...</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Active Positions Summary -->
+            <div class="stats-section">
+              <div class="section-header">
+                <h3><i class="icon-target"></i> Active Positions Summary</h3>
+                <p class="section-subtitle">Current open positions and risk exposure</p>
+              </div>
+              <div id="positions-summary" class="positions-summary">
+                <div class="info-state">
+                  <i class="icon-inbox"></i>
+                  <span>No open positions</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- /RIGHT COLUMN -->
+      </div>
+      <!-- /stats-layout -->
+    </div>
+
+    <!-- Wallet Copy Tab -->
+    <div id="wallet-copy-tab" class="trader-tab-content" style="display: none">
+      <section class="wallet-copy-shell" aria-label="Wallet copy trading">
+        <header class="wallet-copy-header">
+          <div class="wallet-copy-heading">
+            <h2><i class="icon-copy"></i> Copy Trading</h2>
+            <p>Observe selected wallets, validate them in Paper mode and control live execution.</p>
+          </div>
+          <div class="wallet-copy-header-actions">
+            <div class="wallet-copy-system-state">
+              <span class="wallet-copy-master-label">System</span>
+              <strong id="wallet-copy-global-status">Paused globally</strong>
+            </div>
+            <button class="btn btn-outline btn-sm" id="wallet-copy-global-action" type="button">
+              Resume processing
+            </button>
+            <button class="btn btn-ghost btn-sm" id="wallet-copy-settings" type="button">
+              <i class="icon-settings"></i> Global settings
+            </button>
+            <button class="btn btn-primary btn-sm" id="wallet-copy-new-task" type="button">
+              <i class="icon-plus"></i> Add wallet
+            </button>
+          </div>
+        </header>
+
+        <section id="wallet-copy-onboarding" class="wallet-copy-onboarding">
+          <div class="wallet-copy-onboarding-copy">
+            <h3>Copy selected Solana wallets</h3>
+            <p>
+              Start in Paper mode, review execution quality and performance, then explicitly arm
+              Live trading when the task is ready.
+            </p>
+            <button class="btn btn-primary" id="wallet-copy-onboarding-add" type="button">
+              <i class="icon-plus"></i> Add your first wallet
+            </button>
+          </div>
+          <ol class="wallet-copy-onboarding-steps">
+            <li><strong>Observe</strong><span>Detect target swaps without spending SOL.</span></li>
+            <li>
+              <strong>Evaluate</strong><span>Review paper fills, skips, latency and P&amp;L.</span>
+            </li>
+            <li>
+              <strong>Arm</strong><span>Enable real swaps separately for each trusted wallet.</span>
+            </li>
+          </ol>
+        </section>
+
+        <div id="wallet-copy-operations" class="wallet-copy-operations" hidden>
+          <section class="wallet-copy-summary" aria-label="Copy trading summary">
+            <div><span>Tasks</span><strong id="wallet-copy-summary-tasks">—</strong></div>
+            <div><span>Mode</span><strong id="wallet-copy-summary-mode">—</strong></div>
+            <div><span>Budget</span><strong id="wallet-copy-summary-budget">—</strong></div>
+            <div><span>Positions</span><strong id="wallet-copy-summary-positions">—</strong></div>
+            <div><span>Copy P&amp;L</span><strong id="wallet-copy-summary-pnl">—</strong></div>
+            <div><span>Detection</span><strong id="wallet-copy-summary-latency">—</strong></div>
+          </section>
+
+          <div class="wallet-copy-workspace">
+            <aside class="wallet-copy-tasks">
+              <div class="wallet-copy-section-head">
+                <div>
+                  <h3>Wallets</h3>
+                  <span id="wallet-copy-task-count">0 active tasks</span>
+                </div>
+              </div>
+              <div id="wallet-copy-task-list" class="wallet-copy-task-list"></div>
+            </aside>
+
+            <main class="wallet-copy-detail">
+              <header class="wallet-copy-detail-head">
+                <div>
+                  <span id="wallet-copy-detail-state" class="wallet-copy-state">—</span>
+                  <h3 id="wallet-copy-detail-title">Wallet</h3>
+                  <span id="wallet-copy-detail-address" class="wallet-copy-detail-address">—</span>
+                </div>
+                <div class="wallet-copy-detail-actions">
+                  <button class="btn btn-outline btn-sm" id="wallet-copy-task-toggle" type="button">
+                    Pause task
+                  </button>
+                  <button class="btn btn-outline btn-sm" id="wallet-copy-mode-action" type="button">
+                    Arm Live
+                  </button>
+                  <button class="btn btn-secondary btn-sm" id="wallet-copy-edit-task" type="button">
+                    <i class="icon-settings"></i> Edit rules
+                  </button>
+                </div>
+              </header>
+
+              <section id="wallet-copy-task-stats" class="wallet-copy-task-stats">
+                <div><span>Net P&amp;L</span><strong id="wallet-copy-stats-pnl">—</strong></div>
+                <div><span>Arrival p95</span><strong id="wallet-copy-stats-arrival">—</strong></div>
+                <div><span>Positions</span><strong id="wallet-copy-stats-positions">—</strong></div>
+                <div><span>Decisions</span><strong id="wallet-copy-stats-decisions">—</strong></div>
+              </section>
+
+              <div class="wallet-copy-detail-grid">
+                <section class="wallet-copy-detail-section">
+                  <div class="wallet-copy-section-head">
+                    <div>
+                      <h3>Budget and sizing</h3>
+                      <span id="wallet-copy-budget-caption">—</span>
+                    </div>
+                  </div>
+                  <div class="wallet-copy-budget-track">
+                    <span id="wallet-copy-budget-fill"></span>
+                  </div>
+                  <dl id="wallet-copy-sizing-summary" class="wallet-copy-definition-list"></dl>
+                </section>
+                <section class="wallet-copy-detail-section">
+                  <div class="wallet-copy-section-head">
+                    <div>
+                      <h3>Position management</h3>
+                      <span>Effective task rules</span>
+                    </div>
+                  </div>
+                  <dl id="wallet-copy-rules-summary" class="wallet-copy-definition-list"></dl>
+                </section>
+              </div>
+
+              <section class="wallet-copy-activity">
+                <div class="wallet-copy-section-head">
+                  <div>
+                    <h3>Recent activity</h3>
+                    <span id="wallet-copy-activity-caption">Selected wallet</span>
+                  </div>
+                </div>
+                <div id="wallet-copy-activity-columns" class="wallet-copy-activity-columns" hidden>
+                  <span>Decision</span><span>Details</span><span>Time</span>
+                </div>
+                <div id="wallet-copy-activity-list" class="wallet-copy-activity-list"></div>
+              </section>
+            </main>
+          </div>
+        </div>
+
+        <div class="modal-overlay hidden wallet-copy-dialog" id="wallet-copy-editor-dialog">
+          <div class="modal-dialog wallet-copy-dialog-panel">
+            <div class="modal-header">
+              <div class="wallet-copy-form-title">
+                <h2 id="wallet-copy-form-title">Add wallet</h2>
+                <span id="wallet-copy-task-mode">Paper mode</span>
+              </div>
+              <button
+                class="modal-close"
+                id="wallet-copy-editor-close"
+                type="button"
+                aria-label="Close"
+              >
+                <i class="icon-x"></i>
+              </button>
+            </div>
+            <div class="modal-body">
+              <form id="wallet-copy-form" class="wallet-copy-form">
+                <input id="wallet-copy-task-id" type="hidden" />
+                <div class="wallet-copy-form-head">
+                  <label class="wallet-copy-task-toggle"
+                    ><span>Task enabled</span
+                    ><span class="toggle"
+                      ><input id="wallet-copy-enabled" type="checkbox" checked /><span
+                        class="toggle-track"
+                      ></span></span
+                  ></label>
+                </div>
+                <section class="wallet-copy-form-section">
+                  <h4>Wallet and copy sizing</h4>
+                  <div class="wallet-copy-fields">
+                    <label class="wallet-copy-field-wide"
+                      ><span>Target wallet</span
+                      ><input
+                        id="wallet-copy-address"
+                        class="form-input"
+                        type="text"
+                        autocomplete="off"
+                        maxlength="44"
+                        placeholder="Solana wallet address"
+                        required /><small id="wallet-copy-address-error" class="field-error"></small
+                    ></label>
+                    <label
+                      ><span>Task name <small>Optional</small></span
+                      ><input
+                        id="wallet-copy-label"
+                        class="form-input"
+                        type="text"
+                        maxlength="80"
+                        placeholder="e.g. Primary wallet"
+                    /></label>
+                    <label
+                      ><span>Sizing method</span
+                      ><select id="wallet-copy-sizing" class="form-select" data-custom-select>
+                        <option value="fixed">Fixed SOL amount</option>
+                        <option value="ratio_of_target">Share of wallet trade</option>
+                      </select></label
+                    >
+                    <label
+                      ><span id="wallet-copy-size-label">Copy amount (SOL)</span
+                      ><input
+                        id="wallet-copy-size"
+                        class="form-input"
+                        type="number"
+                        min="0.001"
+                        step="0.001"
+                        required
+                    /></label>
+                    <label
+                      ><span>Per trade limit (SOL)</span
+                      ><input
+                        id="wallet-copy-max-trade"
+                        class="form-input"
+                        type="number"
+                        min="0.001"
+                        step="0.001"
+                        required
+                    /></label>
+                    <label
+                      ><span>Per token limit (SOL)</span
+                      ><input
+                        id="wallet-copy-max-token"
+                        class="form-input"
+                        type="number"
+                        min="0.001"
+                        step="0.001"
+                        required
+                    /></label>
+                    <label
+                      ><span>Total budget (SOL)</span
+                      ><input
+                        id="wallet-copy-budget"
+                        class="form-input"
+                        type="number"
+                        min="0.001"
+                        step="0.001"
+                        required
+                    /></label>
+                    <label
+                      ><span>Slippage (%)</span
+                      ><input
+                        id="wallet-copy-slippage"
+                        class="form-input"
+                        type="number"
+                        min="0.1"
+                        max="50"
+                        step="0.1"
+                        required
+                    /></label>
+                    <label
+                      ><span>Exit ownership</span
+                      ><select id="wallet-copy-exit-mode" class="form-select" data-custom-select>
+                        <option value="buy_only">Use my exit rules</option>
+                        <option value="mirror">Mirror wallet sells</option>
+                        <option value="hybrid">Wallet sells + my rules</option>
+                      </select></label
+                    >
+                  </div>
+                </section>
+                <fieldset class="wallet-copy-form-section wallet-copy-policy">
+                  <legend>Exit rule overrides</legend>
+                  <p>Use the Trader defaults or override only the rules this task needs.</p>
+                  <div class="wallet-copy-policy-grid">
+                    <div class="wallet-copy-policy-field">
+                      <label for="wallet-copy-stop-loss-mode">Stop loss</label
+                      ><select
+                        id="wallet-copy-stop-loss-mode"
+                        class="form-select"
+                        data-custom-select
+                      >
+                        <option value="inherit">Use Trader default</option>
+                        <option value="enabled">Enabled for this task</option>
+                        <option value="disabled">Disabled for this task</option>
+                      </select>
+                      <input
+                        id="wallet-copy-stop-loss-value"
+                        class="form-input"
+                        type="number"
+                        min="0.1"
+                        max="100"
+                        step="0.1"
+                        placeholder="Loss threshold (%)"
+                        aria-label="Stop loss threshold percentage"
+                        hidden
+                      />
+                    </div>
+                    <div class="wallet-copy-policy-field">
+                      <label for="wallet-copy-roi-mode">Take profit</label
+                      ><select id="wallet-copy-roi-mode" class="form-select" data-custom-select>
+                        <option value="inherit">Use Trader default</option>
+                        <option value="enabled">Enabled for this task</option>
+                        <option value="disabled">Disabled for this task</option>
+                      </select>
+                      <input
+                        id="wallet-copy-roi-value"
+                        class="form-input"
+                        type="number"
+                        min="0.1"
+                        step="0.1"
+                        placeholder="Profit target (%)"
+                        aria-label="Take profit target percentage"
+                        hidden
+                      />
+                    </div>
+                    <div class="wallet-copy-policy-field">
+                      <label for="wallet-copy-trailing-mode">Trailing stop</label
+                      ><select
+                        id="wallet-copy-trailing-mode"
+                        class="form-select"
+                        data-custom-select
+                      >
+                        <option value="inherit">Use Trader default</option>
+                        <option value="enabled">Enabled for this task</option>
+                        <option value="disabled">Disabled for this task</option>
+                      </select>
+                      <input
+                        id="wallet-copy-trailing-value"
+                        class="form-input"
+                        type="number"
+                        min="0.1"
+                        max="100"
+                        step="0.1"
+                        placeholder="Trail distance (%)"
+                        aria-label="Trailing stop distance percentage"
+                        hidden
+                      />
+                    </div>
+                    <div class="wallet-copy-policy-field">
+                      <label for="wallet-copy-time-mode">Maximum hold</label
+                      ><select id="wallet-copy-time-mode" class="form-select" data-custom-select>
+                        <option value="inherit">Use Trader default</option>
+                        <option value="enabled">Enabled for this task</option>
+                        <option value="disabled">Disabled for this task</option>
+                      </select>
+                      <input
+                        id="wallet-copy-time-value"
+                        class="form-input"
+                        type="number"
+                        min="0.1"
+                        step="0.1"
+                        placeholder="Duration (hours)"
+                        aria-label="Maximum hold duration in hours"
+                        hidden
+                      />
+                    </div>
+                  </div>
+                </fieldset>
+                <div class="wallet-copy-form-actions">
+                  <span class="wallet-copy-form-spacer"></span>
+                  <button class="btn btn-secondary" id="wallet-copy-cancel" type="button">
+                    Cancel</button
+                  ><button class="btn btn-primary" type="submit">Save task</button>
+                </div>
+                <small id="wallet-copy-form-error" class="field-error" aria-live="polite"></small>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-overlay hidden wallet-copy-dialog" id="wallet-copy-settings-dialog">
+          <div class="modal-dialog wallet-copy-settings-panel">
+            <div class="modal-header">
+              <div>
+                <h2>Copy trading settings</h2>
+                <p>Global policy for every wallet task.</p>
+              </div>
+              <button
+                class="modal-close"
+                id="wallet-copy-settings-close"
+                type="button"
+                aria-label="Close"
+              >
+                <i class="icon-x"></i>
+              </button>
+            </div>
+            <div class="modal-body">
+              <form id="wallet-copy-settings-form" class="wallet-copy-settings-form">
+                <label
+                  ><span>Require Filtering pass</span
+                  ><span class="toggle"
+                    ><input id="wallet-copy-require-filter" type="checkbox" /><span
+                      class="toggle-track"
+                    ></span></span
+                ></label>
+                <label
+                  ><span>Latency kill switch</span
+                  ><span class="toggle"
+                    ><input id="wallet-copy-latency-enabled" type="checkbox" /><span
+                      class="toggle-track"
+                    ></span></span
+                ></label>
+                <label
+                  ><span>Default slippage (%)</span
+                  ><input
+                    id="wallet-copy-default-slippage"
+                    class="form-input"
+                    type="number"
+                    min="0.1"
+                    max="50"
+                    step="0.1"
+                    required
+                /></label>
+                <label
+                  ><span>Maximum active tasks</span
+                  ><input
+                    id="wallet-copy-max-tasks"
+                    class="form-input"
+                    type="number"
+                    min="1"
+                    max="50"
+                    step="1"
+                    required
+                /></label>
+                <label
+                  ><span>Maximum arrival delay (ms)</span
+                  ><input
+                    id="wallet-copy-max-delay"
+                    class="form-input"
+                    type="number"
+                    min="250"
+                    max="30000"
+                    step="250"
+                    required
+                /></label>
+                <label
+                  ><span>Latency sample window</span
+                  ><input
+                    id="wallet-copy-latency-window"
+                    class="form-input"
+                    type="number"
+                    min="3"
+                    max="100"
+                    step="1"
+                    required
+                /></label>
+                <div class="modal-footer">
+                  <button class="btn btn-secondary" id="wallet-copy-settings-cancel" type="button">
+                    Cancel
+                  </button>
+                  <button class="btn btn-primary" type="submit">Save settings</button>
+                </div>
+                <small
+                  id="wallet-copy-settings-error"
+                  class="field-error"
+                  aria-live="polite"
+                ></small>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Stop Loss Tab -->
+    <div id="stop-loss-tab" class="trader-tab-content" style="display: none">
+      <div class="config-section">
+        <div class="config-card">
+          <div class="card-header">
+            <div class="card-header-text">
+              <h3><i class="icon-shield-off"></i> Stop Loss</h3>
+              <p class="card-subtitle">
+                Automatically exit a position when its loss exceeds your threshold
+              </p>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="stop-loss-enabled" />
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+
+          <!-- Stop Loss Threshold -->
+          <div class="config-group">
+            <div class="config-label-row">
+              <label for="stop-loss-threshold" class="config-label">
+                <i class="icon-trending-down"></i>
+                <span>Stop Loss Threshold</span>
+              </label>
+              <span class="config-badge config-badge-warning">Loss limit</span>
+            </div>
+            <p class="config-hint">
+              Immediately sells position when loss exceeds this percentage. Unlike trailing stop,
+              this works from the entry price regardless of any gains.
+            </p>
+            <div class="input-group-enhanced">
+              <input
+                type="number"
+                id="stop-loss-threshold"
+                min="1"
+                max="100"
+                step="1"
+                value="50"
+                class="input-large"
+              />
+              <span class="input-unit">%</span>
+            </div>
+            <div class="config-impact">
+              <span class="impact-label">Impact:</span>
+              <span class="impact-text" id="stop-loss-impact">Exit when down 50% from entry</span>
+            </div>
+          </div>
+
+          <!-- Allow Partial Exits -->
+          <div class="config-group">
+            <div class="config-label-row">
+              <label for="stop-loss-allow-partial" class="config-label">
+                <i class="icon-scissors"></i>
+                <span>Allow Partial Exits</span>
+              </label>
+              <label class="toggle">
+                <input type="checkbox" id="stop-loss-allow-partial" />
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+            <p class="config-hint">
+              When enabled, stop loss can sell a portion of the position if configured. When
+              disabled, sells the entire position.
+            </p>
+          </div>
+
+          <!-- Minimum Hold Time -->
+          <div class="config-group">
+            <div class="config-label-row">
+              <label for="stop-loss-min-hold" class="config-label">
+                <i class="icon-clock"></i>
+                <span>Minimum Hold Time</span>
+              </label>
+              <span class="config-badge config-badge-info">Optional delay</span>
+            </div>
+            <p class="config-hint">
+              Optional delay before stop loss can activate. Use this to avoid selling during initial
+              volatility. 0 means stop loss can trigger immediately.
+            </p>
+            <div class="input-group-enhanced">
+              <input
+                type="number"
+                id="stop-loss-min-hold"
+                min="0"
+                max="86400"
+                step="1"
+                value="0"
+                class="input-large"
+              />
+              <span class="input-unit">seconds</span>
+            </div>
+            <div class="config-impact">
+              <span class="impact-label">Current:</span>
+              <span class="impact-text" id="stop-loss-hold-time-display">Immediate</span>
+            </div>
+          </div>
+
+          <!-- Visual Example -->
+          <div class="visual-example">
+            <h4><i class="icon-chart-bar"></i> How It Works</h4>
+            <div class="example-timeline">
+              <div class="timeline-step">
+                <div class="step-icon step-icon-entry">
+                  <i class="icon-arrow-right"></i>
+                </div>
+                <div class="step-content">
+                  <div class="step-title">Entry</div>
+                  <div class="step-value" id="stop-loss-example-entry">0.010000 SOL</div>
+                  <div class="step-detail">Initial position</div>
+                </div>
+              </div>
+              <div class="timeline-arrow"><i class="icon-chevron-right"></i></div>
+              <div class="timeline-step">
+                <div class="step-icon step-icon-activation">
+                  <i class="icon-trending-down"></i>
+                </div>
+                <div class="step-content">
+                  <div class="step-title">Price Falls</div>
+                  <div class="step-value" id="stop-loss-example-trigger">-50%</div>
+                  <div class="step-detail">Threshold reached</div>
+                </div>
+              </div>
+              <div class="timeline-arrow"><i class="icon-chevron-right"></i></div>
+              <div class="timeline-step">
+                <div class="step-icon step-icon-exit">
+                  <i class="icon-log-out"></i>
+                </div>
+                <div class="step-content">
+                  <div class="step-title">Auto Exit</div>
+                  <div class="step-value" id="stop-loss-example-exit">0.005000 SOL</div>
+                  <div class="step-detail" id="stop-loss-partial-indicator">Full position exit</div>
+                </div>
+              </div>
+            </div>
+            <div class="example-summary">
+              <div class="summary-item summary-item-warning">
+                <i class="icon-shield-off"></i>
+                <span>Loss limited to <strong id="stop-loss-example-loss">-50%</strong></span>
+              </div>
+              <div class="summary-item summary-item-info">
+                <i class="icon-info"></i>
+                <span
+                  ><strong>Note:</strong> Stop loss protects against larger losses by exiting
+                  early</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- #stop-loss-tab -->
+
+    <!-- Trailing Stop Tab -->
+    <div id="trailing-stop-tab" class="trader-tab-content" style="display: none">
+      <div class="config-section">
+        <div class="config-card">
+          <div class="card-header">
+            <div class="card-header-text">
+              <h3><i class="icon-shield"></i> Trailing Stop</h3>
+              <p class="card-subtitle">
+                Automatically protect profits by trailing the price as it rises
+              </p>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="trailing-enabled" />
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+
+          <!-- Activation Threshold -->
+          <div class="config-group">
+            <div class="config-label-row">
+              <label for="trail-activation" class="config-label">
+                <i class="icon-trending-up"></i>
+                <span>Activation Threshold</span>
+              </label>
+              <span class="config-badge config-badge-info">When to start</span>
+            </div>
+            <p class="config-hint">Begin trailing when position profit reaches this percentage</p>
+            <div class="input-group-enhanced">
+              <input
+                type="number"
+                id="trail-activation"
+                min="0"
+                max="100"
+                step="1"
+                value="10"
+                class="input-large"
+              />
+              <span class="input-unit">%</span>
+            </div>
+            <div class="config-impact">
+              <span class="impact-label">Impact:</span>
+              <span class="impact-text" id="activation-impact">Starts trailing at +10% profit</span>
+            </div>
+          </div>
+
+          <!-- Trail Distance -->
+          <div class="config-group">
+            <div class="config-label-row">
+              <label for="trail-distance" class="config-label">
+                <i class="icon-arrow-down"></i>
+                <span>Trail Distance</span>
+              </label>
+              <span class="config-badge config-badge-warning">Safety margin</span>
+            </div>
+            <p class="config-hint">Exit if price drops this much from highest point reached</p>
+            <div class="input-group-enhanced">
+              <input
+                type="number"
+                id="trail-distance"
+                min="0"
+                max="50"
+                step="1"
+                value="5"
+                class="input-large"
+              />
+              <span class="input-unit">%</span>
+            </div>
+            <div class="config-impact">
+              <span class="impact-label">Impact:</span>
+              <span class="impact-text" id="distance-impact">Exits at -5% from peak</span>
+            </div>
+          </div>
+
+          <!-- Visual Example -->
+          <div class="visual-example">
+            <h4><i class="icon-chart-bar"></i> How It Works</h4>
+            <div class="example-timeline">
+              <div class="timeline-step">
+                <div class="step-icon step-icon-entry">
+                  <i class="icon-arrow-right"></i>
+                </div>
+                <div class="step-content">
+                  <div class="step-title">Entry</div>
+                  <div class="step-value" id="example-entry">0.001000 SOL</div>
+                  <div class="step-detail">Initial position</div>
+                </div>
+              </div>
+              <div class="timeline-arrow"><i class="icon-chevron-right"></i></div>
+              <div class="timeline-step">
+                <div class="step-icon step-icon-activation">
+                  <i class="icon-zap"></i>
+                </div>
+                <div class="step-content">
+                  <div class="step-title">Activation</div>
+                  <div class="step-value" id="example-activation">0.001100 SOL</div>
+                  <div class="step-detail" id="example-activation-pct">+10% profit</div>
+                </div>
+              </div>
+              <div class="timeline-arrow"><i class="icon-chevron-right"></i></div>
+              <div class="timeline-step">
+                <div class="step-icon step-icon-peak">
+                  <i class="icon-trending-up"></i>
+                </div>
+                <div class="step-content">
+                  <div class="step-title">Peak</div>
+                  <div class="step-value" id="example-peak">0.001200 SOL</div>
+                  <div class="step-detail" id="example-peak-pct">+20% profit</div>
+                </div>
+              </div>
+              <div class="timeline-arrow"><i class="icon-chevron-right"></i></div>
+              <div class="timeline-step">
+                <div class="step-icon step-icon-exit">
+                  <i class="icon-log-out"></i>
+                </div>
+                <div class="step-content">
+                  <div class="step-title">Exit</div>
+                  <div class="step-value" id="example-exit">0.001140 SOL</div>
+                  <div class="step-detail" id="example-exit-pct">+14% final</div>
+                </div>
+              </div>
+            </div>
+            <div class="example-summary">
+              <div class="summary-item summary-item-success">
+                <i class="icon-circle-check"></i>
+                <span>Protected <strong id="example-protected">14%</strong> profit</span>
+              </div>
+              <div class="summary-item summary-item-info">
+                <i class="icon-shield"></i>
+                <span>Avoided <strong id="example-avoided">6%</strong> loss from peak</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- #trailing-stop-tab -->
+
+    <!-- Take Profit (ROI) Tab -->
+    <div id="roi-tab" class="trader-tab-content" style="display: none">
+      <div class="config-section">
+        <div class="config-card">
+          <div class="card-header">
+            <div class="card-header-text">
+              <h3><i class="icon-target"></i> Take Profit</h3>
+              <p class="card-subtitle">
+                Automatically exit the entire position when profit reaches your target
+              </p>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="roi-enabled" />
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+
+          <!-- Target Profit -->
+          <div class="config-group">
+            <div class="config-label-row">
+              <label for="roi-target" class="config-label">
+                <i class="icon-trending-up"></i>
+                <span>Target Profit</span>
+              </label>
+              <span class="config-badge config-badge-info">Single target</span>
+            </div>
+            <p class="config-hint">
+              Automatically exit when unrealized profit reaches this percentage
+            </p>
+            <div class="input-group-enhanced">
+              <input
+                type="number"
+                id="roi-target"
+                min="1"
+                max="1000"
+                step="1"
+                value="20"
+                class="input-large"
+              />
+              <span class="input-unit">%</span>
+            </div>
+            <div class="config-impact">
+              <span class="impact-label">Impact:</span>
+              <span class="impact-text" id="roi-impact">Exit at +20% profit</span>
+            </div>
+          </div>
+
+          <!-- Visual Example -->
+          <div class="visual-example">
+            <h4><i class="icon-chart-bar"></i> Example Scenario</h4>
+            <div class="example-timeline">
+              <div class="timeline-step">
+                <div class="step-icon step-icon-entry">
+                  <i class="icon-arrow-right"></i>
+                </div>
+                <div class="step-content">
+                  <div class="step-title">Entry</div>
+                  <div class="step-value">0.01 SOL</div>
+                  <div class="step-detail">Initial buy</div>
+                </div>
+              </div>
+              <div class="timeline-arrow"><i class="icon-chevron-right"></i></div>
+              <div class="timeline-step">
+                <div class="step-icon step-icon-peak">
+                  <i class="icon-trending-up"></i>
+                </div>
+                <div class="step-content">
+                  <div class="step-title">Target Hit</div>
+                  <div class="step-value" id="roi-example-target">0.012 SOL</div>
+                  <div class="step-detail" id="roi-example-profit">+20% profit</div>
+                </div>
+              </div>
+              <div class="timeline-arrow"><i class="icon-chevron-right"></i></div>
+              <div class="timeline-step">
+                <div class="step-icon step-icon-exit">
+                  <i class="icon-log-out"></i>
+                </div>
+                <div class="step-content">
+                  <div class="step-title">Auto Exit</div>
+                  <div class="step-value">Full Position</div>
+                  <div class="step-detail">100% sold</div>
+                </div>
+              </div>
+            </div>
+            <div class="example-summary">
+              <div class="summary-item summary-item-success">
+                <i class="icon-circle-check"></i>
+                <span>Locked in <strong id="roi-example-summary">+20%</strong> profit</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Time Rules Tab -->
+    <div id="time-rules-tab" class="trader-tab-content" style="display: none">
+      <div class="config-section">
+        <div class="config-card">
+          <div class="card-header">
+            <div class="card-header-text">
+              <h3><i class="icon-clock"></i> Time-Based Exit</h3>
+              <p class="card-subtitle">
+                Automatically exit positions after a maximum hold time if loss exceeds the threshold
+              </p>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="time-override-enabled" />
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+
+          <!-- Hold Duration Limit -->
+          <div class="config-group">
+            <div class="config-label-row">
+              <label for="time-max-hold" class="config-label">
+                <i class="icon-clock"></i>
+                <span>Hold Duration Limit</span>
+              </label>
+              <span class="config-badge config-badge-warning">Time trigger</span>
+            </div>
+            <p class="config-hint">
+              Exit positions held longer than this duration (when combined with loss threshold)
+            </p>
+            <div class="input-group-enhanced">
+              <input
+                type="number"
+                id="time-max-hold"
+                min="1"
+                max="43200"
+                step="1"
+                value="168"
+                class="input-large"
+              />
+              <select id="time-unit" class="unit-select" data-custom-select>
+                <option value="seconds">seconds</option>
+                <option value="minutes">minutes</option>
+                <option value="hours" selected>hours</option>
+                <option value="days">days</option>
+              </select>
+            </div>
+            <div class="config-impact">
+              <span class="impact-label">Readable:</span>
+              <span class="impact-text" id="time-conversion-hint">168 hours = 7 days</span>
+            </div>
+          </div>
+
+          <!-- Loss Threshold -->
+          <div class="config-group">
+            <div class="config-label-row">
+              <label for="time-loss-threshold" class="config-label">
+                <i class="icon-trending-down"></i>
+                <span>Loss Threshold</span>
+              </label>
+              <span class="config-badge config-badge-info">Loss gate</span>
+            </div>
+            <p class="config-hint">
+              Only exit if position loss exceeds this percentage (negative value)
+            </p>
+            <div class="input-group-enhanced">
+              <input
+                type="number"
+                id="time-loss-threshold"
+                min="-100"
+                max="0"
+                step="1"
+                value="-40"
+                class="input-large"
+              />
+              <span class="input-unit">%</span>
+            </div>
+            <div class="config-impact">
+              <span class="impact-label">Impact:</span>
+              <span class="impact-text" id="time-loss-impact"
+                >Exit if down 40% or more after hold period</span
+              >
+            </div>
+          </div>
+
+          <!-- Visual Example -->
+          <div class="visual-example">
+            <h4><i class="icon-chart-bar"></i> How It Works</h4>
+            <div class="example-timeline">
+              <div class="timeline-step">
+                <div class="step-icon step-icon-entry">
+                  <i class="icon-arrow-right"></i>
+                </div>
+                <div class="step-content">
+                  <div class="step-title">Entry</div>
+                  <div class="step-value">Day 0</div>
+                  <div class="step-detail">Position opened</div>
+                </div>
+              </div>
+              <div class="timeline-arrow"><i class="icon-chevron-right"></i></div>
+              <div class="timeline-step">
+                <div class="step-icon step-icon-activation">
+                  <i class="icon-clock"></i>
+                </div>
+                <div class="step-content">
+                  <div class="step-title">Time Limit</div>
+                  <div class="step-value" id="time-example-duration">Day 7</div>
+                  <div class="step-detail">Hold period reached</div>
+                </div>
+              </div>
+              <div class="timeline-arrow"><i class="icon-chevron-right"></i></div>
+              <div class="timeline-step">
+                <div class="step-icon step-icon-exit">
+                  <i class="icon-log-out"></i>
+                </div>
+                <div class="step-content">
+                  <div class="step-title">Auto Exit</div>
+                  <div class="step-value" id="time-example-loss">-40%</div>
+                  <div class="step-detail">Loss threshold met</div>
+                </div>
+              </div>
+            </div>
+            <div class="example-summary">
+              <div class="summary-item summary-item-info">
+                <i class="icon-info"></i>
+                <span
+                  ><strong>Note:</strong> Positions at profit or smaller losses will NOT be
+                  exited</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Current Positions Status -->
+          <div class="config-group config-group-full">
+            <div class="config-label-row">
+              <label class="config-label">
+                <i class="icon-list"></i>
+                <span>Current Positions Status</span>
+              </label>
+            </div>
+            <div id="time-positions-status" class="status-list">
+              <div class="loading">Loading positions...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- #time-rules-tab -->
+
+    <!-- Strategy Control Tab -->
+    <div id="strategy-control-tab" class="trader-tab-content" style="display: none">
+      <div class="config-section strategy-control-section">
+        <div class="strategy-control-grid">
+          <div class="config-card strategy-lane-card strategy-lane-card-entry">
+            <div class="card-header">
+              <div class="card-header-text">
+                <h3><i class="icon-target"></i> Entry Strategies</h3>
+                <p class="card-subtitle">Signals that can open a new position.</p>
+              </div>
+              <span class="strategy-lane-count" id="strategy-entry-enabled-label">-- active</span>
+            </div>
+            <div class="config-group config-group-full">
+              <div id="entry-strategies" class="strategies-list">
+                <div class="strategy-list-state">
+                  <i class="icon-loader spinning"></i>
+                  <span>Loading strategies...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="config-card strategy-lane-card strategy-lane-card-exit">
+            <div class="card-header">
+              <div class="card-header-text">
+                <h3><i class="icon-log-out"></i> Exit Strategies</h3>
+                <p class="card-subtitle">Signals that can close or protect an open position.</p>
+              </div>
+              <span class="strategy-lane-count" id="strategy-exit-enabled-label">-- active</span>
+            </div>
+            <div class="config-group config-group-full">
+              <div id="exit-strategies" class="strategies-list">
+                <div class="strategy-list-state">
+                  <i class="icon-loader spinning"></i>
+                  <span>Loading strategies...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- #strategy-control-tab -->
+
+    <!-- Strategies Tab (full strategy editor, embedded from the strategies page) -->
+    <div id="strategies-tab" class="trader-tab-content" style="display: none">
+      {{STRATEGIES_PANEL}}
+    </div>
+    <!-- #strategies-tab -->
+
+    <!-- DCA Tab -->
+    <div id="dca-tab" class="trader-tab-content" style="display: none">
+      <!-- DCA Configuration Section -->
+      <div class="config-section">
+        <div class="config-card">
+          <div class="card-header">
+            <div class="card-header-text">
+              <h3><i class="icon-dollar-sign"></i> Dollar-Cost Averaging</h3>
+              <p class="card-subtitle">
+                Automatically add to losing positions to lower your average entry price
+              </p>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="dca-enabled" />
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+
+          <div class="config-group">
+            <div class="config-label-row">
+              <label for="dca-threshold" class="config-label">
+                <i class="icon-trending-down"></i>
+                <span>DCA Threshold</span>
+              </label>
+              <span class="config-badge config-badge-warning">Entry trigger</span>
+            </div>
+            <p class="config-hint">Enter DCA when position is down by this percentage</p>
+            <div class="input-group-enhanced">
+              <input
+                type="number"
+                id="dca-threshold"
+                min="-100"
+                max="0"
+                step="1"
+                value="-10"
+                class="input-large"
+              />
+              <span class="input-unit">%</span>
+            </div>
+          </div>
+
+          <div class="config-group">
+            <div class="config-label-row">
+              <label for="dca-max-count" class="config-label">
+                <i class="icon-repeat"></i>
+                <span>Max DCA Count</span>
+              </label>
+            </div>
+            <p class="config-hint">Maximum additional entries per position</p>
+            <div class="input-group-enhanced">
+              <input
+                type="number"
+                id="dca-max-count"
+                min="1"
+                max="5"
+                step="1"
+                value="2"
+                class="input-large"
+              />
+              <span class="input-unit">entries</span>
+            </div>
+          </div>
+
+          <div class="config-group">
+            <div class="config-label-row">
+              <label for="dca-size" class="config-label">
+                <i class="icon-percent"></i>
+                <span>DCA Size</span>
+              </label>
+            </div>
+            <p class="config-hint">Percentage of initial position size for each DCA entry</p>
+            <div class="input-group-enhanced">
+              <input
+                type="number"
+                id="dca-size"
+                min="10"
+                max="200"
+                step="10"
+                value="50"
+                class="input-large"
+              />
+              <span class="input-unit">%</span>
+            </div>
+          </div>
+
+          <div class="config-group">
+            <div class="config-label-row">
+              <label for="dca-cooldown" class="config-label">
+                <i class="icon-clock"></i>
+                <span>DCA Cooldown</span>
+              </label>
+            </div>
+            <p class="config-hint">Minimum time between DCA entries</p>
+            <div class="input-group-enhanced">
+              <input
+                type="number"
+                id="dca-cooldown"
+                min="1"
+                max="1440"
+                step="5"
+                value="30"
+                class="input-large"
+              />
+              <span class="input-unit">minutes</span>
+            </div>
+          </div>
+
+          <!-- Visual Example -->
+          <div class="visual-example">
+            <h4><i class="icon-chart-bar"></i> DCA Example</h4>
+            <div class="example-summary">
+              <div class="summary-item summary-item-info">
+                <i class="icon-info"></i>
+                <span
+                  >0.01 SOL initial → DCA #1: 0.005 SOL @ -10% → DCA #2: 0.005 SOL @ -10% more</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DCA Impact & Warnings -->
+      <div class="config-section">
+        <div class="config-card">
+          <div class="card-header">
+            <div class="card-header-text">
+              <h3><i class="icon-triangle-alert"></i> DCA Strategy Info</h3>
+              <p class="card-subtitle">Important considerations for DCA trading</p>
+            </div>
+          </div>
+          <div class="config-group">
+            <div class="visual-example">
+              <h4><i class="icon-info"></i> How DCA Works</h4>
+              <div class="example-summary">
+                <div class="summary-item summary-item-info">
+                  <i class="icon-trending-down"></i>
+                  <span
+                    ><strong>Trigger:</strong> Position drops below DCA threshold (e.g., -10%)</span
+                  >
+                </div>
+                <div class="summary-item summary-item-info">
+                  <i class="icon-dollar-sign"></i>
+                  <span><strong>Action:</strong> Add more SOL to reduce average cost basis</span>
+                </div>
+                <div class="summary-item summary-item-info">
+                  <i class="icon-repeat"></i>
+                  <span><strong>Repeat:</strong> Can DCA multiple times based on max count</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="config-group">
+            <div class="visual-example">
+              <h4><i class="icon-circle-alert"></i> Risk Warnings</h4>
+              <div class="example-summary">
+                <div class="summary-item summary-item-warning">
+                  <i class="icon-triangle-alert"></i>
+                  <span
+                    ><strong>Increased Exposure:</strong> DCA increases total capital at risk per
+                    position</span
+                  >
+                </div>
+                <div class="summary-item summary-item-warning">
+                  <i class="icon-trending-down"></i>
+                  <span
+                    ><strong>Falling Knife:</strong> DCA won't help if token continues downward
+                    trend</span
+                  >
+                </div>
+                <div class="summary-item summary-item-warning">
+                  <i class="icon-clock"></i>
+                  <span
+                    ><strong>Cooldown:</strong> Use cooldown to avoid rapid-fire DCA entries</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- #dca-tab -->
+
+    <!-- General Settings Tab -->
+    <div id="general-settings-tab" class="trader-tab-content" style="display: none">
+      <!-- Position Sizing Section -->
+      <div class="config-section">
+        <div class="config-card">
+          <div class="card-header">
+            <div class="card-header-text">
+              <h3><i class="icon-target"></i> Position Sizing</h3>
+              <p class="card-subtitle">Control how much to invest per position</p>
+            </div>
+          </div>
+          <div class="config-group">
+            <div class="config-label-row">
+              <label for="max-positions" class="config-label">
+                <i class="icon-layers"></i>
+                <span>Max Open Positions</span>
+              </label>
+              <span class="config-badge config-badge-info">Risk control</span>
+            </div>
+            <p class="config-hint">
+              Maximum number of positions to hold simultaneously (conservative: 2-5)
+            </p>
+            <div class="input-group-enhanced">
+              <input
+                type="number"
+                id="max-positions"
+                min="1"
+                max="100"
+                step="1"
+                value="2"
+                class="input-large"
+              />
+              <span class="input-unit">positions</span>
+            </div>
+          </div>
+
+          <div class="config-group">
+            <div class="config-label-row">
+              <label for="trade-size" class="config-label">
+                <i class="icon-dollar-sign"></i>
+                <span>Default Trade Size</span>
+              </label>
+              <span class="config-badge config-badge-warning">Per position</span>
+            </div>
+            <p class="config-hint">Amount of SOL to invest in each new position</p>
+            <div class="input-group-enhanced">
+              <input
+                type="number"
+                id="trade-size"
+                min="0.001"
+                max="10"
+                step="0.001"
+                value="0.005"
+                class="input-large"
+              />
+              <span class="input-unit">SOL</span>
+            </div>
+          </div>
+
+          <div class="config-group">
+            <div class="config-label-row">
+              <label for="entry-sizes" class="config-label">
+                <i class="icon-list"></i>
+                <span>Preset Entry Sizes</span>
+              </label>
+            </div>
+            <p class="config-hint">
+              Comma-separated SOL amounts for quick selection (e.g., 0.005, 0.01, 0.02)
+            </p>
+            <input
+              type="text"
+              id="entry-sizes"
+              placeholder="0.005, 0.01, 0.02, 0.05"
+              value="0.005, 0.01, 0.02, 0.05"
+              class="input-text-compact"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Timing & Cooldowns Section -->
+      <div class="config-section">
+        <div class="config-card">
+          <div class="card-header">
+            <div class="card-header-text">
+              <h3><i class="icon-clock"></i> Timing &amp; Cooldowns</h3>
+              <p class="card-subtitle">Control timing between operations</p>
+            </div>
+          </div>
+          <div class="config-group">
+            <div class="config-label-row">
+              <label for="close-cooldown" class="config-label">
+                <i class="icon-pause"></i>
+                <span>Position Close Cooldown</span>
+              </label>
+            </div>
+            <p class="config-hint">Minutes to wait before reopening the same token</p>
+            <div class="input-group-enhanced">
+              <input
+                type="number"
+                id="close-cooldown"
+                min="0"
+                max="1440"
+                step="5"
+                value="15"
+                class="input-large"
+              />
+              <span class="input-unit">minutes</span>
+            </div>
+          </div>
+
+          <div class="config-group">
+            <div class="config-label-row">
+              <label for="entry-concurrency" class="config-label">
+                <i class="icon-zap"></i>
+                <span>Entry Check Concurrency</span>
+              </label>
+            </div>
+            <p class="config-hint">
+              Number of tokens to check simultaneously (higher = faster but more CPU)
+            </p>
+            <div class="input-group-enhanced">
+              <input
+                type="number"
+                id="entry-concurrency"
+                min="1"
+                max="50"
+                step="1"
+                value="10"
+                class="input-large"
+              />
+              <span class="input-unit">tokens</span>
+            </div>
+          </div>
+
+          <div class="config-group">
+            <div class="config-label-row">
+              <label class="config-label">
+                <i class="icon-info"></i>
+                <span>Monitor Intervals</span>
+              </label>
+              <span class="config-badge config-badge-info">Read-only</span>
+            </div>
+            <p class="config-hint">Configured in code (not editable via UI)</p>
+            <div class="example-summary">
+              <div class="summary-item summary-item-info">
+                <i class="icon-activity"></i>
+                <span><strong>Entry Monitor:</strong> 30s | <strong>Exit Monitor:</strong> 5s</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- #general-settings-tab -->
+  </div>
+  <!-- #trader-content -->
+</div>
+<!-- .trader-page -->

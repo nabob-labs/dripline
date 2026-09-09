@@ -1,0 +1,584 @@
+//! Transaction manager — coordinates the full transaction processing pipeline.
+//
+// TransactionsManager - Core manager struct for transaction monitoring and coordination
+//
+// This module contains the main TransactionsManager struct that coordinates
+// all transaction-related operations for the VeloxBot trading system.
+
+use chrono::{DateTime, Utc};
+use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
+use tokio::sync::Notify;
+
+use crate::logger::{self, LogTag};
+use crate::transactions::{database::TransactionDatabase, error::Error, types::*, utils::*};
+
+// =============================================================================
+// TRANSACTIONS MANAGER STRUCT
+// =============================================================================
+
+/// TransactionsManager - Main service for real-time transaction monitoring
+///
+/// This struct coordinates all transaction-related functionality including:
+/// - Real-time transaction monitoring via WebSocket integration
+/// - High-performance batch RPC operations
+/// - Transaction analysis and classification
+/// - Position integration for entry/exit verification
+/// - Database caching and persistence
+/// - Retry logic for network resilience
+pub struct TransactionsManager {
+    // Core identification
+    subject: Subject,
+    pub debug_enabled: bool,
+
+    // Transaction tracking state
+    pub known_signatures: HashSet<String>,
+    pub last_signature_check: Option<String>,
+    pub total_transactions: u64,
+    pub new_transactions_count: u64,
+
+    // Database integration
+    pub transaction_database: Option<Arc<TransactionDatabase>>,
+
+    // Retry management for network resilience
+    pub deferred_retries: HashMap<String, DeferredRetry>,
+
+    // WebSocket integration for real-time monitoring
+    pub websocket_receiver: Option<tokio::sync::mpsc::UnboundedReceiver<String>>,
+    pub websocket_shutdown: Option<Arc<Notify>>,
+
+    // Pending transaction tracking
+    pub pending_transactions: HashMap<String, DateTime<Utc>>,
+
+    // Service control
+    pub is_running: bool,
+    pub shutdown_notify: Arc<Notify>,
+
+    // Metrics
+    pub operations: Arc<std::sync::atomic::AtomicU64>,
+    pub errors: Arc<std::sync::atomic::AtomicU64>,
+    pub websocket_received: Arc<std::sync::atomic::AtomicU64>,
+    pub bootstrap_fetched: Arc<std::sync::atomic::AtomicU64>,
+}
+
+// =============================================================================
+// IMPLEMENTATION - CREATION AND LIFECYCLE
+// =============================================================================
+
+impl TransactionsManager {
+    /// Create new TransactionsManager instance with token database integration
+    pub async fn new(subject: Subject) -> Result<Self, Error> {
+        logger::debug(
+            LogTag::Transactions,
+            &format!(
+                "Creating TransactionsManager for wallet: {}",
+                &subject.address()
+            ),
+        );
+
+        // Initialize transaction database (and register globally for processor/on-demand access)
+        let transaction_database =
+            match crate::transactions::database::init_transaction_database().await {
+                Ok(db_arc) => {
+                    logger::debug(
+                        LogTag::Transactions,
+                        "Transaction database initialized successfully",
+                    );
+                    Some(db_arc)
+                }
+                Err(e) => {
+                    logger::warning(
+                        LogTag::Transactions,
+                        &format!("Failed to initialize transaction database: {e}"),
+                    );
+                    None
+                }
+            };
+
+        Ok(Self {
+            subject,
+            debug_enabled: false,
+            known_signatures: HashSet::new(),
+            last_signature_check: None,
+            total_transactions: 0,
+            new_transactions_count: 0,
+            transaction_database,
+            deferred_retries: HashMap::new(),
+            websocket_receiver: None,
+            websocket_shutdown: None,
+            pending_transactions: HashMap::new(),
+            is_running: false,
+            shutdown_notify: Arc::new(Notify::new()),
+            operations: Arc::new(std::sync::atomic::AtomicU64::new(0)),
+            errors: Arc::new(std::sync::atomic::AtomicU64::new(0)),
+            websocket_received: Arc::new(std::sync::atomic::AtomicU64::new(0)),
+            bootstrap_fetched: Arc::new(std::sync::atomic::AtomicU64::new(0)),
+        })
+    }
+
+    /// Initialize the manager with existing state from database
+    pub async fn initialize(&mut self) -> Result<(), Error> {
+        let duration = DurationMeasure::start("TransactionsManager::initialize");
+
+        let subject = self.subject().clone();
+
+        // Load known signatures from database if available
+        if let Some(ref db) = self.transaction_database {
+            match db.get_known_signatures_count(subject.clone()).await {
+                Ok(count) => {
+                    self.total_transactions = count;
+                    if self.debug_enabled {
+                        logger::info(
+                            LogTag::Transactions,
+                            &format!("Loaded {count} known signatures from database"),
+                        );
+                    }
+                }
+                Err(e) => {
+                    logger::info(
+                        LogTag::Transactions,
+                        &format!("Failed to load known signatures count: {e}"),
+                    );
+                }
+            }
+        }
+
+        // Load pending transactions from database
+        if let Some(ref db) = self.transaction_database {
+            match db.get_pending_transactions(subject).await {
+                Ok(pending) => {
+                    self.pending_transactions = pending;
+                    if self.debug_enabled && !self.pending_transactions.is_empty() {
+                        logger::info(
+                            LogTag::Transactions,
+                            &format!(
+                                "Loaded {} pending transactions from database",
+                                self.pending_transactions.len()
+                            ),
+                        );
+                    }
+                }
+                Err(e) => {
+                    logger::info(
+                        LogTag::Transactions,
+                        &format!("Failed to load pending transactions: {e}"),
+                    );
+                }
+            }
+        }
+
+        // Initialize WebSocket connection if configured
+        self.initialize_websocket().await?;
+
+        duration.finish_and_log();
+
+        if self.debug_enabled {
+            logger::info(
+                LogTag::Transactions,
+                &format!(
+                    "TransactionsManager initialized for wallet: {} (known transactions: {})",
+                    &self.subject().address(),
+                    self.total_transactions
+                ),
+            );
+        }
+
+        Ok(())
+    }
+
+    /// Initialize WebSocket connection for real-time transaction monitoring
+    async fn initialize_websocket(&mut self) -> Result<(), Error> {
+        // This will be implemented when integrating with the existing websocket module
+        // For now, we'll skip WebSocket initialization to avoid breaking changes
+
+        if self.debug_enabled {
+            logger::info(
+                LogTag::Transactions,
+                "WebSocket initialization skipped (will be integrated in service module)",
+            );
+        }
+
+        Ok(())
+    }
+
+    /// Shutdown the manager and cleanup resources
+    pub async fn shutdown(&mut self) -> Result<(), Error> {
+        logger::info(LogTag::Transactions, "TransactionsManager shutting down...");
+
+        self.is_running = false;
+
+        // Signal shutdown to any running services
+        self.shutdown_notify.notify_waiters();
+
+        // Close WebSocket connection if active
+        if let Some(shutdown) = self.websocket_shutdown.take() {
+            shutdown.notify_waiters();
+            logger::info(LogTag::Transactions, "WebSocket shutdown signal sent");
+        }
+
+        // Cleanup deferred retries
+        self.deferred_retries.clear();
+
+        // Save pending transactions to database
+        if let Some(ref db) = self.transaction_database {
+            let subject = self.subject().clone();
+            if let Err(e) = db
+                .save_pending_transactions(subject, &self.pending_transactions)
+                .await
+            {
+                logger::info(
+                    LogTag::Transactions,
+                    &format!("Failed to save pending transactions during shutdown: {e}"),
+                );
+            }
+        }
+
+        logger::info(
+            LogTag::Transactions,
+            "TransactionsManager shutdown complete",
+        );
+        Ok(())
+    }
+}
+
+// =============================================================================
+// IMPLEMENTATION - STATISTICS AND STATE
+// =============================================================================
+
+impl TransactionsManager {
+    /// Get transaction statistics
+    pub fn get_stats(&self) -> TransactionStats {
+        TransactionStats {
+            total_transactions: self.total_transactions,
+            new_transactions_count: self.new_transactions_count,
+            known_signatures_count: self.known_signatures.len() as u64,
+            pending_transactions_count: self.pending_transactions.len() as u64,
+            failed_transactions_count: 0, // Will be calculated from database
+            successful_transactions_count: 0, // Will be calculated from database
+        }
+    }
+
+    /// Get enhanced statistics with database queries
+    pub async fn get_enhanced_stats(&self) -> TransactionStats {
+        let mut stats = self.get_stats();
+
+        if let Some(ref db) = self.transaction_database {
+            // Get success/failure counts from database
+            if let Ok(success_count) = db.get_successful_transactions_count().await {
+                stats.successful_transactions_count = success_count;
+            }
+
+            if let Ok(failed_count) = db.get_failed_transactions_count().await {
+                stats.failed_transactions_count = failed_count;
+            }
+        }
+
+        stats
+    }
+
+    /// Get service metrics for ServiceManager integration
+    pub fn metrics(&self) -> crate::services::ServiceMetrics {
+        use std::sync::atomic::Ordering;
+
+        let operations = self.operations.load(Ordering::Relaxed);
+        let errors = self.errors.load(Ordering::Relaxed);
+        let ws = self.websocket_received.load(Ordering::Relaxed);
+        let bootstrap = self.bootstrap_fetched.load(Ordering::Relaxed);
+
+        let mut custom = HashMap::new();
+        custom.insert("websocket_received".to_owned(), ws as f64);
+        custom.insert("bootstrap_fetched".to_owned(), bootstrap as f64);
+        custom.insert(
+            "known_signatures".to_owned(),
+            self.known_signatures.len() as f64,
+        );
+        custom.insert(
+            "pending_transactions".to_owned(),
+            self.pending_transactions.len() as f64,
+        );
+
+        crate::services::ServiceMetrics {
+            operations_total: operations,
+            errors_total: errors,
+            operations_per_second: 0.0,
+            custom_metrics: custom,
+            ..Default::default()
+        }
+    }
+
+    /// Check if signature is known using database (if available) or fallback to HashSet
+    pub async fn is_signature_known(&self, signature: &str) -> bool {
+        let subject = self.subject().clone();
+
+        // First check global cache
+        if is_signature_known_globally(subject.clone(), signature).await {
+            return true;
+        }
+
+        // Then check database if available
+        if let Some(ref db) = self.transaction_database {
+            if let Ok(known) = db.is_signature_known(subject, signature).await {
+                return known;
+            }
+        }
+
+        // Fallback to local HashSet
+        self.known_signatures.contains(signature)
+    }
+
+    /// Add signature to known cache using database (if available) or fallback to HashSet
+    pub async fn add_signature_to_known(&mut self, signature: String) {
+        let subject = self.subject().clone();
+
+        // Add to global cache
+        add_signature_to_known_globally(subject.clone(), signature.clone()).await;
+
+        // Add to database if available
+        if let Some(ref db) = self.transaction_database {
+            if let Err(e) = db.add_known_signature(subject, &signature).await {
+                if self.debug_enabled {
+                    logger::info(
+                        LogTag::Transactions,
+                        &format!("Failed to add signature to database: {e}"),
+                    );
+                }
+            }
+        }
+
+        // Add to local HashSet as fallback
+        self.known_signatures.insert(signature);
+    }
+
+    /// Check if manager is currently running
+    pub fn is_running(&self) -> bool {
+        self.is_running
+    }
+
+    /// Get shutdown notification handle
+    pub fn get_shutdown_notify(&self) -> Arc<Notify> {
+        Arc::clone(&self.shutdown_notify)
+    }
+
+    /// The chain-neutral subject this manager monitors.
+    pub fn subject(&self) -> &Subject {
+        &self.subject
+    }
+
+    /// Get debug status
+    pub fn is_debug_enabled(&self) -> bool {
+        self.debug_enabled
+    }
+}
+
+// =============================================================================
+// IMPLEMENTATION - PENDING TRANSACTIONS MANAGEMENT
+// =============================================================================
+
+impl TransactionsManager {
+    /// Add a pending transaction
+    pub async fn add_pending_transaction(&mut self, signature: String) {
+        let subject = self.subject().clone();
+        let now = Utc::now();
+        self.pending_transactions.insert(signature.clone(), now);
+
+        // Also add to global pending cache
+        add_pending_transaction_globally(subject, signature.clone(), now).await;
+
+        if self.debug_enabled {
+            logger::info(
+                LogTag::Transactions,
+                &format!("Added pending transaction: {}", &signature),
+            );
+        }
+    }
+
+    /// Remove a pending transaction
+    pub async fn remove_pending_transaction(&mut self, signature: &str) {
+        if self.pending_transactions.remove(signature).is_some() {
+            let subject = self.subject().clone();
+            // Also remove from global pending cache
+            remove_pending_transaction_globally(subject, signature).await;
+
+            if self.debug_enabled {
+                logger::info(
+                    LogTag::Transactions,
+                    &format!("Removed pending transaction: {signature}"),
+                );
+            }
+        }
+    }
+
+    /// Get pending transactions list
+    pub fn get_pending_transactions(&self) -> Vec<String> {
+        self.pending_transactions.keys().cloned().collect()
+    }
+
+    /// Cleanup expired pending transactions
+    pub async fn cleanup_expired_pending(&mut self) -> usize {
+        let now = Utc::now();
+        let mut expired_count = 0;
+
+        self.pending_transactions.retain(|signature, timestamp| {
+            let age_secs = (now - *timestamp).num_seconds();
+            if age_secs > PENDING_MAX_AGE_SECS {
+                if self.debug_enabled {
+                    logger::info(
+                        LogTag::Transactions,
+                        &format!(
+                            "Expired pending transaction: {} (age: {}s)",
+                            signature, age_secs
+                        ),
+                    );
+                }
+                expired_count += 1;
+                false
+            } else {
+                true
+            }
+        });
+
+        if expired_count > 0 {
+            logger::info(
+                LogTag::Transactions,
+                &format!("Cleaned up {expired_count} expired pending transactions"),
+            );
+
+            // Also cleanup global pending cache
+            cleanup_expired_pending_transactions().await;
+        }
+
+        expired_count
+    }
+}
+
+// =============================================================================
+// IMPLEMENTATION - DEFERRED RETRIES MANAGEMENT
+// =============================================================================
+
+impl TransactionsManager {
+    /// Add a deferred retry for a failed signature
+    pub fn add_deferred_retry(&mut self, signature: String, error: Option<String>) {
+        let now = Utc::now();
+        let retry = DeferredRetry {
+            signature: signature.clone(),
+            next_retry_at: now + chrono::Duration::seconds(30), // Start with 30 second delay
+            attempts: 1,
+            current_delay_secs: 30,
+            last_error: error,
+            first_seen: now,
+        };
+
+        self.deferred_retries.insert(signature.clone(), retry);
+
+        if self.debug_enabled {
+            logger::info(
+                LogTag::Transactions,
+                &format!("Added deferred retry for signature: {}", &signature),
+            );
+        }
+    }
+
+    /// Maximum retry attempts before giving up
+    const MAX_RETRY_ATTEMPTS: u32 = 3;
+
+    /// Get retries that are ready to be processed
+    pub fn get_ready_retries(&mut self) -> Vec<DeferredRetry> {
+        let now = Utc::now();
+        let mut ready_retries = Vec::new();
+        let mut to_remove: Vec<String> = Vec::new();
+        let mut to_update: Vec<(String, DeferredRetry)> = Vec::new();
+
+        for (signature, retry) in self.deferred_retries.iter() {
+            if now >= retry.next_retry_at {
+                if retry.attempts < Self::MAX_RETRY_ATTEMPTS {
+                    ready_retries.push(retry.clone());
+
+                    let mut updated_retry = retry.clone();
+                    updated_retry.attempts += 1;
+                    updated_retry.current_delay_secs *= 2;
+                    updated_retry.next_retry_at =
+                        now + chrono::Duration::seconds(updated_retry.current_delay_secs);
+
+                    if updated_retry.attempts < Self::MAX_RETRY_ATTEMPTS {
+                        to_update.push((signature.clone(), updated_retry));
+                    } else {
+                        to_remove.push(signature.clone());
+                        if self.debug_enabled {
+                            logger::info(
+                                LogTag::Transactions,
+                                &format!("Exhausted retries for signature: {signature}"),
+                            );
+                        }
+                    }
+                } else {
+                    to_remove.push(signature.clone());
+                }
+            }
+        }
+
+        // Apply removals and updates outside of iteration to avoid borrow issues
+        for sig in to_remove {
+            self.deferred_retries.remove(&sig);
+        }
+        for (sig, updated) in to_update {
+            self.deferred_retries.insert(sig, updated);
+        }
+
+        ready_retries
+    }
+
+    /// Remove a deferred retry (usually after successful processing)
+    pub fn remove_deferred_retry(&mut self, signature: &str) {
+        if self.deferred_retries.remove(signature).is_some() {
+            if self.debug_enabled {
+                logger::info(
+                    LogTag::Transactions,
+                    &format!("Removed deferred retry for signature: {signature}"),
+                );
+            }
+        }
+    }
+
+    /// Get count of pending deferred retries
+    pub fn get_deferred_retries_count(&self) -> usize {
+        self.deferred_retries.len()
+    }
+}
+
+// =============================================================================
+// IMPLEMENTATION - DATABASE INTEGRATION
+// =============================================================================
+
+impl TransactionsManager {
+    /// Get database connection if available
+    pub fn get_transaction_database(&self) -> Option<Arc<TransactionDatabase>> {
+        self.transaction_database.as_ref().map(Arc::clone)
+    }
+
+    /// Check if database is available and connected
+    pub async fn is_database_connected(&self) -> bool {
+        if let Some(ref db) = self.transaction_database {
+            db.health_check().await.is_ok()
+        } else {
+            false
+        }
+    }
+}
+
+// =============================================================================
+// STATIC GLOBAL TRANSACTION STATISTICS
+// =============================================================================
+
+impl TransactionsManager {
+    /// Get global transaction statistics (static method for compatibility)
+    pub async fn get_transaction_stats() -> TransactionStats {
+        TransactionStats {
+            total_transactions: 0, // Will be populated by global service
+            new_transactions_count: 0,
+            known_signatures_count: get_known_signatures_count().await as u64,
+            pending_transactions_count: get_pending_transactions_count().await as u64,
+            failed_transactions_count: 0,
+            successful_transactions_count: 0,
+        }
+    }
+}

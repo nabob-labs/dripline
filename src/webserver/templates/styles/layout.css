@@ -1,0 +1,310 @@
+/* CLEAN LAYOUT - Fixed chrome + single viewport scroll --------- */
+
+/* Fixed top chrome */
+.header {
+  background: var(--header-bg);
+  color: var(--header-text);
+  padding: var(--spacing-xs) var(--spacing-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 10px var(--shadow-md);
+  flex: 0 0 auto;
+}
+
+.header h1 {
+  font-family: var(--font-brand);
+  font-size: 1.4em;
+  font-weight: 900;
+  margin: 0;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #fff 0%, #e0f2fe 100%);
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 2px 10px rgb(255 255 255 / 0.3);
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+/* Control Buttons */
+.control-btn {
+  background: rgb(255, 255, 255, 0.2);
+  border: none;
+  color: var(--header-text);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  font-size: 0.85em;
+  line-height: 1.3;
+  height: 32px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  transition:
+    background 0.3s ease,
+    opacity 0.3s ease,
+    transform 0.1s ease;
+  position: relative;
+}
+
+.control-btn:hover:not(:disabled) {
+  background: rgb(255, 255, 255, 0.3);
+}
+
+.control-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.control-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Trader button with embedded badge */
+.trader-btn {
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+}
+
+.trader-btn.running {
+  background: rgb(16, 185, 129, 0.3);
+}
+
+.trader-btn.stopped {
+  background: rgb(239, 68, 68, 0.3);
+}
+
+/* Refresh button with dropdown */
+.refresh-btn {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  gap: var(--spacing-xs);
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background: rgb(139, 92, 246, 0.3);
+}
+
+/* Power button with dropdown */
+.power-btn {
+  gap: var(--spacing-xs);
+}
+
+.power-btn:hover:not(:disabled) {
+  background: rgb(59, 130, 246, 0.3);
+}
+
+.notification-btn:hover:not(:disabled) {
+  background: rgb(245, 158, 11, 0.3);
+}
+
+.reboot-btn:hover:not(:disabled) {
+  background: rgb(239, 68, 68, 0.3);
+}
+
+/* Connection Status Indicator */
+.connection-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-xl);
+  font-size: 1em;
+  line-height: 1.3;
+  height: 32px;
+  box-sizing: border-box;
+  transition: background var(--transition-normal);
+}
+
+.connection-status.connected {
+  background: rgb(16, 185, 129, 0.3);
+}
+
+.connection-status.disconnected {
+  background: rgb(239, 68, 68, 0.3);
+}
+
+.connection-status.connecting {
+  background: rgb(245, 158, 11, 0.3);
+}
+
+/* Theme Toggle Button */
+.theme-toggle {
+  background: rgb(255, 255, 255, 0.2);
+  border: none;
+  color: var(--header-text);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  font-size: 0.85em;
+  line-height: 1.3;
+  height: 32px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  transition: background var(--transition-normal);
+}
+
+.theme-toggle:hover {
+  background: rgb(255, 255, 255, 0.3);
+}
+
+/* Toolbar container (third row for action buttons) */
+.toolbar-container {
+  display: none;
+  padding: 0;
+  background: transparent;
+  border-bottom: none;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+
+.toolbar-container .spacer {
+  display: none;
+}
+
+/* APP MAIN - Container for everything below the header */
+.app-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* VIEWPORT - The single scroll region for content */
+.content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  /* Prevent content area from being draggable - only titlebar should be draggable */
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+/* Router inserts .page-container wrappers around page markup */
+.content > .page-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto; /* Allow scrolling at page container level */
+}
+
+/* Router page-transition loader. Every navigation releases the outgoing page and
+   mounts this as the viewport's sole child; cached transitions normally finish
+   inside the delayed fade-in and therefore never flash a spinner. */
+.content[data-loading] {
+  overflow: hidden;
+}
+
+/* Structural backstop: a future router regression must not be able to show an
+   outgoing page beside the loader in this flex column. */
+.content[data-loading] > :not(.page-loading) {
+  display: none !important;
+}
+
+.page-loading {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  padding: 2rem;
+  animation: page-loading-fade-in 0.25s ease both;
+  animation-delay: 0.12s; /* hold blank for fast loads, then fade the spinner in */
+}
+
+@keyframes page-loading-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-loading {
+    animation: none;
+  }
+}
+
+/* Page-level error / offline placeholders rendered by core/router.js when a
+   page fetch fails. Themed via tokens (light + dark); centered, no ribbon. */
+.page-load-error,
+.page-offline {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 240px;
+  padding: 2.5rem 2rem;
+  text-align: center;
+}
+
+.page-load-error h2,
+.page-offline h2 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.page-load-error h2 .icon-triangle-alert {
+  color: var(--color-error, #f85149);
+  margin-right: 0.4rem;
+}
+
+.page-load-error p,
+.page-offline p {
+  max-width: 420px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.page-offline-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--accent, #58a6ff);
+  border-radius: 50%;
+  animation: conn-overlay-spin 0.8s linear infinite;
+}
+
+.page-load-retry {
+  margin-top: 0.5rem;
+  padding: 0.5rem 1.1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md, 6px);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast, 0.15s) ease,
+    border-color var(--transition-fast, 0.15s) ease;
+}
+
+.page-load-retry:hover {
+  background: var(--bg-card);
+  border-color: var(--text-muted);
+}

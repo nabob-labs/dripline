@@ -1,0 +1,383 @@
+/* Assistant page styles */
+
+/* Main Panel */
+.assistant-main-panel {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  padding: var(--spacing-lg) var(--spacing-xl);
+  padding-bottom: calc(var(--spacing-xl) * 2);
+  background: var(--bg-primary);
+}
+
+/* Chat panel needs full-fill layout - no padding */
+.assistant-main-panel:has(#chat-panel.active) {
+  padding: 0;
+  overflow: hidden;
+}
+
+.assistant-panel-content {
+  display: none;
+  padding-bottom: var(--spacing-xl);
+}
+
+.assistant-panel-content.active {
+  display: block;
+  animation: assistant-panel-fade 0.3s ease-out;
+}
+
+/* Chat panel fills entire available space */
+#chat-panel.assistant-panel-content {
+  padding-bottom: 0;
+  height: 100%;
+  min-height: 0;
+}
+
+#chat-panel.assistant-panel-content.active {
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes assistant-panel-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.assistant-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-lg);
+  gap: var(--spacing-md);
+}
+
+.panel-header-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.assistant-panel-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 8px;
+}
+
+.assistant-panel-description {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Page layout tokens */
+
+.assistant-page {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+
+  --assistant-card-radius: 8px;
+  --assistant-card-padding: 1rem;
+}
+
+/* Assistant content container - full height for chat */
+#assistant-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.assistant-panel-content > * + * {
+  margin-top: 1rem;
+}
+
+/* ============================================================================
+   Assistant status bar - LLM master toggle
+   ============================================================================ */
+
+.assistant-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--assistant-card-radius);
+  margin-bottom: 1.25rem;
+  transition: border-color 0.2s ease;
+}
+
+.assistant-status-bar[data-status="enabled"] {
+  border-color: var(--success-alpha-40);
+}
+
+.assistant-status-bar[data-status="disabled"] {
+  border-color: var(--danger-alpha-40);
+}
+
+.assistant-page .status-bar-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.assistant-page .status-bar-icon {
+  color: var(--text-muted);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.assistant-status-bar[data-status="enabled"] .status-bar-icon {
+  color: var(--success);
+}
+
+.assistant-status-bar[data-status="disabled"] .status-bar-icon {
+  color: var(--text-muted);
+}
+
+.assistant-page .status-bar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.assistant-page .status-bar-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.assistant-page .status-bar-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.assistant-status-bar[data-status="enabled"] .status-bar-status {
+  color: var(--success);
+}
+
+/* ============================================================================
+   Stats Section
+   ============================================================================ */
+
+.assistant-page .stats-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--assistant-card-radius);
+  padding: var(--assistant-card-padding);
+}
+
+.assistant-page .section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.assistant-page .section-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.assistant-page .section-header h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.assistant-page .section-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* ============================================================================
+   Key Metrics
+   ============================================================================ */
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+/* ============================================================================
+   Recent Decisions
+   ============================================================================ */
+
+#recent-decisions-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+#recent-decisions-container .empty-state {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.decision-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.85rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  transition:
+    border-color var(--transition-base),
+    transform var(--transition-base);
+}
+
+.decision-card:hover {
+  border-color: var(--primary-alpha-40);
+  transform: translateX(2px);
+}
+
+.decision-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+}
+
+.decision-card[data-decision="allow"] .decision-icon {
+  background: var(--success-alpha-15);
+  color: var(--success);
+}
+
+.decision-card[data-decision="reject"] .decision-icon {
+  background: var(--danger-alpha-15);
+  color: var(--danger);
+}
+
+.decision-card[data-decision="neutral"] .decision-icon {
+  background: var(--info-alpha-15);
+  color: var(--info-color);
+}
+
+.decision-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.decision-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.decision-token {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.decision-context {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.05rem 0.4rem;
+}
+
+.decision-time {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.decision-time i {
+  font-size: 0.8rem;
+}
+
+.decision-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.decision-result {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+}
+
+.decision-card[data-decision="allow"] .decision-result {
+  background: var(--success-alpha-15);
+  color: var(--success);
+}
+
+.decision-card[data-decision="reject"] .decision-result {
+  background: var(--danger-alpha-15);
+  color: var(--danger);
+}
+
+.decision-card[data-decision="neutral"] .decision-result {
+  background: var(--info-alpha-15);
+  color: var(--info-color);
+}
+
+.decision-stats {
+  display: flex;
+  gap: 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.decision-stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}

@@ -1,0 +1,94 @@
+//! Database file path resolution.
+
+use super::get_data_directory;
+use std::path::PathBuf;
+
+/// Returns the tokens database path.
+pub fn get_tokens_db_path() -> PathBuf {
+    get_data_directory().join("tokens.db")
+}
+
+/// Returns the transactions database path.
+pub fn get_transactions_db_path() -> PathBuf {
+    get_data_directory().join("transactions.db")
+}
+
+/// Returns the positions database path.
+pub fn get_positions_db_path() -> PathBuf {
+    get_data_directory().join("positions.db")
+}
+
+/// Returns the wallet database path (balance monitor: snapshots, worth history).
+pub fn get_wallet_db_path() -> PathBuf {
+    get_data_directory().join("wallet.db")
+}
+
+/// Returns the wallets database path (wallet list/keys, and the watch service's
+/// `watch_targets` / `watch_cursors` tables -- a distinct file from `wallet.db`
+/// above, despite the similar name).
+pub fn get_wallets_db_path() -> PathBuf {
+    get_data_directory().join("wallets.db")
+}
+
+/// Returns the events database path.
+pub fn get_events_db_path() -> PathBuf {
+    get_data_directory().join("events.db")
+}
+
+/// Returns the pools database path.
+pub fn get_pools_db_path() -> PathBuf {
+    get_data_directory().join("pools.db")
+}
+
+/// Returns the strategies database path.
+pub fn get_strategies_db_path() -> PathBuf {
+    get_data_directory().join("strategies.db")
+}
+
+/// Returns the copy-trading policy and paper-decision database path.
+pub fn get_copy_trading_db_path() -> PathBuf {
+    get_data_directory().join("copy_trading.db")
+}
+
+/// Returns the OHLCV database path.
+pub fn get_ohlcvs_db_path() -> PathBuf {
+    get_data_directory().join("ohlcvs.db")
+}
+
+/// Returns the actions database path.
+pub fn get_actions_db_path() -> PathBuf {
+    get_data_directory().join("actions.db")
+}
+
+/// Returns the tools database path.
+pub fn get_tools_db_path() -> PathBuf {
+    get_data_directory().join("tools.db")
+}
+
+/// Returns the legacy-named LLM-analysis database path.
+pub fn get_ai_db_path() -> PathBuf {
+    get_data_directory().join("ai.db")
+}
+
+/// Returns the agent-control database path (durable client pairings, the
+/// external-agent approval queue and the agent-control audit log).
+pub fn get_agent_control_db_path() -> PathBuf {
+    get_data_directory().join("agent_control.db")
+}
+
+/// Returns the legacy-named Assistant chat database path.
+pub fn get_ai_chat_db_path() -> PathBuf {
+    get_data_directory().join("ai_chat.db")
+}
+
+/// Returns all related files for a SQLite database (main DB, SHM, WAL).
+///
+/// SQLite databases create additional files for write-ahead logging and
+/// shared memory. This helper returns all three files for cleanup operations.
+pub fn get_db_with_wal_files(db_path: PathBuf) -> Vec<PathBuf> {
+    vec![
+        db_path.clone(),
+        db_path.with_extension("db-shm"),
+        db_path.with_extension("db-wal"),
+    ]
+}

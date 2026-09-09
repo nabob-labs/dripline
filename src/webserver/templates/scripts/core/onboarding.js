@@ -1,0 +1,209 @@
+// Onboarding Flow Controller
+// Handles the multi-page introduction for first-time users
+
+class OnboardingControllerClass {
+  constructor() {
+    this.currentSlide = 0;
+    this.totalSlides = 0;
+    this.initialized = false;
+    this.completing = false;
+  }
+
+  init() {
+    if (this.initialized) return;
+
+    this.slides = document.querySelectorAll(".onboarding-slide");
+    this.dots = document.querySelectorAll(".progress-dot");
+    this.prevBtn = document.getElementById("onboardingPrev");
+    this.nextBtn = document.getElementById("onboardingNext");
+    this.setupShortcutBtn = document.getElementById("onboardingSetupShortcut");
+
+    if (!this.slides.length) {
+      console.warn("[Onboarding] Slides not found");
+      return;
+    }
+
+    this.totalSlides = this.slides.length;
+    this.bindEvents();
+    this.goToSlide(0);
+    this.loadVersion();
+    this.initialized = true;
+  }
+
+  async loadVersion() {
+    try {
+      const response = await fetch("/api/version");
+      if (response.ok) {
+        const data = await response.json();
+        const versionEl = document.getElementById("onboarding-version");
+        if (versionEl && data.version) {
+          versionEl.textContent = `v${data.version}`;
+        }
+      }
+    } catch {
+      console.warn("[Onboarding] Failed to load version");
+    }
+  }
+
+  bindEvents() {
+    // Navigation buttons
+    if (this.prevBtn) {
+      this.prevBtn.addEventListener("click", () => this.prev());
+    }
+    if (this.nextBtn) {
+      this.nextBtn.addEventListener("click", () => this.next());
+    }
+    if (this.setupShortcutBtn) {
+      this.setupShortcutBtn.addEventListener("click", () => this.complete());
+    }
+
+    // Dot navigation
+    this.dots.forEach((dot) => {
+      dot.addEventListener("click", () => {
+        const slideIndex = parseInt(dot.dataset.dot, 10);
+        this.goToSlide(slideIndex);
+      });
+    });
+
+    // Keyboard navigation
+    document.addEventListener("keydown", (e) => {
+      const onboardingScreen = document.getElementById("onboardingScreen");
+      if (!onboardingScreen || onboardingScreen.style.display === "none") return;
+
+      // Enter on a focused control is that control's activation, not "next".
+      const onControl =
+        typeof e.target?.closest === "function" && e.target.closest("button, a, input");
+
+      if (e.key === "ArrowRight" || (e.key === "Enter" && !onControl)) {
+        this.next();
+      } else if (e.key === "ArrowLeft") {
+        this.prev();
+      } else if (e.key === "Escape") {
+        this.complete();
+      }
+    });
+  }
+
+  goToSlide(index) {
+    if (index < 0 || index >= this.totalSlides) return;
+
+    // Update theme
+    const screen = document.getElementById("onboardingScreen");
+    if (screen) {
+      // One entry per slide; the closing slide bookends back to the brand blue.
+      const themes = ["blue", "purple", "green", "amber", "cyan", "blue"];
+      screen.setAttribute("data-theme", themes[index] || "blue");
+    }
+
+    // Update slide classes
+    this.slides.forEach((slide, i) => {
+      slide.classList.remove("active", "prev");
+      if (i === index) {
+        slide.classList.add("active");
+        // Stagger feature card animations
+        const cards = slide.querySelectorAll(".slide-feature");
+        cards.forEach((card, ci) => {
+          card.style.animationDelay = `${0.1 + ci * 0.08}s`;
+          card.classList.remove("slide-feature-enter");
+          void card.offsetWidth; // force reflow
+          card.classList.add("slide-feature-enter");
+        });
+      } else if (i < index) {
+        slide.classList.add("prev");
+      }
+    });
+
+    this.currentSlide = index;
+    this.updateUI();
+  }
+
+  prev() {
+    if (this.currentSlide > 0) {
+      this.goToSlide(this.currentSlide - 1);
+    }
+  }
+
+  next() {
+    if (this.currentSlide < this.totalSlides - 1) {
+      this.goToSlide(this.currentSlide + 1);
+    } else {
+      this.complete();
+    }
+  }
+
+  updateUI() {
+    // Update dots
+    this.dots.forEach((dot, i) => {
+      dot.classList.toggle("active", i === this.currentSlide);
+    });
+
+    // Update buttons
+    if (this.prevBtn) {
+      this.prevBtn.disabled = this.currentSlide === 0;
+    }
+    if (this.nextBtn) {
+      if (this.currentSlide === this.totalSlides - 1) {
+        this.nextBtn.innerHTML = 'Continue to setup <i class="icon-arrow-right"></i>';
+      } else {
+        this.nextBtn.innerHTML = 'Next <i class="icon-chevron-right"></i>';
+      }
+    }
+    if (this.setupShortcutBtn) {
+      this.setupShortcutBtn.hidden = this.currentSlide === this.totalSlides - 1;
+    }
+  }
+
+  async complete() {
+    if (this.completing) return;
+    this.completing = true;
+
+    // Mark onboarding as complete in backend (in-memory only, not saved to disk)
+    try {
+      const response = await fetch("/api/initialization/onboarding/complete", { method: "POST" });
+      if (!response.ok) console.error("[Onboarding] Failed to update completion state");
+    } catch (err) {
+      console.error("[Onboarding] Error updating completion state:", err);
+    }
+
+    // Hide onboarding screen
+    const onboardingScreen = document.getElementById("onboardingScreen");
+    if (onboardingScreen) {
+      onboardingScreen.style.display = "none";
+    }
+
+    // Always show setup after onboarding - we're in the initialization flow
+    // so setup is always required (otherwise we wouldn't be in onboarding)
+    const setupWrapper = document.getElementById("setupScreenWrapper");
+    if (setupWrapper) {
+      setupWrapper.style.display = "block";
+      const setupScreen = document.getElementById("setupScreen");
+      if (setupScreen) {
+        setupScreen.style.display = "grid";
+      }
+      if (window.SetupController) {
+        window.SetupController.init();
+      }
+    } else {
+      console.error("[Onboarding] Setup screen wrapper not found!");
+      this.completing = false;
+    }
+  }
+
+  showFromSetup() {
+    const setupWrapper = document.getElementById("setupScreenWrapper");
+    const setupScreen = document.getElementById("setupScreen");
+    const onboardingScreen = document.getElementById("onboardingScreen");
+
+    if (!onboardingScreen) return;
+
+    if (setupWrapper) setupWrapper.style.display = "none";
+    if (setupScreen) setupScreen.style.display = "none";
+    onboardingScreen.style.display = "grid";
+    this.completing = false;
+    this.goToSlide(this.currentSlide);
+    window.requestAnimationFrame(() => this.nextBtn?.focus({ preventScroll: true }));
+  }
+}
+
+// Export for use
+window.OnboardingController = new OnboardingControllerClass();

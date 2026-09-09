@@ -1,0 +1,619 @@
+//! Wallet monitoring service and public API functions
+
+use chrono::{DateTime, Duration as ChronoDuration, Utc};
+use std::sync::Arc;
+use std::time::Duration;
+use tokio::sync::Notify;
+
+use crate::chains::adapter;
+use crate::chains::solana::assets::fetch_nft_metadata_batch;
+use crate::chains::solana::rpc::{get_rpc_client, RpcClientMethods};
+use crate::logger::{self, LogTag};
+use crate::utils::get_wallet_address;
+use crate::{chains::active_chain, config::with_config};
+
+use crate::transactions::get_transaction_database;
+
+use super::cache::{
+    canonical_window, circuit_record_failure, circuit_reset, compute_and_cache_metrics,
+    compute_and_cache_metrics_internal, hydrate_wallet_snapshot_status, warmup_dashboard_metrics,
+    API_RESPONSE_CACHE, CACHE_METRICS,
+};
+use super::dashboard::clamp_window_hours;
+use super::database::{
+    increment_errors, increment_flow_syncs, increment_operations, increment_snapshots,
+    mark_wallet_db_ready, GLOBAL_WALLET_DB,
+};
+use super::types::*;
+use super::worth::{
+    publish_snapshot, request_balance_refresh, settle_refresh_burst, wait_for_refresh_request,
+};
+use crate::wallets::Error;
+
+// =============================================================================
+// INITIALIZATION
+// =============================================================================
+
+/// Initialize the global wallet database
+pub async fn initialize_wallet_database() -> Result<(), Error> {
+    let mut db_lock = GLOBAL_WALLET_DB.lock().await;
+    if db_lock.is_some() {
+        return Ok(()); // Already initialized
+    }
+
+    let db = super::database::WalletDatabase::new(active_chain()).await?;
+    let latest_snapshot_time = db.get_latest_snapshot_time()?;
+
+    // Hydrate the live worth cache from the last persisted snapshot so the header and
+    // the home hero show a real figure immediately, instead of zeroes until the first
+    // collection tick lands.
+    match db.get_latest_snapshot_with_balances() {
+        Ok(Some(snapshot)) => publish_snapshot(Arc::new(snapshot)),
+        Ok(None) => {}
+        Err(err) => logger::warning(
+            LogTag::Wallet,
+            &format!("Failed to hydrate live wallet worth from last snapshot: {err}"),
+        ),
+    }
+
+    *db_lock = Some(db);
+    mark_wallet_db_ready();
+
+    hydrate_wallet_snapshot_status(latest_snapshot_time);
+
+    logger::info(
+        LogTag::Wallet,
+        "Global wallet database initialized successfully",
+    );
+    Ok(())
+}
+
+/// Rebind the wallet-monitor database's subject to whichever wallet is now
+/// main, without decrypting anything. Called by `crate::wallets::manager::crud`
+/// after create/import/update/set-main so every subsequent snapshot,
+/// dashboard-metrics and flow-cache query scopes to the new wallet instead of
+/// a stale cached address. A no-op (not an error) before the wallet-monitor
+/// database has initialized — its own `new()` resolves the then-current main
+/// wallet directly.
+pub async fn refresh_wallet_monitor_subject() -> Result<(), Error> {
+    let mut db_guard = GLOBAL_WALLET_DB.lock().await;
+    match db_guard.as_mut() {
+        Some(db) => db.rebind_subject().await,
+        None => Ok(()),
+    }
+}
+
+// =============================================================================
+// WALLET MONITORING SERVICE
+// =============================================================================
+
+/// Collect current wallet balance and token balances
+async fn collect_wallet_snapshot() -> Result<WalletSnapshot, Error> {
+    // Get wallet address
+    let wallet_address = get_wallet_address().map_err(|e| Error::Dependency {
+        dependency: "config",
+        detail: e.to_string(),
+    })?;
+
+    let rpc_client = get_rpc_client();
+    let snapshot_time = Utc::now();
+
+    logger::debug(
+        LogTag::Wallet,
+        &format!("Collecting wallet snapshot for {}", &wallet_address[..8]),
+    );
+
+    // The two reads run concurrently and without artificial delays. They used to be
+    // serialized behind 500ms sleeps each, which bought nothing (the RPC client does
+    // its own rate limiting) and put a full second of latency in front of every
+    // refresh — including the ones fired the instant a trade confirms, which is
+    // exactly when the number has to be right.
+    let (sol_balance, token_accounts) = tokio::try_join!(
+        async {
+            rpc_client
+                .get_sol_balance(&wallet_address)
+                .await
+                .map_err(|e| Error::Dependency {
+                    dependency: "rpc",
+                    detail: e.to_string(),
+                })
+        },
+        async {
+            rpc_client
+                .get_all_token_accounts_str(&wallet_address)
+                .await
+                .map_err(|e| Error::Dependency {
+                    dependency: "rpc",
+                    detail: e.to_string(),
+                })
+        }
+    )?;
+
+    let sol_balance_lamports = adapter().native_to_raw(sol_balance);
+
+    // Separate fungible tokens and NFTs
+    let mut token_balances = Vec::new();
+    let mut nft_mints_with_accounts: Vec<(String, String, bool)> = Vec::new(); // (mint, account, is_token_2022)
+
+    for account_info in &token_accounts {
+        // Skip accounts with zero balance
+        if account_info.balance == 0 {
+            continue;
+        }
+
+        // Check if this is an NFT (decimals=0 and balance=1)
+        if account_info.is_nft {
+            nft_mints_with_accounts.push((
+                account_info.mint.clone(),
+                account_info.account.clone(),
+                account_info.is_token_2022,
+            ));
+        } else {
+            // Fungible token - use decimals from RPC response
+            let decimals = account_info.decimals;
+            let balance_ui = (account_info.balance as f64) / (10_f64).powi(decimals as i32);
+
+            token_balances.push(SnapshotTokenBalance {
+                id: None,
+                snapshot_id: None,
+                mint: account_info.mint.clone(),
+                balance: account_info.balance,
+                balance_ui,
+                decimals,
+                is_token_2022: account_info.is_token_2022,
+            });
+        }
+    }
+
+    // Fetch NFT metadata from Metaplex
+    let mut nft_balances = Vec::new();
+    if !nft_mints_with_accounts.is_empty() {
+        let nft_mints: Vec<String> = nft_mints_with_accounts
+            .iter()
+            .map(|(mint, _, _)| mint.clone())
+            .collect();
+
+        logger::debug(
+            LogTag::Wallet,
+            &format!("Fetching metadata for {} NFTs", nft_mints.len()),
+        );
+
+        let metadata_results = fetch_nft_metadata_batch(&nft_mints).await;
+
+        for (mint, account, is_token_2022) in nft_mints_with_accounts {
+            let (name, symbol, image_url) = metadata_results
+                .get(&mint)
+                .and_then(|result| result.as_ref().ok())
+                .map(|meta| {
+                    (
+                        meta.name.clone(),
+                        meta.symbol.clone(),
+                        meta.image_url.clone(),
+                    )
+                })
+                .unwrap_or((None, None, None));
+
+            nft_balances.push(NftBalance {
+                id: None,
+                snapshot_id: None,
+                mint,
+                account_address: account,
+                name,
+                symbol,
+                image_url,
+                is_token_2022,
+            });
+        }
+    }
+
+    let total_tokens_count = token_balances.len() as u32;
+    let total_nfts_count = nft_balances.len() as u32;
+
+    // Value the holdings at the prices in force right now, so the persisted row is a
+    // point-in-time worth. Historical rows can never be re-valued honestly later (we
+    // would be pricing yesterday's holdings at today's price), so it has to happen here.
+    let tokens_worth_sol: f64 = token_balances
+        .iter()
+        .filter_map(|balance| {
+            crate::pools::get_pool_price(&balance.mint)
+                .map(|price| balance.balance_ui * price.price_sol)
+        })
+        .sum();
+
+    logger::debug(
+        LogTag::Wallet,
+        &format!(
+            "Collected snapshot: SOL {:.6}, {} tokens, {} NFTs, worth {:.6} SOL",
+            sol_balance,
+            total_tokens_count,
+            total_nfts_count,
+            sol_balance + tokens_worth_sol
+        ),
+    );
+
+    Ok(WalletSnapshot {
+        id: None,
+        wallet_address,
+        snapshot_time,
+        sol_balance,
+        sol_balance_lamports,
+        total_equity_sol: sol_balance + tokens_worth_sol,
+        total_tokens_count,
+        total_nfts_count,
+        token_balances,
+        nft_balances,
+    })
+}
+
+/// Collect a fresh snapshot, publish it as the live worth, and persist it.
+///
+/// The ONE path that produces a snapshot. Publishing happens before the database
+/// write so the UI reflects a new balance immediately even if the write is slow, and
+/// still would if it failed.
+async fn collect_publish_and_store() -> Result<Arc<WalletSnapshot>, Error> {
+    let snapshot = Arc::new(collect_wallet_snapshot().await?);
+
+    increment_operations();
+    increment_snapshots();
+    publish_snapshot(Arc::clone(&snapshot));
+
+    let db_guard = GLOBAL_WALLET_DB.lock().await;
+    match db_guard.as_ref() {
+        Some(db) => {
+            db.save_wallet_snapshot(&snapshot)?;
+            Ok(snapshot)
+        }
+        None => Err(Error::NotInitialized {
+            database: "wallet-monitor",
+        }),
+    }
+}
+
+pub async fn start_wallet_monitoring_service(
+    shutdown: Arc<Notify>,
+    monitor: tokio_metrics::TaskMonitor,
+) -> tokio::task::JoinHandle<()> {
+    tokio::spawn(
+        monitor.instrument(async move {
+            logger::info(LogTag::Wallet, "Wallet monitoring service started (instrumented)");
+
+            // Initialize database
+            if let Err(e) = initialize_wallet_database().await {
+                logger::error(
+                    LogTag::Wallet,
+                    &format!("Failed to initialize wallet database: {e}")
+                );
+                return;
+            }
+
+            warmup_dashboard_metrics().await;
+
+            let snapshot_interval = with_config(|cfg| cfg.wallet.snapshot_interval_secs);
+            let cache_interval_secs = with_config(|cfg| cfg.wallet.flow_cache_update_secs);
+            let mut interval = tokio::time::interval(Duration::from_secs(snapshot_interval.max(10)));
+            let mut flow_sync_interval = tokio::time::interval(Duration::from_secs(cache_interval_secs.max(1)));
+            let (metrics_24h_secs, metrics_7d_secs, metrics_30d_secs, metrics_all_secs) =
+                with_config(|cfg| {
+                    (
+                        cfg.wallet.dashboard_metrics_24h_interval_secs.max(30),
+                        cfg.wallet.dashboard_metrics_7d_interval_secs.max(60),
+                        cfg.wallet.dashboard_metrics_30d_interval_secs.max(300),
+                        cfg.wallet.dashboard_metrics_alltime_interval_secs.max(300),
+                    )
+                });
+            let mut metrics_24h_interval =
+                tokio::time::interval(Duration::from_secs(metrics_24h_secs));
+            let mut metrics_7d_interval =
+                tokio::time::interval(Duration::from_secs(metrics_7d_secs));
+            let mut metrics_30d_interval =
+                tokio::time::interval(Duration::from_secs(metrics_30d_secs));
+            let mut metrics_all_interval =
+                tokio::time::interval(Duration::from_secs(metrics_all_secs));
+            let mut cleanup_counter = 0;
+
+            // The own-wallet consumer of the shared wallet-watch activity feed (§6.5
+            // of the wallet-observation plan): a notification for some OTHER watched
+            // address must never refresh our worth, so this is filtered to our own
+            // address rather than reacting to every subject the watch service sees.
+            let own_wallet_address = crate::utils::get_wallet_address().ok();
+            let mut watch_activity_rx = crate::wallets::watch::subscribe_activity();
+
+            loop {
+                tokio::select! {
+                _ = shutdown.notified() => {
+                    logger::info(LogTag::Wallet, "Wallet monitoring service shutting down");
+                    break;
+                }
+                // Something changed the wallet on-chain — the bot's own swap, or the
+                // owner moving funds from another app. Both reach us through the
+                // wallet's logsSubscribe stream, so the balance is refreshed within a
+                // couple of seconds instead of waiting out the snapshot interval.
+                _ = wait_for_refresh_request() => {
+                    // Runs in the branch BODY, which select! never cancels — so the
+                    // debounce can never swallow the notification that woke us.
+                    settle_refresh_burst().await;
+                    if crate::connectivity::is_network_offline() {
+                        continue;
+                    }
+                    match collect_publish_and_store().await {
+                        Ok(snapshot) => logger::debug(
+                            LogTag::Wallet,
+                            &format!(
+                                "Wallet activity refresh - SOL: {:.6}, worth: {:.6} SOL",
+                                snapshot.sol_balance, snapshot.total_equity_sol
+                            ),
+                        ),
+                        Err(e) => {
+                            increment_errors();
+                            logger::warning(LogTag::Wallet, &format!("Activity-triggered wallet refresh failed: {e}"));
+                        }
+                    }
+                    // The interval exists to catch what the stream misses, so restart it
+                    // from now — a fresh snapshot means no periodic one is due yet.
+                    interval.reset();
+                }
+                // Own-wallet activity from the shared wallet-watch service (WS,
+                // poll fallback or gap-fill -- all three converge on the same
+                // broadcast). Wakes the branch above rather than refreshing
+                // directly, so the same burst-debounce applies here too.
+                activity = watch_activity_rx.recv() => {
+                    match activity {
+                        Ok(activity) if Some(activity.subject.as_str()) == own_wallet_address.as_deref() => {
+                            request_balance_refresh();
+                        }
+                        Ok(_) => {} // some other watched subject -- never refreshes our worth
+                        Err(tokio::sync::broadcast::error::RecvError::Lagged(skipped)) => {
+                            logger::debug(
+                                LogTag::Wallet,
+                                &format!("Wallet-watch activity consumer lagged by {skipped} messages"),
+                            );
+                        }
+                        Err(tokio::sync::broadcast::error::RecvError::Closed) => {}
+                    }
+                }
+                _ = interval.tick() => {
+                    // Skip the RPC-backed snapshot while the network is confirmed
+                    // offline — it would only fail with "No providers available".
+                    // The last snapshot stays; resumes automatically on reconnect.
+                    if crate::connectivity::is_network_offline() {
+                        continue;
+                    }
+                    match collect_publish_and_store().await {
+                        Ok(snapshot) => {
+                            logger::debug(
+                                LogTag::Wallet,
+                                &format!(
+                                    "Saved snapshot - SOL: {:.6}, Tokens: {}, worth: {:.6} SOL",
+                                    snapshot.sol_balance,
+                                    snapshot.total_tokens_count,
+                                    snapshot.total_equity_sol
+                                )
+                            );
+                        }
+                        Err(e) => {
+                            increment_errors();
+                            logger::error(LogTag::Wallet, &format!("Failed to collect wallet snapshot: {e}"));
+                        }
+                    }
+
+                    // Cleanup old snapshots every 60 intervals (1 hour)
+                    cleanup_counter += 1;
+                    if cleanup_counter >= 60 {
+                        cleanup_counter = 0;
+
+                        let db_guard = GLOBAL_WALLET_DB.lock().await;
+                        match db_guard.as_ref() {
+                            Some(db) => {
+                                if let Err(e) = db.cleanup_old_snapshots() {
+                                    logger::warning(LogTag::Wallet, &format!("Failed to cleanup old snapshots: {e}"));
+                                }
+                                if let Err(e) = db.cleanup_expired_metrics() {
+                                    logger::warning(LogTag::Wallet, &format!(
+                                        "Failed to cleanup expired dashboard metrics: {}",
+                                        e
+                                    ));
+                                }
+                            }
+                            None => {
+                                logger::warning(LogTag::Wallet, "Wallet database not initialized for cleanup");
+                            }
+                        }
+                    }
+                }
+                _ = flow_sync_interval.tick() => {
+                    // Periodically sync SOL flow cache from transactions DB
+                    let (batch_size, lookback_secs) = with_config(|cfg| (cfg.wallet.flow_cache_backfill_batch, cfg.wallet.flow_cache_lookback_secs));
+                    // Step 1: read current max cached ts under short lock
+                    let start_ts = {
+                        let db_guard = GLOBAL_WALLET_DB.lock().await;
+                        if let Some(wallet_db) = db_guard.as_ref() {
+                            match wallet_db.get_flow_cache_max_ts() {
+                                Ok(Some(ts)) => ts - ChronoDuration::seconds(lookback_secs as i64),
+                                Ok(None) => Utc::now() - ChronoDuration::hours(24),
+                                Err(_) => Utc::now() - ChronoDuration::hours(24),
+                            }
+                        } else {
+                            // Wallet DB not ready yet
+                            continue;
+                        }
+                    };
+
+                    // Step 2: export rows from transactions DB without holding wallet lock
+                    let rows = if let Some(tx_db) = get_transaction_database().await {
+                        match tx_db.export_processed_for_wallet_flow(start_ts, batch_size).await {
+                            Ok(rows) => rows,
+                            Err(e) => {
+                                logger::error(LogTag::Wallet, &format!("Failed to export processed rows: {e}"));
+                                Vec::new()
+                            }
+                        }
+                    } else { Vec::new() };
+
+                    if rows.is_empty() { continue; }
+
+                    // Step 3: upsert into wallet cache under short lock
+                    let mapped: Vec<(String, DateTime<Utc>, f64)> = rows
+                        .into_iter()
+                        .map(|r| (r.signature, r.timestamp, r.sol_delta))
+                        .collect();
+                    let db_guard = GLOBAL_WALLET_DB.lock().await;
+                    if let Some(wallet_db) = db_guard.as_ref() {
+                        if let Err(e) = wallet_db.upsert_flow_rows(&mapped) {
+                            increment_errors();
+                            logger::error(LogTag::Wallet, &format!("Failed to upsert flow cache rows: {e}"));
+                        } else {
+                            increment_flow_syncs();
+                            logger::debug(LogTag::Wallet, &format!("Upserted {} flow cache rows", mapped.len()));
+                        }
+                    }
+                }
+                _ = metrics_24h_interval.tick() => {
+                    compute_and_cache_metrics_internal("24h", 24).await;
+                }
+                _ = metrics_7d_interval.tick() => {
+                    compute_and_cache_metrics_internal("7d", 168).await;
+                }
+                _ = metrics_30d_interval.tick() => {
+                    compute_and_cache_metrics_internal("30d", 720).await;
+                }
+                _ = metrics_all_interval.tick() => {
+                    compute_and_cache_metrics_internal("all_time", 0).await;
+                }
+            }
+            }
+
+            logger::info(LogTag::Wallet, "Wallet monitoring service stopped");
+        })
+    )
+}
+
+// =============================================================================
+// PUBLIC API FUNCTIONS
+// =============================================================================
+
+/// Get recent wallet snapshots
+pub async fn get_recent_wallet_snapshots(limit: usize) -> Result<Vec<WalletSnapshot>, Error> {
+    let db_guard = GLOBAL_WALLET_DB.lock().await;
+    match db_guard.as_ref() {
+        Some(db) => Ok(db.get_recent_snapshots(limit)?),
+        None => Err(Error::NotInitialized {
+            database: "wallet-monitor",
+        }),
+    }
+}
+
+/// Get wallet monitoring statistics
+pub async fn get_wallet_monitor_stats() -> Result<WalletMonitorStats, Error> {
+    let db_guard = GLOBAL_WALLET_DB.lock().await;
+    match db_guard.as_ref() {
+        Some(db) => Ok(db.get_monitor_stats()?),
+        None => Err(Error::NotInitialized {
+            database: "wallet-monitor",
+        }),
+    }
+}
+
+/// Get token balances for a snapshot
+pub async fn get_snapshot_token_balances(
+    snapshot_id: i64,
+) -> Result<Vec<SnapshotTokenBalance>, Error> {
+    let db_guard = GLOBAL_WALLET_DB.lock().await;
+    match db_guard.as_ref() {
+        Some(db) => Ok(db.get_token_balances(snapshot_id)?),
+        None => Err(Error::NotInitialized {
+            database: "wallet-monitor",
+        }),
+    }
+}
+
+/// Get NFT balances for a snapshot
+pub async fn get_snapshot_nft_balances(snapshot_id: i64) -> Result<Vec<NftBalance>, Error> {
+    let db_guard = GLOBAL_WALLET_DB.lock().await;
+    match db_guard.as_ref() {
+        Some(db) => Ok(db.get_nft_balances(snapshot_id)?),
+        None => Err(Error::NotInitialized {
+            database: "wallet-monitor",
+        }),
+    }
+}
+
+/// Get current wallet status (latest snapshot data)
+pub async fn get_current_wallet_status() -> Result<Option<WalletSnapshot>, Error> {
+    let snapshots = get_recent_wallet_snapshots(1).await?;
+    Ok(snapshots.into_iter().next())
+}
+
+/// Force an immediate on-chain wallet snapshot and persist it.
+///
+/// Used by the dashboard "refresh" button so the user always gets a fresh
+/// holdings list (SOL balance + token balances straight from RPC) instead of
+/// waiting for the next periodic tick. Returns the freshly captured snapshot.
+pub async fn force_wallet_snapshot() -> Result<WalletSnapshot, Error> {
+    let snapshot = collect_publish_and_store().await?;
+    Ok((*snapshot).clone())
+}
+
+/// Get SOL balance at or before a specific time (optimized single-value query)
+pub async fn get_balance_at_time(target_time: DateTime<Utc>) -> Result<Option<f64>, Error> {
+    let db_guard = GLOBAL_WALLET_DB.lock().await;
+    match db_guard.as_ref() {
+        Some(db) => Ok(db.get_balance_at_time(target_time)?),
+        None => Err(Error::NotInitialized {
+            database: "wallet-monitor",
+        }),
+    }
+}
+
+/// Get the end-of-day SOL balance for each calendar day within a period.
+pub async fn get_daily_end_balances(
+    start: DateTime<Utc>,
+    end: DateTime<Utc>,
+) -> Result<Vec<(String, f64)>, Error> {
+    let db_guard = GLOBAL_WALLET_DB.lock().await;
+    match db_guard.as_ref() {
+        Some(db) => Ok(db.get_daily_end_balances(start, end)?),
+        None => Err(Error::NotInitialized {
+            database: "wallet-monitor",
+        }),
+    }
+}
+
+/// Public accessor for flow cache stats
+pub async fn get_flow_cache_stats() -> Result<WalletFlowCacheStats, Error> {
+    let db_guard = GLOBAL_WALLET_DB.lock().await;
+    match db_guard.as_ref() {
+        Some(db) => Ok(db.get_flow_cache_stats()?),
+        None => Err(Error::NotInitialized {
+            database: "wallet-monitor",
+        }),
+    }
+}
+
+pub async fn refresh_dashboard_cache(window_hours: i64) -> Result<(), Error> {
+    let window_hours = clamp_window_hours(window_hours);
+    let (window_key, canonical_hours) =
+        canonical_window(window_hours).ok_or(Error::InvalidWindow { window_hours })?;
+
+    {
+        let db_guard = GLOBAL_WALLET_DB.lock().await;
+        if let Some(db) = db_guard.as_ref() {
+            db.invalidate_dashboard_metrics(window_key)?;
+        }
+    }
+
+    if let Err(err) = compute_and_cache_metrics(window_key, canonical_hours).await {
+        circuit_record_failure(window_key).await;
+        Err(err)
+    } else {
+        circuit_reset(window_key).await;
+        Ok(())
+    }
+}
+
+pub async fn get_dashboard_cache_metrics() -> CachePerformanceMetrics {
+    CACHE_METRICS.read().await.clone()
+}
+
+pub async fn clear_dashboard_api_cache() {
+    API_RESPONSE_CACHE.invalidate_all();
+}

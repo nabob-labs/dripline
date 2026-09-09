@@ -1,0 +1,45 @@
+/* Transactions page-specific styles */
+
+/* Page container - ensure proper height for scrolling */
+.transactions-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* DataTable container */
+#transactions-root {
+  flex: 1;
+  min-height: 0; /* Critical for flex scrolling */
+  overflow: hidden;
+}
+
+.value-positive {
+  color: var(--badge-online);
+  font-weight: 600;
+  font-family: var(--font-data);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+}
+
+.value-negative {
+  color: var(--badge-error);
+  font-weight: 600;
+  font-family: var(--font-data);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+}
+
+.link-signature {
+  color: var(--link-color);
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+.link-signature:hover {
+  text-decoration: underline;
+}

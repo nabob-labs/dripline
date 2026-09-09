@@ -1,0 +1,163 @@
+//! CoinGecko API client
+//!
+//! API Documentation: https://docs.coingecko.com/reference/introduction
+//!
+//! Endpoints implemented:
+//! 1. /api/v3/coins/list?include_platform=true - Get all coins with platform addresses
+
+pub mod types;
+
+use self::types::CoinGeckoCoin;
+use crate::apis::client::HttpClient;
+use crate::apis::stats::ApiStatsTracker;
+use crate::apis::Error;
+use crate::errors::{DataError, NetworkError};
+use std::sync::Arc;
+use std::time::Instant;
+
+// ============================================================================
+// API CONFIGURATION - Hardcoded for CoinGecko API
+// ============================================================================
+
+const COINGECKO_BASE_URL: &str = "https://api.coingecko.com/api/v3";
+
+/// API key for CoinGecko demo tier (get free key at coingecko.com)
+fn get_coingecko_api_key() -> String {
+    std::env::var("COINGECKO_API_KEY").unwrap_or_default()
+}
+
+/// Request timeout - CoinGecko can be slow with large datasets, 20s recommended
+const TIMEOUT_SECS: u64 = 20;
+
+// ============================================================================
+// CLIENT IMPLEMENTATION
+// ============================================================================
+
+pub struct CoinGeckoClient {
+    http_client: HttpClient,
+    stats: Arc<ApiStatsTracker>,
+    enabled: bool,
+}
+
+impl CoinGeckoClient {
+    /// Create a new CoinGecko API client
+    pub fn new(enabled: bool) -> Result<Self, Error> {
+        let http_client = HttpClient::new(TIMEOUT_SECS)?;
+        let stats = Arc::new(ApiStatsTracker::new());
+
+        Ok(Self {
+            http_client,
+            stats,
+            enabled,
+        })
+    }
+
+    /// Whether this client is enabled in the current configuration
+    pub fn is_enabled(&self) -> bool {
+        self.enabled
+    }
+
+    /// Retrieve cumulative API usage statistics
+    pub async fn get_stats(&self) -> super::stats::ApiStats {
+        self.stats.get_stats().await
+    }
+
+    /// Fetch all coins with platform addresses
+    /// Returns coins that have Solana addresses in their platforms
+    pub async fn fetch_coins_list(&self) -> Result<Vec<CoinGeckoCoin>, Error> {
+        if !self.enabled {
+            return Err(Error::Disabled {
+                provider: "CoinGecko".to_owned(),
+            });
+        }
+
+        let start = Instant::now();
+        let url = format!("{COINGECKO_BASE_URL}/coins/list?include_platform=true");
+
+        let response = self
+            .http_client
+            .client()
+            .get(&url)
+            .header("Accept", "application/json")
+            .header("x-cg-demo-api-key", get_coingecko_api_key())
+            .send()
+            .await
+            .map_err(|e| {
+                let error: Error = NetworkError::RequestFailed {
+                    endpoint: url.clone(),
+                    detail: e.to_string(),
+                }
+                .into();
+                self.stats.record_cache_miss();
+                error
+            })?;
+
+        let elapsed = start.elapsed().as_millis() as f64;
+
+        if !response.status().is_success() {
+            self.stats.record_request(false, elapsed).await;
+            return Err(NetworkError::HttpStatus {
+                endpoint: url.clone(),
+                status: response.status().as_u16(),
+                body: None,
+            }
+            .into());
+        }
+
+        let coins: Vec<CoinGeckoCoin> = match response.json().await {
+            Ok(parsed) => parsed,
+            Err(e) => {
+                self.stats.record_request(false, elapsed).await;
+                return Err(DataError::ParseError {
+                    data_type: url.clone(),
+                    error: e.to_string(),
+                }
+                .into());
+            }
+        };
+
+        self.stats.record_request(true, elapsed).await;
+
+        Ok(coins)
+    }
+
+    /// Extract Solana token addresses from coins list
+    pub fn extract_solana_addresses(coins: &[CoinGeckoCoin]) -> Vec<String> {
+        coins
+            .iter()
+            .filter_map(|coin| {
+                coin.platforms.as_ref().and_then(|platforms| {
+                    platforms
+                        .get(crate::chains::adapter().market_data_network())
+                        .and_then(|addr| {
+                            if !addr.is_empty() && addr.len() > 32 && addr.len() < 50 {
+                                Some(addr.clone())
+                            } else {
+                                None
+                            }
+                        })
+                })
+            })
+            .collect()
+    }
+
+    /// Extract Solana token addresses with names
+    pub fn extract_solana_addresses_with_names(coins: &[CoinGeckoCoin]) -> Vec<(String, String)> {
+        coins
+            .iter()
+            .filter_map(|coin| {
+                coin.platforms.as_ref().and_then(|platforms| {
+                    platforms
+                        .get(crate::chains::adapter().market_data_network())
+                        .and_then(|addr| {
+                            if !addr.is_empty() && addr.len() > 32 && addr.len() < 50 {
+                                Some((coin.name.clone(), addr.clone()))
+                            } else {
+                                None
+                            }
+                        })
+                })
+            })
+            .collect()
+    }
+}

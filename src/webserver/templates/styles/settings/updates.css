@@ -1,0 +1,416 @@
+/* Settings > Updates: three focused views sharing one flat visual language. */
+
+.updates {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  min-width: 0;
+}
+
+.updates > .details-tab-row {
+  background: transparent;
+}
+
+.updates > .details-tab-row .details-tab-list {
+  padding-inline: 0;
+}
+
+.updates-panel[hidden] {
+  display: none;
+}
+
+.updates-loading {
+  padding: var(--spacing-lg) 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+/* Status */
+
+.updates-status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.updates-status-copy {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--spacing-sm);
+}
+
+.updates-status-icon {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.updates-status[data-tone="primary"] .updates-status-icon {
+  color: var(--primary-color);
+}
+
+.updates-status[data-tone="success"] .updates-status-icon {
+  color: var(--semantic-success-text);
+}
+
+.updates-status[data-tone="error"] .updates-status-icon {
+  color: var(--semantic-error-text);
+}
+
+.updates-headline {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.updates-detail {
+  max-width: 64ch;
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+.updates-version-flow {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto minmax(120px, 1fr);
+  align-items: center;
+  gap: var(--spacing-md);
+  max-width: 460px;
+  padding-block: var(--spacing-sm);
+}
+
+.updates-version-flow--single {
+  grid-template-columns: minmax(120px, 1fr);
+  max-width: 220px;
+}
+
+.updates-version-flow > i {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.updates-version-point {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.updates-version-point span {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.updates-version-point strong {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.updates-version-point--target strong {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.updates-progress-copy {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  max-width: 620px;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+}
+
+.updates-progress {
+  position: relative;
+  max-width: 620px;
+  height: 4px;
+  margin-top: calc(var(--spacing-sm) * -1);
+  overflow: hidden;
+  background: var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.updates-progress-fill {
+  height: 100%;
+  background: var(--primary-color);
+  border-radius: inherit;
+  transition: width 0.3s ease;
+}
+
+.updates-progress.is-indeterminate .updates-progress-fill {
+  width: 35%;
+  animation: updates-slide 1.4s ease-in-out infinite;
+  transition: none;
+}
+
+@keyframes updates-slide {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(286%);
+  }
+}
+
+.updates-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.updates-detail-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-sm) var(--spacing-xl);
+  margin: 0;
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--border-color);
+}
+
+.updates-detail-row {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.8fr) minmax(0, 1.2fr);
+  align-items: baseline;
+  gap: var(--spacing-sm);
+  min-width: 0;
+  font-size: 0.75rem;
+}
+
+.updates-detail-row dt {
+  color: var(--text-muted);
+}
+
+.updates-detail-row dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+/* Release notes */
+
+.updates-history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  max-width: 76ch;
+}
+
+.updates-history-notice {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.updates-release-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.updates-release-item + .updates-release-item {
+  border-top: 1px solid var(--border-color);
+}
+
+.updates-release-summary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+.updates-release-summary::-webkit-details-marker {
+  display: none;
+}
+
+.updates-release-version {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.updates-release[data-state="installed"] .updates-release-version,
+.updates-release[data-state="available"] .updates-release-version {
+  color: var(--primary-color);
+}
+
+.updates-release-tag {
+  color: var(--primary-color);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.updates-release-facts {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.updates-release-facts > * + *::before {
+  content: "\00b7";
+  margin-right: var(--spacing-sm);
+}
+
+.updates-release-chevron {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  transition: transform var(--transition-fast);
+}
+
+.updates-release[open] .updates-release-chevron {
+  transform: rotate(180deg);
+}
+
+.updates-release-summary:hover .updates-release-chevron,
+.updates-release-summary:hover .updates-release-facts {
+  color: var(--text-secondary);
+}
+
+.updates-release-body {
+  padding-bottom: var(--spacing-md);
+}
+
+.updates-release-body > p,
+.updates-release-section p,
+.updates-release-section li,
+.updates-release-empty {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.65;
+}
+
+.updates-release-section + .updates-release-section {
+  margin-top: var(--spacing-md);
+}
+
+.updates-release-section h4 {
+  margin: 0 0 var(--spacing-sm);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.updates-release-section ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin: 0;
+  padding-left: 1.15rem;
+}
+
+.updates-release-section li::marker {
+  color: var(--primary-color);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .updates-release-chevron {
+    transition: none;
+  }
+}
+
+.updates-empty {
+  max-width: 56ch;
+  padding-block: var(--spacing-lg);
+}
+
+.updates-empty h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.updates-empty p {
+  margin: 5px 0 var(--spacing-md);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+/* Preferences */
+
+.updates-preference-section + .updates-preference-section {
+  margin-top: var(--spacing-lg);
+}
+
+.updates-subhead {
+  margin: 0 0 var(--spacing-sm);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.updates-number-control {
+  display: grid;
+  grid-template-columns: minmax(0, 88px) auto;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 142px;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.updates-number-control .number-field {
+  min-width: 0;
+  width: 88px;
+}
+
+.updates-field--inactive .settings-field-info {
+  opacity: 0.55;
+}
+
+@media (width <= 800px) {
+  .updates-detail-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (width <= 560px) {
+  .updates-version-flow {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+
+  .updates-detail-row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .updates-progress-copy {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .updates-progress-fill {
+    transition: none;
+  }
+
+  .updates-progress.is-indeterminate .updates-progress-fill {
+    width: 100%;
+    animation: none;
+  }
+}

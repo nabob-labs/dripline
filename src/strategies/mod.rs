@@ -1,0 +1,257 @@
+//! Trading strategy engine — rule trees, conditions, and evaluation logic.
+mod error;
+
+pub mod conditions;
+pub mod database;
+pub use database as db;
+pub mod engine;
+pub mod types;
+
+pub use error::{Error, Result};
+
+use crate::logger::{self, LogTag};
+use crate::ohlcvs::TimeframeBundle;
+use crate::strategies::db::{get_enabled_strategies, record_evaluation};
+use crate::strategies::engine::{EngineConfig, StrategyEngine};
+use crate::strategies::types::{
+    EvaluationContext, MarketData, PositionData, Strategy, StrategyType,
+};
+use chrono::Utc;
+use std::sync::Arc;
+use std::sync::LazyLock;
+use tokio::sync::RwLock;
+
+/// Global strategy engine instance
+static STRATEGY_ENGINE: LazyLock<Arc<RwLock<Option<StrategyEngine>>>> =
+    LazyLock::new(|| Arc::new(RwLock::new(None)));
+
+/// Initialize the strategy system
+pub async fn init_strategy_system(config: EngineConfig) -> crate::Result<()> {
+    // Initialize database
+    db::init_strategies_db()?;
+
+    // Create and store engine
+    let engine = StrategyEngine::new(config);
+    let mut global_engine = STRATEGY_ENGINE.write().await;
+    *global_engine = Some(engine);
+
+    logger::info(LogTag::System, "Strategy system initialized successfully");
+
+    Ok(())
+}
+
+/// Get the global strategy engine
+async fn get_engine() -> crate::Result<Arc<RwLock<Option<StrategyEngine>>>> {
+    let engine = STRATEGY_ENGINE.read().await;
+    if engine.is_none() {
+        return Err(crate::Error::internal_error(
+            "Strategy engine not initialized",
+        ));
+    }
+    drop(engine);
+    Ok(STRATEGY_ENGINE.clone())
+}
+
+/// Evaluate entry strategies for a token
+///
+/// This function is the main entry point for the trader module to check
+/// if any entry strategies signal to open a position for a token.
+///
+/// # Arguments
+/// * `token_mint` - The token mint address
+/// * `current_price` - Current token price in SOL
+/// * `market_data` - Optional market data (liquidity, volume, etc.)
+/// * `timeframe_bundle` - Optional multi-timeframe OHLCV bundle
+///
+/// # Returns
+/// * `Ok(Some(strategy_id))` - If a strategy signals entry
+/// * `Ok(None)` - If no strategy signals entry
+/// * `Err(e)` - If evaluation fails
+pub async fn evaluate_entry_strategies(
+    token_mint: &str,
+    current_price: f64,
+    market_data: Option<MarketData>,
+    timeframe_bundle: Option<TimeframeBundle>,
+) -> crate::Result<Option<String>> {
+    let engine_lock = get_engine().await?;
+    let engine_guard = engine_lock.read().await;
+    let engine = engine_guard
+        .as_ref()
+        .ok_or_else(|| crate::Error::internal_error("Strategy engine not available"))?;
+
+    // Get enabled entry strategies
+    let strategies = get_enabled_strategies(StrategyType::Entry)?;
+
+    if strategies.is_empty() {
+        return Ok(None);
+    }
+
+    // Evaluate strategies by priority (lower priority first)
+    for strategy in strategies {
+        let context = EvaluationContext {
+            token_mint: token_mint.to_string(),
+            current_price: Some(current_price),
+            position_data: None,
+            market_data: market_data.clone(),
+            timeframe_bundle: timeframe_bundle.clone(),
+            strategy_timeframe: strategy.timeframe.clone(),
+            evaluated_at: Utc::now(),
+        };
+
+        let result = engine.evaluate_strategy(&strategy, &context).await;
+
+        match result {
+            Ok(eval_result) => {
+                // Record evaluation
+                if let Err(e) = record_evaluation(&eval_result, token_mint) {
+                    logger::warning(LogTag::System, &format!("Failed to record evaluation: {e}"));
+                }
+
+                // If strategy signals entry, return it
+                if eval_result.result {
+                    logger::info(
+                        LogTag::System,
+                        &format!(
+                            "Entry strategy triggered: strategy={}, token={}, price={:.9}",
+                            strategy.name, token_mint, current_price
+                        ),
+                    );
+                    return Ok(Some(strategy.id.clone()));
+                }
+            }
+            Err(e) => {
+                logger::error(
+                    LogTag::System,
+                    &format!(
+                        "Entry strategy evaluation error: strategy={}, error={}",
+                        strategy.name, e
+                    ),
+                );
+            }
+        }
+    }
+
+    Ok(None)
+}
+
+/// Evaluate exit strategies for a position
+///
+/// This function is the main entry point for the trader module to check
+/// if any exit strategies signal to close a position.
+///
+/// # Arguments
+/// * `token_mint` - The token mint address
+/// * `current_price` - Current token price in SOL
+/// * `position_data` - Position data (entry price, age, etc.)
+/// * `market_data` - Optional market data (liquidity, volume, etc.)
+/// * `timeframe_bundle` - Optional multi-timeframe OHLCV bundle
+///
+/// # Returns
+/// * `Ok(Some(strategy_id))` - If a strategy signals exit
+/// * `Ok(None)` - If no strategy signals exit
+/// * `Err(e)` - If evaluation fails
+pub async fn evaluate_exit_strategies(
+    token_mint: &str,
+    current_price: f64,
+    position_data: PositionData,
+    market_data: Option<MarketData>,
+    timeframe_bundle: Option<TimeframeBundle>,
+) -> crate::Result<Option<String>> {
+    let engine_lock = get_engine().await?;
+    let engine_guard = engine_lock.read().await;
+    let engine = engine_guard
+        .as_ref()
+        .ok_or_else(|| crate::Error::internal_error("Strategy engine not available"))?;
+
+    // Get enabled exit strategies
+    let strategies = get_enabled_strategies(StrategyType::Exit)?;
+
+    if strategies.is_empty() {
+        return Ok(None);
+    }
+
+    // Evaluate strategies by priority (lower priority first)
+    for strategy in strategies {
+        let context = EvaluationContext {
+            token_mint: token_mint.to_string(),
+            current_price: Some(current_price),
+            position_data: Some(position_data.clone()),
+            market_data: market_data.clone(),
+            timeframe_bundle: timeframe_bundle.clone(),
+            strategy_timeframe: strategy.timeframe.clone(),
+            evaluated_at: Utc::now(),
+        };
+
+        let result = engine.evaluate_strategy(&strategy, &context).await;
+
+        match result {
+            Ok(eval_result) => {
+                // Record evaluation
+                if let Err(e) = record_evaluation(&eval_result, token_mint) {
+                    logger::warning(LogTag::System, &format!("Failed to record evaluation: {e}"));
+                }
+
+                // If strategy signals exit, return it
+                if eval_result.result {
+                    logger::info(LogTag::System, &format!("Exit strategy triggered: strategy={}, token={}, price={:.9}, entry_price={:.9}, profit_pct={:.2}%",
+                            strategy.name, token_mint, current_price, position_data.entry_price,
+                            position_data.unrealized_profit_pct.unwrap_or_default()),
+                    );
+                    return Ok(Some(strategy.id.clone()));
+                }
+            }
+            Err(e) => {
+                logger::error(
+                    LogTag::System,
+                    &format!(
+                        "Exit strategy evaluation error: strategy={}, error={}",
+                        strategy.name, e
+                    ),
+                );
+            }
+        }
+    }
+
+    Ok(None)
+}
+
+/// Validate a strategy without evaluation
+pub async fn validate_strategy(strategy: &Strategy) -> crate::Result<()> {
+    let engine_lock = get_engine().await?;
+    let engine_guard = engine_lock.read().await;
+    let engine = engine_guard
+        .as_ref()
+        .ok_or_else(|| crate::Error::internal_error("Strategy engine not available"))?;
+
+    Ok(engine.validate_strategy(strategy)?)
+}
+
+/// Clear the evaluation cache
+pub async fn clear_evaluation_cache() -> crate::Result<()> {
+    let engine_lock = get_engine().await?;
+    let engine_guard = engine_lock.read().await;
+    let engine = engine_guard
+        .as_ref()
+        .ok_or_else(|| crate::Error::internal_error("Strategy engine not available"))?;
+
+    engine.clear_cache().await;
+    Ok(())
+}
+
+/// Get all condition schemas for UI
+pub async fn get_condition_schemas() -> crate::Result<serde_json::Value> {
+    let engine_lock = get_engine().await?;
+    let engine_guard = engine_lock.read().await;
+    let engine = engine_guard
+        .as_ref()
+        .ok_or_else(|| crate::Error::internal_error("Strategy engine not available"))?;
+
+    let registry = engine.get_condition_registry();
+    Ok(registry.get_all_schemas())
+}
+
+// Re-export commonly used types for convenience
+pub use types::{
+    Condition, LogicalOperator, Parameter, ParameterConstraints, RiskLevel, RuleTree,
+    StrategyPerformance, StrategyTemplate,
+};

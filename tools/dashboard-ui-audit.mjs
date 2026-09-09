@@ -1,0 +1,435 @@
+/* global console, process */
+
+import { readFile } from "node:fs/promises";
+import { relative, resolve } from "node:path";
+
+import {
+  PAGES_ROOT as pagesRoot,
+  REPO_ROOT as root,
+  SCRIPTS_ROOT as scriptsRoot,
+  STYLES_ROOT as stylesRoot,
+  attributeParts,
+  findOpenTags,
+  rulesIn as parseRules,
+  walk,
+} from "./lib/dashboard_ui.mjs";
+
+const canonicalOwners = new Map([
+  [".metric-card", "components.css"],
+  [".metric-icon", "components.css"],
+  [".metric-content", "components.css"],
+  [".metric-label", "components.css"],
+  [".metric-value", "components.css"],
+  [".metric-detail", "components.css"],
+  [".empty-state", "components.css"],
+  [".empty-state-title", "components.css"],
+  [".empty-state-description", "components.css"],
+  [".empty-state-action", "components.css"],
+  [".modal-overlay", "components.css"],
+  [".modal-dialog", "components.css"],
+  [".modal-header", "components.css"],
+  [".modal-close", "components.css"],
+  [".modal-body", "components.css"],
+  [".modal-tabs", "components.css"],
+  [".modal-tab", "components.css"],
+  [".modal-tab-content", "components.css"],
+  [".modal-footer", "components.css"],
+  [".section-header", "common.css"],
+  [".section-subtitle", "common.css"],
+  [".form-group", "components/form_controls.css"],
+  [".input-group", "components/form_controls.css"],
+  [".toggle", "components/form_controls.css"],
+  [".toggle-track", "components/form_controls.css"],
+  [".toggle-label", "components/form_controls.css"],
+  [".toggle-state", "components/form_controls.css"],
+  [".checkbox-label", "components/form_controls.css"],
+  [".checkbox-group", "components/form_controls.css"],
+  [".number-field", "components/form_controls.css"],
+  [".number-field-suffix", "components/form_controls.css"],
+  [".number-field-spin", "components/form_controls.css"],
+  [".number-field-step", "components/form_controls.css"],
+  [".input-unit", "components/form_controls.css"],
+  [".sub-tabs-container", "ui/tab_bar.css"],
+  [".sub-tab", "ui/tab_bar.css"],
+]);
+
+/* Selector + declaration body per rule, so a check can look at what a rule
+   actually draws and not only at what it targets. Parsing itself lives in
+   `lib/dashboard_ui.mjs`, shared with the button contract tests. */
+function rulesIn(css) {
+  return parseRules(css).map((rule) => [rule.selector, rule.body]);
+}
+
+function selectorsIn(css) {
+  return parseRules(css).map((rule) => rule.selector);
+}
+
+/* Where a control sits against its label text is one calculation, in one place:
+   every hand-rolled `margin-top: 3px` was a different answer to it. A row that
+   is centred by its own layout cancels the shared offset with
+   `--control-line-offset: 0px` instead of nudging the control. */
+const controlPlacementDeclaration =
+  /^\s*(margin(?:-top|-block-start|-block)?|vertical-align|align-self)\s*:\s*(?!var\(--control-line-offset\))/m;
+
+const modalSkinDeclaration =
+  /^\s*(position|display|z-index|background(?:-color)?|border(?!-radius)(?:-[a-z-]+)?|border-radius|box-shadow|backdrop-filter|animation)\s*:/m;
+
+const controlSkinDeclaration =
+  /^\s*(width|height|min-width|max-width|min-height|max-height|padding(?:-[a-z-]+)?|background(?:-color)?|border(?:-[a-z-]+)?|border-radius|box-shadow|outline|appearance|accent-color)\s*:/m;
+
+function inputMayBeChoiceControl(selector) {
+  let depth = 0;
+  let compoundStart = 0;
+  for (let index = 0; index < selector.length; index += 1) {
+    const char = selector[index];
+    if (char === "(" || char === "[") depth += 1;
+    else if (char === ")" || char === "]") depth = Math.max(0, depth - 1);
+    else if (depth === 0 && /[\s>+~]/.test(char)) compoundStart = index + 1;
+  }
+
+  const target = selector.slice(compoundStart).trim();
+  const inputTarget = target.match(/^input(?=$|[:.#]|\[)(.*)$/i);
+  if (!inputTarget) return false;
+
+  const tail = inputTarget[1];
+  const exactType = tail.match(/^\s*\[\s*type\s*=\s*["']?([\w-]+)["']?\s*\]/i);
+  if (exactType) return /^(?:checkbox|radio)$/i.test(exactType[1]);
+
+  const exclusions = tail.match(/^\s*:not\(([^)]*)\)/i)?.[1] || "";
+  const excludesCheckbox = /\[\s*type\s*=\s*["']?checkbox["']?\s*\]/i.test(exclusions);
+  const excludesRadio = /\[\s*type\s*=\s*["']?radio["']?\s*\]/i.test(exclusions);
+  return !excludesCheckbox || !excludesRadio;
+}
+
+/* A page that styles `label` generically hits the checkbox ROW too: the
+   Assistant modal's `.modal-body .form-group label { display: block }` (0,2,1)
+   outranked `.checkbox-label` (0,1,0) and unflexed the row, so the control fell
+   back to baseline alignment. A caption rule must say it means captions. */
+const labelBoxDeclaration =
+  /^\s*(display|align-items|gap|margin(?:-[a-z]+)?|font-size|line-height|font-weight)\s*:/m;
+
+/* A color theme is allowed to repaint the dashboard, never to re-typeset or
+   rearrange it. A stale dark block once replaced embedded Inter/JetBrains Mono
+   with system fonts, so every inherited label changed width and baseline when
+   the user toggled theme. Guard both direct declarations and indirect metric
+   tokens: otherwise a theme can move the UI through `--font-*`, `--spacing-*`,
+   or another geometry variable while every component rule looks innocent. */
+const themeMetricProperty =
+  /^(?:(?:-webkit-|-moz-)?font(?:-.+)?|-webkit-text-stroke(?:-width)?|line-height|letter-spacing|word-spacing|text-transform|text-indent|text-align|text-overflow|white-space|writing-mode|vertical-align|content|display|visibility|position|inset(?:-.+)?|top|right|bottom|left|(?:[\w-]+-)?(?:width|height)|(?:min-|max-)?(?:inline-size|block-size)|margin(?:-.+)?|padding(?:-.+)?|gap|row-gap|column-gap|grid(?:-.+)?|flex(?:-.+)?|align-(?:.+)|justify-(?:.+)|place-(?:.+)|order|float|clear|overflow(?:-.+)?|box-sizing|aspect-ratio|columns|column-count|border|border-(?:top|right|bottom|left|block|inline)(?:-(?:start|end))?|border-[\w-]*(?:width|radius)|outline|outline-width|outline-offset|transform|translate|rotate|scale|animation(?:-.+)?|transition(?:-.+)?)$/;
+
+const themeMetricToken =
+  /^--(?:.*-)?(?:font|spacing|radius|transition|duration|motion|width|height|inline-size|block-size|size|gap|padding|margin|offset|position|inset|line-height|letter-spacing|word-spacing|weight|family|layout|grid|flex|align|justify|order|transform|translate|rotate|scale)(?:-|$)/;
+
+function declarationsIn(body) {
+  return [...body.matchAll(/(?:^|;)\s*([\w-]+)\s*:/g)].map((match) => match[1]);
+}
+
+function genericLabelTarget(selector) {
+  const compounds = selector.split(/[\s>+~](?![^(]*\))/).filter(Boolean);
+  if (compounds.length < 2) return false;
+  const target = compounds[compounds.length - 1];
+  if (!/^label(?![\w-])/.test(target)) return false;
+  if (/\.checkbox-label/.test(target)) return false;
+  /* A rule that deliberately targets control rows is the contract, not a leak. */
+  if (/:has\(>\s*input\[type=["']?(?:checkbox|radio)/.test(target)) return false;
+  return !/:not\([^)]*(?:checkbox-label|\[type=["']?(?:checkbox|radio))/.test(target);
+}
+
+const errors = [];
+const cssFiles = (await walk(stylesRoot)).filter((file) => file.endsWith(".css"));
+
+function auditSelectContract(file, source) {
+  for (const match of source.matchAll(/<select\b[^>]*>/gi)) {
+    if (/\bdata-custom-select\b/i.test(match[0])) continue;
+    const line = source.slice(0, match.index).split("\n").length;
+    errors.push(
+      `${relative(root, file)}:${line}: native select is forbidden; add data-custom-select`
+    );
+  }
+}
+
+/* Markup half of the same contract: a row's alignment is never a class. */
+function auditChoiceRowContract(file, source) {
+  for (const match of source.matchAll(/checkbox-label--[\w-]+/g)) {
+    const line = source.slice(0, match.index).split("\n").length;
+    errors.push(
+      `${relative(root, file)}:${line}: ${match[0]}; a checkbox row is aligned by .checkbox-label alone`
+    );
+  }
+}
+
+function auditNativeChoiceContract(file, source) {
+  for (const match of source.matchAll(
+    /<[^>]+\brole\s*=\s*["'](?:switch|checkbox|radio)["'][^>]*>/gi
+  )) {
+    const line = source.slice(0, match.index).split("\n").length;
+    errors.push(
+      `${relative(root, file)}:${line}: simulated choice control is forbidden; use a native checkbox/radio and the shared control family`
+    );
+  }
+}
+
+/* A loaded token image is bare artwork, not a painted avatar tile. Require the
+   shared marker anywhere a known token-logo class or a dynamic logo URL emits an
+   <img>; token_identity.css then owns crop/contain behavior across every surface. */
+const tokenLogoImageClasses = new Set([
+  "token-logo",
+  "overview-token-logo",
+  "favorite-logo",
+  "feat-card-avatar-img",
+  "featured-row-card-logo",
+  "search-result-logo",
+  "trade-action-token-logo-img",
+]);
+
+function auditTokenLogoContract(file, source) {
+  for (const { tag, index } of findOpenTags(source, "img")) {
+    const classParts = attributeParts(tag, "class");
+    const classes = (classParts?.statics || "").split(/\s+/).filter(Boolean);
+    const hasTokenLogoClass = classes.some((name) => tokenLogoImageClasses.has(name));
+    const usesDynamicLogoUrl =
+      /\bsrc\s*=\s*["'`][\s\S]*\$\{[\s\S]*\b(?:logoUrl|logo_url|image_url)\b/i.test(tag);
+    if (!hasTokenLogoClass && !usesDynamicLogoUrl) continue;
+    if (classes.includes("token-logo-artwork")) continue;
+
+    const line = source.slice(0, index).split("\n").length;
+    errors.push(`${relative(root, file)}:${line}: token logo <img> must use .token-logo-artwork`);
+  }
+}
+
+for (const file of cssFiles) {
+  const css = await readFile(file, "utf8");
+  const path = relative(stylesRoot, file);
+
+  if (/@media\s*\(\s*prefers-color-scheme\s*:/i.test(css)) {
+    errors.push(`${path}: app themes are selected by html[data-theme], not OS color-scheme media`);
+  }
+
+  for (const { selector, body, line } of parseRules(css)) {
+    if (/\.(?:light|dark)-theme\b/.test(selector)) {
+      errors.push(
+        `${path}:${line}: ${selector} uses a dead theme class; target html[data-theme] instead`
+      );
+    }
+    if (!/\[data-theme(?:[\s=\]])/.test(selector)) continue;
+    for (const property of declarationsIn(body)) {
+      if (!themeMetricProperty.test(property) && !themeMetricToken.test(property)) continue;
+      errors.push(
+        `${path}:${line}: ${selector} sets ${property}; color themes may change paint only, not typography, geometry, layout, or motion`
+      );
+    }
+  }
+
+  for (const selector of selectorsIn(css)) {
+    const owner = canonicalOwners.get(selector);
+    if (owner && path !== owner) {
+      errors.push(`${path}: ${selector} is owned by ${owner}`);
+    }
+    if (/\.(?:source|category)-switch\b|\.slider\b|-switch__/.test(selector)) {
+      errors.push(`${path}: custom switch selector ${selector}; use .toggle`);
+    }
+    if (/\.checkbox-label--/.test(selector)) {
+      errors.push(
+        `${path}: ${selector}; checkbox alignment is not a variant, it is the row contract in components/form_controls.css`
+      );
+    }
+    if (/(?:^|[\s>+~,])\.[\w-]+-radio\b/.test(selector)) {
+      errors.push(`${path}: custom radio selector ${selector}; use input[type="radio"]`);
+    }
+  }
+
+  /* The control family (switch, checkbox, radio) has one skin. A page may place
+     a control - margins, order, alignment - but never re-draw its box, which is
+     how four different switches and five checkbox sizes grew in the first place. */
+  for (const [selector, body] of rulesIn(css)) {
+    if (!genericLabelTarget(selector)) continue;
+    const boxed = body.match(labelBoxDeclaration);
+    if (boxed) {
+      errors.push(
+        `${path}: ${selector} sets ${boxed[1]} on every label; exclude control rows with :not(.checkbox-label, :has(> input[type="checkbox"]), :has(> input[type="radio"]))`
+      );
+    }
+  }
+
+  /* A dialog is .modal-overlay + .modal-dialog. A page sizes its own modal and
+     nothing else: four parallel modal implementations (security, create-strategy
+     and the two assistant ones) each re-drew the same box, with a different
+     background, radius, shadow and open animation. */
+  if (path !== "components.css") {
+    for (const [selector, body] of rulesIn(css)) {
+      if (!/\.[\w-]*-modal(?![\w-])[^\s>+~]*$/.test(selector.trim())) continue;
+      const skin = body.match(modalSkinDeclaration);
+      if (skin) {
+        errors.push(
+          `${path}: ${selector} sets ${skin[1]}; the dialog box is .modal-dialog in components.css - a page sizes its modal, it does not re-draw it`
+        );
+      }
+    }
+  }
+
+  /* The modal header owns its title. Every page that re-declared the heading it
+     happened to use (h2 here, h3 there) is why one modal family ended up with a
+     1.17em title and an icon sitting on the text baseline. A dialog that needs a
+     different title gives it a class of its own instead. */
+  if (path !== "components.css") {
+    for (const [selector] of rulesIn(css)) {
+      if (/\.modal-header\b[^{]*(?:[\s>]h[1-6]|[\s>]\.modal-title)\b/.test(selector)) {
+        errors.push(
+          `${path}: ${selector} re-styles the modal title; it is owned by components.css .modal-header > :where(h1..h6, .modal-title)`
+        );
+      }
+    }
+  }
+
+  if (path !== "components/form_controls.css") {
+    for (const [selector, body] of rulesIn(css)) {
+      if (!inputMayBeChoiceControl(selector)) continue;
+      const skin = body.match(controlSkinDeclaration);
+      if (skin) {
+        errors.push(
+          `${path}: ${selector} sets ${skin[1]}; the control skin is owned by components/form_controls.css`
+        );
+      }
+      const placement = body.match(controlPlacementDeclaration);
+      if (placement) {
+        errors.push(
+          `${path}: ${selector} sets ${placement[1]}; a choice control is aligned to its label by --control-line-offset in components/form_controls.css`
+        );
+      }
+    }
+  }
+
+  if (
+    path !== "ui/tab_bar.css" &&
+    /\.sub-tabs-container[^{]*\{[^}]*display\s*:[^;}]*!important/is.test(css)
+  ) {
+    errors.push(`${path}: shared subtab visibility must be controlled by TabBar`);
+  }
+
+  if (path !== "components/form_controls.css" && /-webkit-(?:inner|outer)-spin-button/.test(css)) {
+    errors.push(`${path}: the number stepper is owned by components/form_controls.css`);
+  }
+}
+
+for (const file of await walk(scriptsRoot)) {
+  if (!file.endsWith(".js")) continue;
+  const source = await readFile(file, "utf8");
+  if (/createElement\(["']style["']\)|<style\b/i.test(source)) {
+    errors.push(`${relative(root, file)}: runtime or embedded CSS is forbidden; use styles/`);
+  }
+  if (!file.endsWith("custom_select.js")) auditSelectContract(file, source);
+  auditNativeChoiceContract(file, source);
+  auditChoiceRowContract(file, source);
+  auditTokenLogoContract(file, source);
+}
+
+for (const file of await walk(pagesRoot)) {
+  if (!file.endsWith(".html")) continue;
+  const source = await readFile(file, "utf8");
+  if (/<style\b/i.test(source)) {
+    errors.push(`${relative(root, file)}: page templates must not contain <style>`);
+  }
+  auditSelectContract(file, source);
+  auditNativeChoiceContract(file, source);
+  auditChoiceRowContract(file, source);
+  auditTokenLogoContract(file, source);
+}
+
+const templatesSource = await readFile(resolve(root, "src/webserver/templates.rs"), "utf8");
+const baseSource = await readFile(resolve(root, "src/webserver/templates/base.html"), "utf8");
+const routerSource = await readFile(
+  resolve(root, "src/webserver/templates/scripts/core/router.js"),
+  "utf8"
+);
+const chatWidgetSource = await readFile(
+  resolve(root, "src/webserver/templates/scripts/core/chat_widget.js"),
+  "utf8"
+);
+const chatWidgetLayoutSource = await readFile(
+  resolve(root, "src/webserver/templates/styles/components/chat_widget/layout.css"),
+  "utf8"
+);
+const foundationSource = await readFile(
+  resolve(root, "src/webserver/templates/styles/foundation.css"),
+  "utf8"
+);
+const tokenIdentityStylesSource = await readFile(
+  resolve(root, "src/webserver/templates/styles/ui/token_identity.css"),
+  "utf8"
+);
+
+if (templatesSource.includes("__PAGE_STYLES__") || baseSource.includes("__PAGE_STYLES__")) {
+  errors.push("Page CSS must not be serialized into a global JavaScript registry");
+}
+if (!templatesSource.includes("pub fn page_styles")) {
+  errors.push("templates.rs must expose the centralized page_styles manifest");
+}
+if (!routerSource.includes("/styles/pages/")) {
+  errors.push("router.js must load route-scoped page styles from /styles/pages/");
+}
+
+const assistantStyleManifest = templatesSource.match(/"assistant"\s*=>\s*\[([\s\S]*?)\]\s*\.join/);
+const globalStyleManifest = templatesSource.match(/let combined_styles = \[([\s\S]*?)\];/);
+const chatWidgetStyles = [
+  "CHAT_WIDGET_LAYOUT_STYLES",
+  "CHAT_WIDGET_MESSAGES_STYLES",
+  "CHAT_WIDGET_INPUT_STYLES",
+];
+
+if (!chatWidgetSource.includes('class="chat-widget chat-container')) {
+  errors.push("ChatWidget must expose the .chat-widget CSS scope root");
+}
+if (/(?:^|\n)\s*\.chat-container\s*\{/m.test(chatWidgetLayoutSource)) {
+  errors.push("ChatWidget scope-root layout must target :scope, not descendant .chat-container");
+}
+if (/(^|[\s,{])\.cw-host-(?:page|dialog)(?:\.sessions-open)?\s+\./m.test(chatWidgetLayoutSource)) {
+  errors.push("ChatWidget root host modifiers inside @scope must use :scope.cw-host-*");
+}
+for (const style of chatWidgetStyles) {
+  if (!globalStyleManifest?.[1].includes(style)) {
+    errors.push(`${style} must be loaded by the global shared-style manifest`);
+  }
+  if (assistantStyleManifest?.[1].includes(style)) {
+    errors.push(`${style} must not depend on the Assistant route-scoped style manifest`);
+  }
+}
+
+const tokenArtworkRule = parseRules(tokenIdentityStylesSource).find(
+  ({ selector }) => selector === ":root img.token-logo-artwork"
+);
+const tokenFrameRule = parseRules(tokenIdentityStylesSource).find(
+  ({ selector }) => selector === ":root .token-logo-frame:has(> img.token-logo-artwork)"
+);
+for (const [label, body] of [
+  ["loaded token artwork", tokenArtworkRule?.body],
+  ["loaded token frame", tokenFrameRule?.body],
+]) {
+  for (const declaration of [
+    /\bborder\s*:\s*0\s*;/,
+    /\bbackground\s*:\s*transparent\s*;/,
+    /\bbox-shadow\s*:\s*none\s*;/,
+  ]) {
+    if (!body || !declaration.test(body)) {
+      errors.push(`${label} must stay bare in ui/token_identity.css`);
+      break;
+    }
+  }
+}
+if (!/--token-logo-fit\s*:\s*cover\s*;/.test(foundationSource)) {
+  errors.push("Circle token logos must crop with --token-logo-fit: cover");
+}
+if (
+  !/:root\[data-token-logo-shape="rounded-square"\][^{]*\{[^}]*--token-logo-fit\s*:\s*contain\s*;/s.test(
+    foundationSource
+  )
+) {
+  errors.push("Natural token logos must preserve their canvas with --token-logo-fit: contain");
+}
+
+if (errors.length) {
+  console.error("Dashboard UI contract violations:\n");
+  errors.forEach((error) => console.error(`- ${error}`));
+  process.exitCode = 1;
+} else {
+  console.log(`Dashboard UI audit passed (${cssFiles.length} stylesheets checked).`);
+}

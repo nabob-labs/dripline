@@ -1,0 +1,1123 @@
+/* =============================================================================
+   Form Controls - Unified Input System
+   =============================================================================
+   Standardized styles for all form inputs: text, number, select, checkbox,
+   toggle switches, and composed input patterns.
+   ============================================================================= */
+
+/* =============================================================================
+   CSS Custom Properties - Form Control Tokens
+   ============================================================================= */
+:root {
+  /* Input dimensions */
+  --input-padding-y: 8px;
+  --input-padding-x: 12px;
+  --input-border-width: 1px;
+  --input-border-radius: var(--radius-md);
+  --input-font-size: 0.875rem;
+  --input-height: 38px;
+  --input-height-sm: 32px;
+  --input-height-lg: 44px;
+
+  /* Focus ring */
+  --input-focus-ring-width: 3px;
+  --input-focus-ring-color: var(--primary-alpha-10);
+
+  /* Control family (switch, checkbox, radio) - shared skin. One surface, one
+     ring, one accent and one motion curve for every binary/choice control in the
+     dashboard; see the Control Family section below. */
+  --control-motion: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --control-surface: var(--bg-tertiary);
+  --control-ring: var(--border-color);
+  --control-ring-hover: var(--input-border-hover);
+  --control-knob: var(--text-muted);
+  --control-accent: var(--primary-color);
+  --control-mark: var(--bg-primary);
+
+  /* Switch geometry - default (unlevelled) size. Radius is ~1/3 of the height:
+     a soft rounded rect, never a pill. */
+  --toggle-width: 40px;
+  --toggle-height: 22px;
+  --toggle-radius: 7px;
+  --toggle-knob-size: 16px;
+  --toggle-knob-radius: 5px;
+  --toggle-knob-offset: 3px;
+
+  /* Checkbox geometry - same radius ratio as the switch track. */
+  --checkbox-size: 16px;
+  --checkbox-size-sm: 14px;
+  --checkbox-radius: 5px;
+
+  /* Choice-control alignment - the single source for how a checkbox or radio
+     sits beside its label text. Inter's metrics, in em, plus the line height of
+     a label row. The control is centred on the text's cap band (baseline to
+     cap height): that is the block of ink a reader sees in a sentence-case
+     label, and its top edge - the leading capital and the ascenders - is what
+     the eye lines the control up with. Centring on the line box instead puts
+     the control low, because half-leading and the ascent above the cap height
+     are empty space; centring on the x-height band puts it low too, by half
+     the distance between the x-height and the cap. Because the offset is
+     measured from the first line, a label that wraps keeps the control on
+     line one. A row that centres its own children (an icon/card row) cancels
+     the offset with --control-line-offset: 0px; nothing else may nudge a
+     control. */
+  --control-row-gap: var(--spacing-sm);
+  --control-group-gap: var(--spacing-lg);
+  --control-line-height: 1.45;
+  --control-text-ascent: 0.969;
+  --control-text-descent: 0.241;
+  --control-text-cap-height: 0.727;
+  --control-box-size: var(--checkbox-size);
+  --control-line-offset: calc(
+    (
+        var(--control-line-height) + var(--control-text-ascent) - var(--control-text-descent) -
+          var(--control-text-cap-height)
+      ) *
+      0.5em - var(--control-box-size) * 0.5
+  );
+
+  /* Select arrow */
+  --select-arrow-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --select-arrow-dark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b949e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --select-arrow: var(--select-arrow-light);
+
+  /* Input state colors */
+  --input-border-default: var(--border-color);
+  --input-border-hover: var(--text-muted);
+  --input-border-focus: var(--primary-color);
+  --input-border-error: var(--error-color);
+  --input-border-success: var(--success-color);
+}
+
+/* =============================================================================
+   Base Input Styles
+   =============================================================================
+   Applies to: text, number, password, email, search, url, tel, date, time
+   ============================================================================= */
+
+input[type="text"],
+input[type="number"],
+input[type="password"],
+input[type="email"],
+input[type="search"],
+input[type="url"],
+input[type="tel"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  height: var(--input-height);
+  padding: var(--input-padding-y) var(--input-padding-x);
+  font-family: var(--font-data);
+  font-size: var(--input-font-size);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: var(--input-bg);
+  border: var(--input-border-width) solid var(--input-border-default);
+  border-radius: var(--input-border-radius);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+  width: 100%;
+}
+
+/* Hover state */
+input[type="text"]:hover:not(:disabled, :read-only),
+input[type="number"]:hover:not(:disabled, :read-only),
+input[type="password"]:hover:not(:disabled, :read-only),
+input[type="email"]:hover:not(:disabled, :read-only),
+input[type="search"]:hover:not(:disabled, :read-only),
+input[type="url"]:hover:not(:disabled, :read-only),
+input[type="tel"]:hover:not(:disabled, :read-only),
+input[type="date"]:hover:not(:disabled, :read-only),
+input[type="time"]:hover:not(:disabled, :read-only),
+input[type="datetime-local"]:hover:not(:disabled, :read-only) {
+  border-color: var(--input-border-hover);
+}
+
+/* Focus state - fully custom effect owned by us.
+   We use border + box-shadow only. No browser outline leaking.
+   Text inputs always show a clear custom focus when active (even on mouse),
+   per desktop-app convention for the field you are typing in. */
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+input[type="search"]:focus,
+input[type="url"]:focus,
+input[type="tel"]:focus,
+input[type="date"]:focus,
+input[type="time"]:focus,
+input[type="datetime-local"]:focus {
+  outline: none !important; /* ensure no browser default leaks */
+  border-color: var(--input-border-focus);
+  box-shadow: 0 0 0 var(--input-focus-ring-width) var(--input-focus-ring-color);
+  caret-color: var(--primary-color); /* our custom caret */
+}
+
+/* Keyboard-only stronger ring (gated by the global data-input system in theme.js + foundation).
+   We still customize it completely. */
+input[type="text"]:focus-visible,
+input[type="number"]:focus-visible,
+input[type="password"]:focus-visible,
+input[type="email"]:focus-visible,
+input[type="search"]:focus-visible,
+input[type="url"]:focus-visible,
+input[type="tel"]:focus-visible,
+input[type="date"]:focus-visible,
+input[type="time"]:focus-visible,
+input[type="datetime-local"]:focus-visible {
+  outline: none !important;
+  box-shadow:
+    0 0 0 var(--input-focus-ring-width) var(--input-focus-ring-color),
+    0 0 0 2px var(--primary-color);
+}
+
+/* Disabled state */
+input[type="text"]:disabled,
+input[type="number"]:disabled,
+input[type="password"]:disabled,
+input[type="email"]:disabled,
+input[type="search"]:disabled,
+input[type="url"]:disabled,
+input[type="tel"]:disabled,
+input[type="date"]:disabled,
+input[type="time"]:disabled,
+input[type="datetime-local"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--bg-card-hover);
+}
+
+/* Read-only state */
+input[type="text"]:read-only,
+input[type="number"]:read-only,
+input[type="password"]:read-only,
+input[type="email"]:read-only {
+  background: var(--bg-card-hover);
+  cursor: default;
+}
+
+/* Placeholder styling */
+input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* Error state */
+input.input-error,
+input[aria-invalid="true"] {
+  border-color: var(--input-border-error);
+}
+
+input.input-error:focus,
+input[aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 var(--input-focus-ring-width) var(--danger-alpha-10);
+}
+
+/* Success state */
+input.input-success {
+  border-color: var(--input-border-success);
+}
+
+input.input-success:focus {
+  box-shadow: 0 0 0 var(--input-focus-ring-width) var(--success-alpha-10);
+}
+
+/* Size variants */
+input.input-sm {
+  height: var(--input-height-sm);
+  padding: 6px 10px;
+  font-size: 0.8125rem;
+}
+
+input.input-lg {
+  height: var(--input-height-lg);
+  padding: 10px 14px;
+  font-size: 1rem;
+}
+
+/* =============================================================================
+   Textarea
+   ============================================================================= */
+
+textarea {
+  padding: var(--input-padding-y) var(--input-padding-x);
+  font-family: var(--font-data);
+  font-size: var(--input-font-size);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: var(--input-bg);
+  border: var(--input-border-width) solid var(--input-border-default);
+  border-radius: var(--input-border-radius);
+  resize: vertical;
+  min-height: 80px;
+  width: 100%;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+textarea:hover:not(:disabled, :read-only) {
+  border-color: var(--input-border-hover);
+}
+
+textarea:focus {
+  outline: none !important;
+  border-color: var(--input-border-focus);
+  box-shadow: 0 0 0 var(--input-focus-ring-width) var(--input-focus-ring-color);
+  caret-color: var(--primary-color);
+}
+
+textarea:focus-visible {
+  outline: none !important;
+  box-shadow:
+    0 0 0 var(--input-focus-ring-width) var(--input-focus-ring-color),
+    0 0 0 2px var(--primary-color);
+}
+
+textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--bg-card-hover);
+}
+
+textarea:read-only {
+  background: var(--bg-card-hover);
+  cursor: default;
+}
+
+textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* =============================================================================
+   Select Dropdown
+   ============================================================================= */
+
+select {
+  /* -webkit-/-moz- prefixes are REQUIRED to suppress the native OS dropdown arrow
+     in Electron's Chromium. Without them the browser draws its own chevron on top
+     of var(--select-arrow), producing two overlapping arrows. The stylelint-disable
+     is intentional: a previous `lint --fix` stripped these prefixes and reintroduced
+     the double-arrow bug. Do not remove. */
+  /* stylelint-disable property-no-vendor-prefix */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  /* stylelint-enable property-no-vendor-prefix */
+  appearance: none;
+  height: var(--input-height);
+  padding: var(--input-padding-y) var(--input-padding-x);
+  padding-right: 36px;
+  font-family: var(--font-data);
+  font-size: var(--input-font-size);
+  line-height: 1.5;
+  color: var(--text-primary);
+  background-color: var(--input-bg);
+  background-image: var(--select-arrow);
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+  border: var(--input-border-width) solid var(--input-border-default);
+  border-radius: var(--input-border-radius);
+  cursor: pointer;
+  width: 100%;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+select:hover:not(:disabled) {
+  border-color: var(--input-border-hover);
+}
+
+select:focus {
+  outline: none !important;
+  border-color: var(--input-border-focus);
+  box-shadow: 0 0 0 var(--input-focus-ring-width) var(--input-focus-ring-color);
+  caret-color: var(--primary-color);
+}
+
+select:focus-visible {
+  outline: none !important;
+  box-shadow:
+    0 0 0 var(--input-focus-ring-width) var(--input-focus-ring-color),
+    0 0 0 2px var(--primary-color);
+}
+
+select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--bg-card-hover);
+}
+
+/* Size variants */
+select.select-sm {
+  height: var(--input-height-sm);
+  padding: 6px 10px;
+  padding-right: 32px;
+  font-size: 0.8125rem;
+}
+
+select.select-lg {
+  height: var(--input-height-lg);
+  padding: 10px 14px;
+  padding-right: 40px;
+  font-size: 1rem;
+}
+
+/* =============================================================================
+   Control Family - Switch, Checkbox, Radio
+   =============================================================================
+   Everything in the dashboard that turns something on or off is one of three
+   shapes drawn from ONE token set (--control-*): the switch, the checkbox and
+   the radio. They share the resting surface, the 1px inset ring, the accent
+   fill and the motion curve, so a panel that mixes them still reads as one
+   system. The shape language is a soft ROUNDED RECT: never a pill with a
+   circular knob (that reads as a phone setting), never a hard square (that
+   reads as a bare form checkbox). The radio stays round because roundness is
+   what tells a user only one option can win.
+
+   Active state always uses --control-accent. Success, warning and danger belong
+   to adjacent status text, never to the control's selection skin; otherwise a
+   mixed settings view looks like unrelated green and blue component libraries.
+
+   HIERARCHY. A switch declares its depth with data-level, never with a size
+   class and never with a different colour, so a master switch, its groups and
+   their rules keep one identity and only their scale changes:
+     data-level="root"   the master over a whole source/section
+     data-level="group"  a group of rules inside that section
+     data-level="item"   a single rule/row inside a group
+   The bare sizes (.toggle-sm) stay for compact standalone switches - toolbar
+   chips, list rows - that are not part of a hierarchy.
+   ============================================================================= */
+
+/* -----------------------------------------------------------------------------
+   Switch
+   -------------------------------------------------------------------------- */
+
+.toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+/* The input stays in the DOM and in the tab order (never display:none) so the
+   control keeps its keyboard and form semantics; .toggle-track is the visual.
+   Typed to beat the global input[type="checkbox"] box regardless of file order. */
+.toggle > input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+}
+
+.toggle-track {
+  position: relative;
+  flex-shrink: 0;
+  width: var(--toggle-width);
+  height: var(--toggle-height);
+  background: var(--control-surface);
+  border-radius: var(--toggle-radius);
+  box-shadow: inset 0 0 0 1px var(--control-ring);
+  transition:
+    background-color var(--control-motion),
+    box-shadow var(--control-motion);
+}
+
+/* Knob: a rounded square that travels the track. Travel and press-squash both
+   compose into ONE transform, so each is a custom property instead of a second
+   transform declaration that would overwrite the first. */
+.toggle-track::after {
+  content: "";
+  position: absolute;
+  top: var(--toggle-knob-offset);
+  left: var(--toggle-knob-offset);
+  width: var(--toggle-knob-size);
+  height: var(--toggle-knob-size);
+  background: var(--control-knob);
+  border-radius: var(--toggle-knob-radius);
+  transform: translateX(var(--toggle-knob-travel, 0)) scale(var(--toggle-knob-squash, 1));
+  transition:
+    transform var(--control-motion),
+    background-color var(--control-motion);
+}
+
+.toggle:hover > input:not(:checked, :disabled) + .toggle-track {
+  box-shadow: inset 0 0 0 1px var(--control-ring-hover);
+}
+
+.toggle:hover > input:not(:checked, :disabled) + .toggle-track::after {
+  background: var(--text-secondary);
+}
+
+.toggle > input:checked + .toggle-track {
+  background: var(--control-accent);
+  box-shadow: inset 0 0 0 1px var(--control-accent);
+}
+
+.toggle > input:checked + .toggle-track::after {
+  --toggle-knob-travel: calc(
+    var(--toggle-width) - var(--toggle-knob-size) - var(--toggle-knob-offset) * 2
+  );
+
+  background: var(--control-mark);
+}
+
+/* Press feedback: the knob compresses. A click feels physical without changing
+   colour or growing a ring. */
+.toggle:active > input:not(:disabled) + .toggle-track::after {
+  --toggle-knob-squash: 0.88;
+}
+
+/* The input carries focus but cannot paint it (it is 0x0 and transparent), so
+   the track projects the keyboard ring. :focus-visible is the modality gate. */
+.toggle > input:focus-visible + .toggle-track {
+  box-shadow:
+    inset 0 0 0 1px var(--control-ring),
+    0 0 0 var(--input-focus-ring-width) var(--input-focus-ring-color);
+}
+
+.toggle > input:checked:focus-visible + .toggle-track {
+  box-shadow:
+    inset 0 0 0 1px var(--control-accent),
+    0 0 0 var(--input-focus-ring-width) var(--input-focus-ring-color);
+}
+
+.toggle:has(> input:disabled) {
+  cursor: not-allowed;
+}
+
+.toggle > input:disabled + .toggle-track {
+  opacity: 0.45;
+}
+
+/* Sentence-case label beside the switch. */
+.toggle-label {
+  font-size: var(--input-font-size);
+  color: var(--text-secondary);
+  cursor: inherit;
+  user-select: none;
+  transition: color var(--control-motion);
+}
+
+.toggle > input:checked ~ .toggle-label {
+  color: var(--text-primary);
+}
+
+/* Micro state word (ON/OFF, ALL/…) for switches that must state their state in
+   text as well as colour - toolbars, status bars, dense rows. */
+.toggle-state {
+  font-family: var(--font-data);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  cursor: inherit;
+  user-select: none;
+  transition: color var(--control-motion);
+}
+
+.toggle > input:checked ~ .toggle-state {
+  color: var(--control-accent);
+}
+
+.toggle > input:disabled ~ .toggle-label,
+.toggle > input:disabled ~ .toggle-state {
+  opacity: 0.45;
+}
+
+/* Hierarchy levels - scale only, one identity. */
+.toggle[data-level="root"] {
+  --toggle-width: 44px;
+  --toggle-height: 24px;
+  --toggle-radius: 8px;
+  --toggle-knob-size: 18px;
+  --toggle-knob-radius: 6px;
+}
+
+.toggle[data-level="group"] {
+  --toggle-width: 36px;
+  --toggle-height: 20px;
+  --toggle-radius: 7px;
+  --toggle-knob-size: 14px;
+  --toggle-knob-radius: 5px;
+}
+
+.toggle[data-level="item"] {
+  --toggle-width: 30px;
+  --toggle-height: 18px;
+  --toggle-radius: 6px;
+  --toggle-knob-size: 12px;
+  --toggle-knob-radius: 4px;
+}
+
+/* Compact standalone size (not a hierarchy level). */
+.toggle-sm {
+  --toggle-width: 32px;
+  --toggle-height: 18px;
+  --toggle-radius: 6px;
+  --toggle-knob-size: 12px;
+  --toggle-knob-radius: 4px;
+}
+
+/* -----------------------------------------------------------------------------
+   Checkbox
+   -------------------------------------------------------------------------- */
+
+/* Same surface, ring, radius ratio and motion as the switch; the fill is the
+   selection accent. Switch inputs are excluded by .toggle > input above. */
+input[type="checkbox"] {
+  appearance: none;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--checkbox-size);
+  height: var(--checkbox-size);
+  background: var(--control-surface);
+  border: none;
+  border-radius: var(--checkbox-radius);
+  box-shadow: inset 0 0 0 1px var(--control-ring);
+
+  /* The control owns its box: the UA margin on a checkbox/radio would silently
+     add to every flex gap it sits in. The inherited font size is what makes
+     --control-line-offset resolve against the label's own text. */
+  margin: 0;
+  font-size: inherit;
+  cursor: pointer;
+  transition:
+    background-color var(--control-motion),
+    box-shadow var(--control-motion),
+    transform var(--control-motion);
+}
+
+input[type="checkbox"]:hover:not(:disabled, :checked) {
+  box-shadow: inset 0 0 0 1px var(--control-ring-hover);
+}
+
+input[type="checkbox"]:checked {
+  background: var(--control-accent);
+  box-shadow: inset 0 0 0 1px var(--control-accent);
+}
+
+/* Checkmark: an SVG mask on inset:0 at a percentage size, so every size variant
+   scales for free. It grows in from the centre. */
+input[type="checkbox"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: var(--control-mark);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E")
+    center / 64% no-repeat;
+  transform: scale(0);
+  transition: transform var(--control-motion);
+}
+
+input[type="checkbox"]:checked::after {
+  transform: scale(1);
+}
+
+input[type="checkbox"]:active:not(:disabled) {
+  transform: scale(0.9);
+}
+
+input[type="checkbox"]:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px var(--control-ring),
+    0 0 0 var(--input-focus-ring-width) var(--input-focus-ring-color);
+  outline: none;
+}
+
+input[type="checkbox"]:checked:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px var(--control-accent),
+    0 0 0 var(--input-focus-ring-width) var(--input-focus-ring-color);
+}
+
+input[type="checkbox"]:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+input[type="checkbox"].checkbox-sm {
+  --control-box-size: var(--checkbox-size-sm);
+
+  width: var(--checkbox-size-sm);
+  height: var(--checkbox-size-sm);
+  border-radius: var(--radius-sm);
+}
+
+/* -----------------------------------------------------------------------------
+   Radio
+   -------------------------------------------------------------------------- */
+
+input[type="radio"] {
+  appearance: none;
+  position: relative;
+  flex-shrink: 0;
+  width: var(--checkbox-size);
+  height: var(--checkbox-size);
+  background: var(--control-surface);
+  border: none;
+  border-radius: var(--radius-full);
+  box-shadow: inset 0 0 0 1px var(--control-ring);
+  margin: 0;
+  font-size: inherit;
+  cursor: pointer;
+  transition:
+    background-color var(--control-motion),
+    box-shadow var(--control-motion),
+    transform var(--control-motion);
+}
+
+input[type="radio"]:hover:not(:disabled, :checked) {
+  box-shadow: inset 0 0 0 1px var(--control-ring-hover);
+}
+
+input[type="radio"]:checked {
+  background: var(--control-accent);
+  box-shadow: inset 0 0 0 1px var(--control-accent);
+}
+
+/* Dot, grown in on the same curve as the checkmark. */
+input[type="radio"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 40%;
+  height: 40%;
+  background: var(--control-mark);
+  border-radius: var(--radius-full);
+  transform: scale(0);
+  transition: transform var(--control-motion);
+}
+
+input[type="radio"]:checked::after {
+  transform: scale(1);
+}
+
+input[type="radio"]:active:not(:disabled) {
+  transform: scale(0.9);
+}
+
+input[type="radio"]:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px var(--control-ring),
+    0 0 0 var(--input-focus-ring-width) var(--input-focus-ring-color);
+  outline: none;
+}
+
+input[type="radio"]:checked:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px var(--control-accent),
+    0 0 0 var(--input-focus-ring-width) var(--input-focus-ring-color);
+}
+
+input[type="radio"]:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* -----------------------------------------------------------------------------
+   Label rows
+   -------------------------------------------------------------------------- */
+
+/* A checkbox or radio with text beside it. .checkbox-label is the canonical
+   row; the zero-specificity selector beside it gives any other label that
+   directly holds a bare control the same geometry, so a row added later is
+   aligned without opting in and a component that owns its own layout still
+   wins. Switch labels are excluded - .toggle is a different component. */
+.checkbox-label,
+:where(
+  label:not(.toggle):has(> input[type="checkbox"]),
+  label:not(.toggle):has(> input[type="radio"])
+) {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--control-row-gap);
+  font-size: var(--input-font-size);
+  color: var(--text-secondary);
+  line-height: var(--control-line-height);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* The one place a choice control is positioned against text. Scoped to label
+   rows, so a control standing alone in a cell, card or grid is untouched. */
+.checkbox-label > input[type="checkbox"],
+.checkbox-label > input[type="radio"],
+:where(
+    label:not(.toggle):has(> input[type="checkbox"]),
+    label:not(.toggle):has(> input[type="radio"])
+  )
+  > :where(input[type="checkbox"], input[type="radio"]) {
+  margin-block-start: var(--control-line-offset);
+}
+
+.checkbox-label span {
+  min-width: 0;
+}
+
+.checkbox-label:has(> input:disabled) {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Several control rows side by side, wrapping as a block, with any help text
+   below them on its own line. Rows must separate from each other by more than a
+   control separates from its own text, or three checkboxes on one line read as
+   one run of words: the column gap is the group's, the row gap only stacks
+   wrapped lines. */
+.checkbox-group {
+  /* The group owns its own flex context: it is not always ALSO a .form-group,
+     and on a bare nested div a `gap` without `display: flex` is ignored, which
+     left the rows separated by nothing but collapsed whitespace. */
+  display: flex;
+  flex-flow: row wrap;
+  align-items: flex-start;
+  gap: var(--control-row-gap) var(--control-group-gap);
+}
+
+.checkbox-group > label {
+  flex: 0 0 auto;
+}
+
+.checkbox-group > small,
+.checkbox-group > .form-help {
+  flex: 1 1 100%;
+  margin-top: 0;
+}
+
+/* Reduced motion keeps the state change, drops the travel. */
+@media (prefers-reduced-motion: reduce) {
+  .toggle-track,
+  .toggle-track::after,
+  .toggle-label,
+  .toggle-state,
+  input[type="checkbox"],
+  input[type="checkbox"]::after,
+  input[type="radio"],
+  input[type="radio"]::after {
+    transition: none;
+  }
+}
+
+/* =============================================================================
+   Search Input Wrapper
+   ============================================================================= */
+
+.search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-wrapper .search-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  pointer-events: none;
+  transition: color var(--transition-fast);
+}
+
+.search-wrapper input {
+  padding-left: 38px;
+  padding-right: 38px;
+}
+
+.search-wrapper input:focus + .search-icon,
+.search-wrapper:focus-within .search-icon {
+  color: var(--primary-color);
+}
+
+.search-wrapper .search-clear {
+  position: absolute;
+  right: 8px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.search-wrapper .search-clear:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.search-wrapper input:not(:placeholder-shown) ~ .search-clear {
+  display: flex;
+}
+
+/* =============================================================================
+   Numeric Field — the one shell every <input type="number"> gets
+   =============================================================================
+   `ui/number_field.js` wraps EVERY number input in the dashboard in
+   `.number-field`, so a number reads and behaves the same on every page. Markup
+   writes the input and, when the value has one, an `.input-unit` right after it —
+   no wrapper class of its own; the enhancer builds the shell and pulls a short
+   suffix into the box (a word-length one stays in the page's own row).
+
+   The shell holds two things inside the field's own box, at its inline end: a
+   symbol-length unit suffix and our stepper. The room they need is reserved by
+   the shell's gutter, which the enhancer applies as an INLINE declaration
+   pointing back at `--number-field-gutter`. It has to be inline: any page rule
+   that sets the `padding` shorthand on its own inputs (`.input-large`,
+   `.trade-action-input`, `.config-field-control input[type="number"]`, …)
+   outranks a stylesheet reserve and erases it — which is how a right-aligned
+   "50" ended up printed on top of its own "USD" suffix. The measurements
+   themselves stay here; JavaScript passes no numbers of its own except the
+   unit's length in characters. */
+
+.number-field {
+  --number-field-spin-width: 18px;
+  --number-field-unit-space: 0px;
+  --number-field-gutter: calc(
+    var(--number-field-unit-space) + var(--number-field-spin-width) + 10px
+  );
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+
+  /* The shell IS the field, so it takes the width an input takes by default and
+     a page that wants a narrower number sizes the shell, never the input — the
+     stepper and suffix anchor to the shell's inline end. */
+  width: 100%;
+}
+
+/* The input fills the shell, so the shell's inline end IS the field's inline
+   end and the suffix can anchor to it. A page that caps a number input's width
+   caps `.number-field` instead (see config_fields.css, config_components.css). */
+.number-field > input[type="number"] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* One character of the input's own data font per unit character, plus the gap
+   to the stepper. Slightly generous — the suffix renders a size smaller — and
+   generous is the safe direction: it can only leave air, never overlap. Only a
+   suffix that sits INSIDE the box is reserved for — a word-length unit stays
+   outside the shell and takes its own room (see UNIT_INSIDE_MAX_CHARS). */
+.number-field:has(.number-field-suffix > .input-unit) {
+  --number-field-unit-space: calc(var(--number-field-unit-len, 3) * 1ch + 6px);
+}
+
+.number-field-suffix {
+  position: absolute;
+  inset-inline-end: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  /* The suffix must never eat a click meant for the field; the stepper's own
+     buttons take their events back below. */
+  pointer-events: none;
+}
+
+.input-unit {
+  font-family: var(--font-data);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* Stepper: bare chevrons, never a tile or ring behind them. Idle they stay out
+   of the way and only the value is legible; hover or focus brings them up. The
+   column keeps its width at all times, so nothing reflows when they appear. */
+.number-field-spin {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: var(--number-field-spin-width);
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.number-field:hover .number-field-spin,
+.number-field:focus-within .number-field-spin {
+  opacity: 1;
+}
+
+.number-field-step {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 11px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.6rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.12s ease;
+}
+
+.number-field-step:hover {
+  color: var(--primary-color);
+}
+
+.number-field-step:active {
+  color: var(--primary-hover);
+}
+
+/* A value that cannot be edited cannot be stepped either. */
+.number-field:has(> input:disabled) .number-field-spin,
+.number-field:has(> input:read-only) .number-field-spin {
+  visibility: hidden;
+}
+
+/* The browser's own spin buttons are replaced everywhere, not merely hidden on
+   the pages that noticed them: they overlap right-aligned values, ignore our
+   type scale and appear on hover with no relation to the field's design. */
+input[type="number"] {
+  appearance: textfield;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+/* =============================================================================
+   Form Group Pattern
+   ============================================================================= */
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+/* Field caption. A label that holds a control is a row, not a caption, and
+   keeps the row typography above. */
+.form-group
+  label:not(.checkbox-label, :has(> input[type="checkbox"]), :has(> input[type="radio"])) {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.01em;
+}
+
+.form-group label.required::after {
+  content: " *";
+  color: var(--error-color);
+}
+
+.form-group .form-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.form-group .form-error {
+  font-size: 0.75rem;
+  color: var(--error-color);
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.form-group .form-error::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E");
+  background-size: contain;
+  flex-shrink: 0;
+}
+
+/* =============================================================================
+   Inline Form Controls
+   ============================================================================= */
+
+.form-inline {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.form-inline
+  label:not(.checkbox-label, :has(> input[type="checkbox"]), :has(> input[type="radio"])) {
+  font-size: var(--input-font-size);
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.form-inline input,
+.form-inline select {
+  flex: 1;
+  min-width: 0;
+}
+
+/* =============================================================================
+   Input Group (Connected Inputs)
+   ============================================================================= */
+
+.input-group {
+  display: flex;
+  align-items: stretch;
+}
+
+.input-group input,
+.input-group select,
+.input-group .input-group-addon {
+  border-radius: 0;
+}
+
+.input-group > :first-child {
+  border-radius: var(--input-border-radius) 0 0 var(--input-border-radius);
+}
+
+.input-group > :last-child {
+  border-radius: 0 var(--input-border-radius) var(--input-border-radius) 0;
+}
+
+.input-group > :not(:first-child) {
+  margin-left: -1px;
+}
+
+.input-group-addon {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--input-padding-x);
+  background: var(--bg-card-hover);
+  border: var(--input-border-width) solid var(--input-border-default);
+  font-size: var(--input-font-size);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}

@@ -1,0 +1,70 @@
+//! Concrete background service implementations for each bot subsystem.
+pub mod account_service;
+pub mod assistant_scheduled_tasks_service;
+pub mod ata_cleanup_service;
+pub mod connectivity_service;
+pub mod copy_trading_service;
+pub mod events_service;
+pub mod filtering_service;
+pub mod llm_analysis_service;
+pub mod ohlcv_service;
+pub mod pools_service;
+pub mod positions_service;
+pub mod referral_service;
+pub mod rpc_stats_service;
+pub mod sol_price_service;
+pub mod transactions_service;
+pub mod update_check_service;
+pub mod wallet_service;
+pub mod wallet_watch_service;
+pub mod webserver_service;
+
+// Pool sub-services
+pub mod pool_analyzer_service;
+pub mod pool_calculator_service;
+pub mod pool_discovery_service;
+pub mod pool_fetcher_service;
+
+// Centralized tokens service
+pub mod tokens_service;
+
+// Trader service
+pub mod trader_service;
+
+// Telegram service
+pub mod telegram_service;
+
+pub use account_service::AccountService;
+pub use assistant_scheduled_tasks_service::AssistantScheduledTasksService;
+pub use ata_cleanup_service::AtaCleanupService;
+pub use connectivity_service::ConnectivityService;
+pub use copy_trading_service::CopyTradingService;
+pub use events_service::EventsService;
+pub use filtering_service::FilteringService;
+pub use llm_analysis_service::LlmAnalysisService;
+pub use ohlcv_service::OhlcvService;
+pub use pools_service::PoolsService;
+pub use positions_service::PositionsService;
+pub use referral_service::ReferralService;
+pub use rpc_stats_service::RpcStatsService;
+pub use sol_price_service::SolPriceService;
+pub use transactions_service::TransactionsService;
+pub use update_check_service::UpdateCheckService;
+pub use wallet_service::WalletService;
+pub use wallet_watch_service::WalletWatchService;
+pub use webserver_service::WebserverService;
+
+// Pool sub-services
+pub use pool_analyzer_service::PoolAnalyzerService;
+pub use pool_calculator_service::PoolCalculatorService;
+pub use pool_discovery_service::PoolDiscoveryService;
+pub use pool_fetcher_service::PoolFetcherService;
+
+// Centralized tokens service
+pub use tokens_service::TokensService;
+
+// Trader service
+pub use trader_service::TraderService;
+
+// Telegram service
+pub use telegram_service::TelegramService;

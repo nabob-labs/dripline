@@ -1,0 +1,40 @@
+//! Trading end-to-end. Contains the MAINNET swap lifecycle — it spends real SOL.
+//!
+//! `#[ignore]` AND gated by [`common::require_mainnet`], which returns `None` (clean
+//! skip, no spend, no failure) unless the owner opts in with `SB_TEST_MAINNET_SWAP=1`
+//! and a funded `SB_TEST_WALLET`. So the live command runs the read-only tests while
+//! this one self-skips; `./test.sh mainnet` sets the env so it executes. Spend is
+//! capped by `SB_TEST_MAX_LAMPORTS`. The `mainnet` in the test name puts it in the
+//! serial-mainnet nextest group (never run in parallel).
+
+mod common;
+
+#[tokio::test]
+#[ignore = "mainnet swap: spends real SOL"]
+async fn mainnet_manual_buy_then_sell_lifecycle() {
+    let Some(ctx) = common::require_mainnet() else {
+        return; // Not opted in — skip without spending or failing.
+    };
+    let _guard = common::isolated_env();
+
+    // Prove the guard + wallet resolve so `./test.sh mainnet` exercises the harness.
+    assert!(ctx.max_lamports > 0, "spend cap must be positive");
+    if let Some(wallet_path) = &ctx.wallet_path {
+        assert!(
+            std::path::Path::new(wallet_path).exists(),
+            "funded test wallet not found at {wallet_path}"
+        );
+    }
+
+    // TODO(wire): drive the real manual-trade path end to end, capped at ctx.max_lamports:
+    //   1. load keypair from ctx.wallet_path; init RPC via get_rpc_client()
+    //   2. trader::manual::manual_buy(ctx.mint, size <= cap) -> assert a position opens
+    //   3. await entry verification (EntryVerified)          -> assert holdings > 0
+    //   4. trader::manual::manual_sell(ctx.mint, close_all)  -> assert exit submitted
+    //   5. await ExitVerified                                -> assert closed, PnL recorded,
+    //      slot released exactly once, exit record written
+    eprintln!(
+        "mainnet harness ready: mint={} cap={} lamports (swap execution not yet wired)",
+        ctx.mint, ctx.max_lamports
+    );
+}

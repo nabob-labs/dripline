@@ -1,0 +1,57 @@
+/* DataTable Component Styles */
+
+/* ==================== Colgroup Column Width Management ==================== */
+
+/* Column widths: NO transition by default to prevent oscillation during data updates */
+.data-table col {
+  transition: none;
+}
+
+/* Disable transition during active resize for immediate feedback */
+body.dt-column-resizing .data-table col {
+  transition: none;
+}
+
+/* ==================== Table Wrapper ==================== */
+
+.data-table-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  flex: 1 1 auto;
+  background: var(--bg-primary);
+  overflow: hidden;
+  position: relative;
+}
+
+.data-table-wrapper.is-refreshing .data-table {
+  opacity: 0.65;
+  transition: opacity 0.18s ease;
+}
+
+.data-table-wrapper.is-refreshing::after {
+  content: "Refreshing...";
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: rgb(148, 163, 184, 0.15);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  backdrop-filter: blur(6px);
+  border: 1px solid rgb(148, 163, 184, 0.3);
+}
+
+/* ==================== Module Organization ==================== */
+
+/*
+ * Additional DataTable styles are split into sub-modules:
+ * - core.css: Loading states, table structure, header, body, cells, drag & drop
+ * - column_types.css: Image columns, action buttons, dropdown menus, data formatting
+ * - pagination.css: Client pagination, server pagination, mode toggle
+ *
+ * These are registered separately in templates.rs and combined at compile time.
+ */

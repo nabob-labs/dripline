@@ -1,0 +1,408 @@
+//! Swap and action resilience — the guards that keep a trade from getting STUCK.
+//!
+//! Every test here exists because of a real stuck sell: a manual "sell all" that
+//! reached `Executing swap via Jupiter` and then produced no further log line, no
+//! error and no completion for as long as the app stayed up. The position sat in
+//! "Selling", its slot permit stayed consumed, and the exit action never resolved.
+//!
+//! These are pure/local tests — no chain, no provider, no network egress. The HTTP
+//! ones bind a loopback listener so the "server that never answers" case is exact
+//! and deterministic rather than something we hope to observe against a real host.
+
+mod common;
+
+use std::time::{Duration, Instant};
+use tokio::io::AsyncReadExt;
+use tokio::net::TcpListener;
+
+/// Accept connections and NEVER reply. Returns the bound address.
+///
+/// This is the failure mode that hung the sell: the socket connects fine (so a
+/// connect timeout does not help) and then nothing comes back, forever.
+async fn spawn_silent_server() -> String {
+    let listener = TcpListener::bind("127.0.0.1:0").await.expect("bind");
+    let addr = listener.local_addr().expect("addr").to_string();
+    tokio::spawn(async move {
+        loop {
+            let Ok((mut socket, _)) = listener.accept().await else {
+                return;
+            };
+            // Hold the connection open, read the request, answer nothing.
+            tokio::spawn(async move {
+                let mut buf = [0u8; 1024];
+                while socket.read(&mut buf).await.unwrap_or(0) > 0 {}
+                std::future::pending::<()>().await;
+            });
+        }
+    });
+    addr
+}
+
+/// The regression itself: `net::client()` had NO request timeout, so reqwest waited
+/// forever on a server that accepted the connection and went silent. Any HTTP call in
+/// the app could park its task permanently — including the Jupiter swap-build call
+/// that sits between "we decided to sell" and "we have a signed transaction".
+#[tokio::test]
+async fn a_silent_server_times_out_instead_of_hanging_forever() {
+    let addr = spawn_silent_server().await;
+    let client = veloxbot::net::client();
+
+    let started = Instant::now();
+    let result = tokio::time::timeout(
+        Duration::from_secs(70),
+        client.get(format!("http://{addr}/")).send(),
+    )
+    .await;
+
+    let inner = result.expect("request must not outlive the default timeout — it hung");
+    assert!(
+        inner.is_err(),
+        "a server that never answers must produce an error, not a response"
+    );
+    assert!(
+        inner.unwrap_err().is_timeout(),
+        "the failure must be reported as a timeout"
+    );
+    assert!(
+        started.elapsed() < Duration::from_secs(70),
+        "took {:?}",
+        started.elapsed()
+    );
+}
+
+/// Swap execution sets a TIGHTER per-request timeout than the shared default, because
+/// a quote that is slow is also stale. Per-request timeouts must win over the client
+/// default — if they silently did not, the swap path would fall back to the 45s
+/// default and a trade decision would act on a price a minute old.
+#[tokio::test]
+async fn a_per_request_timeout_overrides_the_client_default() {
+    let addr = spawn_silent_server().await;
+    let client = veloxbot::net::client();
+
+    let started = Instant::now();
+    let result = client
+        .get(format!("http://{addr}/"))
+        .timeout(Duration::from_secs(2))
+        .send()
+        .await;
+
+    assert!(result.is_err(), "silent server must not yield a response");
+    assert!(
+        started.elapsed() < Duration::from_secs(20),
+        "per-request timeout was ignored; waited {:?}",
+        started.elapsed()
+    );
+}
+
+/// A submitted-but-unconfirmed swap is recognised even when a router wraps the RPC
+/// error in its own prose.
+///
+/// This decision is the difference between "hand the signature to verification" and
+/// "send the sell again through the next router" — the second is a real double sell.
+/// The old parser matched the FIRST "Transaction " in the message, so a wrapper that
+/// began "Transaction send failed: ..." made it return a sentence fragment. That
+/// fragment was truthy, so the no-retry guard held by luck, but it was then written
+/// to `exit_transaction_signature` and enqueued for verification — an exit pinned to
+/// a signature that does not exist on chain can never settle.
+#[test]
+fn a_wrapped_unconfirmed_swap_error_yields_the_real_signature_only() {
+    use veloxbot::swaps::unconfirmed_swap_signature_from_message;
+
+    const SIGNATURE: &str =
+        "5VERv8NMvzbJMEkV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUW";
+
+    assert_eq!(
+        unconfirmed_swap_signature_from_message(&format!(
+            "Transaction send failed: RPC error: Transaction {SIGNATURE} not confirmed within timeout"
+        )),
+        Some(SIGNATURE.to_owned()),
+    );
+
+    // A pre-submission failure must NOT look submitted, or a recoverable trade is
+    // abandoned with a phantom exit signature.
+    assert_eq!(
+        unconfirmed_swap_signature_from_message("No swap route available for this token"),
+        None,
+    );
+
+    // Prose can never masquerade as a signature.
+    assert_eq!(
+        unconfirmed_swap_signature_from_message(
+            "Transaction send failed: not confirmed within timeout"
+        ),
+        None,
+    );
+}
+
+/// Completed actions must actually be deletable.
+///
+/// `action_steps.action_id` is a FOREIGN KEY into `actions(id)` with no ON DELETE
+/// CASCADE, and the cleanup deleted the PARENT first — so every run aborted with
+/// "FOREIGN KEY constraint failed" and removed nothing. Both tables therefore grew
+/// for the life of an install, and every trade adds rows to both.
+#[tokio::test(flavor = "multi_thread")]
+async fn completed_actions_are_deleted_together_with_their_steps() {
+    use veloxbot::actions::{Action, ActionState, ActionType, ActionsDatabase};
+
+    let _dir = common::isolated_env();
+    veloxbot::paths::ensure_all_directories().expect("create isolated data dirs");
+    common::configure_own_wallet();
+
+    let db = ActionsDatabase::new().await.expect("actions db");
+
+    let action = Action::new(
+        "stuck-sell-cleanup".to_owned(),
+        ActionType::SwapSell,
+        "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN".to_owned(),
+        vec![
+            "Validating".to_owned(),
+            "Getting Quote".to_owned(),
+            "Executing Swap".to_owned(),
+            "Verifying".to_owned(),
+        ],
+        serde_json::json!({ "symbol": "TRUMP" }),
+    );
+    db.insert_action(&action).await.expect("insert action");
+
+    let completed_at = chrono::Utc::now();
+    db.update_action_state(
+        &action.id,
+        &ActionState::Completed,
+        Some(completed_at),
+        action.started_at,
+    )
+    .await
+    .expect("complete action");
+
+    // A negative retention puts the cutoff in the future, so every completed action
+    // qualifies — the point under test is that the delete SUCCEEDS, not the cutoff math.
+    let deleted = db
+        .cleanup_old_actions(-1)
+        .await
+        .expect("cleanup must not fail on the steps foreign key");
+
+    assert_eq!(deleted, 1, "the completed action must be deleted");
+    assert!(
+        db.get_action(&action.id)
+            .await
+            .expect("read back")
+            .is_none(),
+        "the action must be gone after cleanup"
+    );
+}
+
+fn uninitialized_quote_request() -> veloxbot::swaps::QuoteRequest {
+    use veloxbot::swaps::{QuoteRequest, SwapMode};
+    QuoteRequest {
+        chain: veloxbot::chains::active_chain(),
+        input_mint: "So11111111111111111111111111111111111111112".to_owned(),
+        output_mint: "TokenMint111111111111111111111111111111111".to_owned(),
+        input_amount: 1_000_000,
+        wallet_address: "Wallet1111111111111111111111111111111111111".to_owned(),
+        slippage_pct: 1.0,
+        swap_mode: SwapMode::ExactIn,
+        exclude_dexes: None,
+    }
+}
+
+fn assert_registry_uninitialized(err: veloxbot::Error) {
+    match err {
+        veloxbot::Error::Service(veloxbot::errors::ServiceError::Initialize {
+            service,
+            ..
+        }) => {
+            assert_eq!(service, "swaps.registry");
+        }
+        other => panic!("expected swaps.registry init error, got {other}"),
+    }
+}
+
+/// Quote/execution before `set_router_factory` must return a domain error.
+/// This binary never registers a factory; the accessor must not abort the process.
+#[test]
+fn uninitialized_registry_access_does_not_panic() {
+    let result = std::panic::catch_unwind(veloxbot::swaps::try_get_registry);
+    assert!(result.is_ok(), "try_get_registry must not panic");
+    assert!(
+        result.expect("catch_unwind").is_none(),
+        "no factory is registered in this test binary"
+    );
+
+    let result = std::panic::catch_unwind(veloxbot::swaps::get_registry);
+    assert!(result.is_ok(), "get_registry must not panic");
+    match result.expect("catch_unwind") {
+        Err(err) => assert_registry_uninitialized(err),
+        Ok(_) => panic!("get_registry must fail when uninitialized"),
+    }
+}
+
+#[tokio::test]
+async fn uninitialized_quote_returns_a_domain_error() {
+    let err = veloxbot::swaps::get_best_quote(uninitialized_quote_request())
+        .await
+        .expect_err("quote without a factory");
+    assert_registry_uninitialized(err);
+}
+
+#[tokio::test]
+async fn uninitialized_execution_returns_a_domain_error() {
+    use veloxbot::swaps::{
+        execute_swap_with_fallback, quote_and_execute_for_wallet, Quote, RouterChoice, SwapMode,
+    };
+
+    let quote = Quote {
+        chain: veloxbot::chains::active_chain(),
+        router_id: "jupiter".to_owned(),
+        router_name: "Jupiter".to_owned(),
+        input_mint: "So11111111111111111111111111111111111111112".to_owned(),
+        output_mint: "TokenMint111111111111111111111111111111111".to_owned(),
+        input_amount: 1_000_000,
+        output_amount: 1,
+        minimum_output_amount: 1,
+        price_impact_pct: 0.0,
+        platform_fee_lamports: None,
+        estimated_network_fee_lamports: None,
+        slippage_bps: 100,
+        route_plan: "none".to_owned(),
+        swap_mode: SwapMode::ExactIn,
+        wallet_address: "Wallet1111111111111111111111111111111111111".to_owned(),
+        exclude_dexes: None,
+        execution_data: b"jupiter".to_vec(),
+    };
+
+    let err = execute_swap_with_fallback(&common::filter_token("mint"), quote)
+        .await
+        .expect_err("execute without a factory");
+    assert_registry_uninitialized(err);
+
+    let err = quote_and_execute_for_wallet(uninitialized_quote_request(), 1, RouterChoice::Auto)
+        .await
+        .expect_err("wallet execute without a factory");
+    assert_registry_uninitialized(err);
+}
+
+/// A direct swap that LANDED SUCCESSFULLY must never read as "never submitted".
+///
+/// `unconfirmed_swap_signature` is the only thing standing between a submitted
+/// swap and a caller that retries or discards it. `open.rs` creates a pending
+/// position when it returns `Some` and returns `SwapFailed` with NO POSITION AT
+/// ALL when it returns `None`; the exit ladders in `close.rs` and
+/// `partial_close.rs` stop on `Some` and escalate to the next slippage rung on
+/// `None`.
+///
+/// `DirectSwapError::OutputNotReceived` is raised for a transaction that
+/// CONFIRMED WITHOUT ERROR -- the input left the wallet and the output arrived,
+/// `min_out` was enforced by the pool programme itself -- and only the receipt
+/// MEASUREMENT came in under the guaranteed minimum. Its `submitted()` is true
+/// and it carries the signature as data. But the recovery function matches one
+/// variant by name (`ConfirmationTimeout`) and otherwise scans the message for
+/// the aggregator's " not confirmed within timeout" marker, which this variant's
+/// message does not contain.
+///
+/// The consequence is a buy whose tokens are in the wallet and whose position
+/// was never created.
+#[test]
+fn a_confirmed_swap_reported_as_output_not_received_is_still_recoverable() {
+    use veloxbot::chains::solana::swaps::direct::DirectSwapError;
+    use veloxbot::swaps::unconfirmed_swap_signature;
+
+    const SIGNATURE: &str =
+        "5VERv8NMvzbJMEkV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUW";
+
+    let error = DirectSwapError::OutputNotReceived {
+        signature: SIGNATURE.to_owned(),
+        expected_minimum: 1_000_000,
+        received: 0,
+    };
+    assert!(
+        error.submitted(),
+        "the engine itself says this one reached the chain"
+    );
+    assert_eq!(
+        error.signature(),
+        Some(SIGNATURE),
+        "the engine itself carries the signature as data"
+    );
+
+    assert_eq!(
+        unconfirmed_swap_signature(&veloxbot::Error::from(error)).as_deref(),
+        Some(SIGNATURE),
+        "a confirmed swap the receipt could not measure must be handed to \
+         reconciliation, not treated as a trade that never happened"
+    );
+}
+
+/// `ConfirmationTimeout` -- the variant the recovery function was written for --
+/// still works, and `TransactionFailed` is deliberately NOT recoverable.
+///
+/// A reverted transaction moved nothing, so a caller must be free to retry it
+/// and must NOT open a position against it. That is why `submitted()` being true
+/// for `TransactionFailed` is not the same question as whether the signature
+/// should be handed back here.
+#[test]
+fn a_reverted_swap_is_not_mistaken_for_one_that_may_still_land() {
+    use veloxbot::chains::solana::swaps::direct::DirectSwapError;
+    use veloxbot::swaps::unconfirmed_swap_signature;
+
+    const SIGNATURE: &str =
+        "5VERv8NMvzbJMEkV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUW";
+
+    assert_eq!(
+        unconfirmed_swap_signature(&veloxbot::Error::from(
+            DirectSwapError::ConfirmationTimeout {
+                signature: SIGNATURE.to_owned(),
+                waited_ms: 60_000,
+            }
+        ))
+        .as_deref(),
+        Some(SIGNATURE)
+    );
+    assert_eq!(
+        unconfirmed_swap_signature(&veloxbot::Error::from(
+            DirectSwapError::TransactionFailed {
+                signature: SIGNATURE.to_owned(),
+                detail: "custom program error: 0x1".to_owned(),
+            }
+        )),
+        None,
+        "a transaction that reverted is safe to retry and must not open a position"
+    );
+}
+
+/// A failure that never reached the chain must NOT look submitted, or a
+/// recoverable trade is abandoned against a signature that does not exist.
+#[test]
+fn an_unsubmitted_direct_swap_failure_yields_no_signature() {
+    use veloxbot::chains::solana::solana_sdk::pubkey::Pubkey;
+    use veloxbot::chains::solana::swaps::direct::DirectSwapError;
+    use veloxbot::swaps::unconfirmed_swap_signature;
+
+    for error in [
+        DirectSwapError::SimulationRejected {
+            detail: "rejected".to_owned(),
+            logs: Vec::new(),
+        },
+        DirectSwapError::SubmitFailed {
+            detail: "node refused".to_owned(),
+        },
+        DirectSwapError::BlockhashExpired {
+            signature:
+                "5VERv8NMvzbJMEkV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUW"
+                    .to_owned(),
+            last_valid_block_height: 100,
+            current_block_height: 152,
+        },
+        DirectSwapError::InsufficientBalance {
+            mint: Pubkey::new_unique(),
+            required: 10,
+            available: 1,
+        },
+    ] {
+        assert!(!error.submitted(), "sanity: these never reached the chain");
+        assert_eq!(
+            unconfirmed_swap_signature(&veloxbot::Error::from(error)),
+            None,
+            "an unsubmitted failure must stay retryable"
+        );
+    }
+}

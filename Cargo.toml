@@ -1,0 +1,257 @@
+[package]
+name = "veloxbot"
+version = "0.2.5"
+edition = "2021"
+license = "Apache-2.0"
+default-run = "veloxbot"
+# Disable automatic binary discovery - only the main binary is bundled.
+autobins = false
+
+# Note: We do NOT use a [workspace] here to keep the build simple.
+# Verification lives in the standard test suite (tests/ + co-located #[cfg(test)]),
+# run via ../test.sh (cargo-nextest). The old debug_bins/debug-tools were removed.
+
+# Dev profile — fastest possible compile + good debugging
+[profile.dev]
+opt-level = 0
+debug = 0                # no debug info -> much faster compile/link
+incremental = true
+codegen-units = 256
+lto = false
+panic = "abort"          # simpler codegen, faster builds
+debug-assertions = false # skip extra checks for speed
+overflow-checks = false  # skip integer overflow checks
+
+# Release profile — FAST compilation, good runtime performance, no debug info
+[profile.release]
+opt-level = 2            # Good performance, much faster compile than opt-level 3
+lto = false              # NO LTO = saves 5-10 minutes per build
+codegen-units = 256      # Maximum parallelism for fastest compilation
+incremental = true       # Faster rebuilds when code changes
+debug = false            # No debug info in binary
+panic = "abort"          # Security: no stack unwinding, smaller binary
+strip = "symbols"        # Strip ALL symbols (no function names leak)
+debug-assertions = false # No debug assertions in release
+overflow-checks = false  # No overflow checks (performance)
+
+[lib]
+name = "veloxbot"
+path = "src/lib.rs"
+doctest = false
+# Note: Default crate-type is "rlib" which is sufficient for desktop builds
+# Android builds will specify crate-type via build script when needed
+
+# Main binary - this is the only binary included in the app bundle
+[[bin]]
+name = "veloxbot"
+path = "src/main.rs"
+
+# =============================================================================
+# Tests: standard cargo tests (tests/ integration + co-located #[cfg(test)]),
+# organized in tiers (L0 pure / L1 read-only live / L2 mainnet swap).
+# Run the whole suite via ../test.sh (cargo-nextest); see .config/nextest.toml.
+# =============================================================================
+
+[dependencies]
+# Core async runtime with minimal features for faster builds
+# Added tracing for tokio-console support
+tokio = { version = "1", features = [
+  "rt-multi-thread",
+  "macros",
+  "sync",
+  "time",
+  "fs",
+  "net",
+  "tracing",
+] }
+console-subscriber = { version = "0.2", optional = true }
+tokio-metrics = "0.4"
+
+# Essential dependencies
+anyhow = "1.0"
+arc-swap = "1.7"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+semver = "1.0"
+blake3 = "1.5"
+sha2 = "0.10"
+flate2 = { version = "1.0", default-features = false, features = ["rust_backend"] }
+
+# HTTP client and websockets - using rustls for Android compatibility
+reqwest = { version = "0.11", default-features = false, features = [
+  "json",
+  "rustls-tls",
+  "blocking",
+  "stream",
+  "socks",
+] }
+tokio-tungstenite = { version = "0.21", features = ["connect", "rustls-tls-native-roots"] }
+
+# OpenSSL - vendored build for Android cross-compilation
+openssl = { version = "0.10", features = ["vendored"], optional = true }
+
+# Database with bundled sqlite for faster builds
+rusqlite = { version = "0.37", features = ["bundled", "unlock_notify"] }
+r2d2 = "0.8"
+r2d2_sqlite = "0.31"
+
+# Crypto / encoding
+bs58 = "0.5"
+base64 = "0.22"
+toml = "0.9"
+aes-gcm = "0.10"
+constant_time_eq = "0.3"
+
+# TOTP 2FA authentication
+totp-rs = { version = "5.6", features = ["qr", "gen_secret"] }
+qrcode = "0.14"
+image = { version = "0.25", default-features = false, features = ["png"] }
+
+# CLI and logging - minimal features
+clap = { version = "4.0", features = ["derive"] }
+colored = "3.0"
+log = "0.4"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# System / utils
+rand = "0.8"
+bincode = "1.3"
+thiserror = "2.0"
+fslock = "0.2"
+uuid = { version = "1.11", features = ["v4", "serde"] }
+regex = "1.10"
+
+# CPU profiling
+pprof = { version = "0.13", features = ["flamegraph", "criterion"], optional = true }
+unicode-width = "0.2"
+
+# Concurrency
+dashmap = "5.5"
+moka = { version = "0.12", features = ["sync"] }
+
+# Rate limiting with GCRA algorithm
+governor = "0.6"
+nonzero_ext = "0.3"
+
+# Service management dependencies
+async-trait = "0.1"
+
+# Solana dependencies - with full features needed for trading
+solana-sdk = { version = "2.3.1", features = ["full"] }
+solana-client = { version = "2.1.0" }
+solana-program = { version = "2.3.0" }
+solana-transaction-status = { version = "2.3.3" }
+solana-account-decoder = { version = "2.3.1" }
+
+# SPL Token dependencies - minimal features
+spl-token-2022 = { version = "8.0.1", default-features = false, features = ["no-entrypoint"] }
+spl-token = { version = "8.0.0", default-features = false, features = ["no-entrypoint"] }
+spl-associated-token-account = { version = "6.0.0", default-features = false, features = [
+  "no-entrypoint",
+] }
+
+# Web and networking
+futures = "0.3"
+futures-util = "0.3"
+url = "2.4"
+async-stream = "0.3"
+tokio-stream = "0.1"
+
+# Telegram bot integration
+teloxide = { version = "0.13", features = ["macros"] }
+
+# File and data processing
+csv = "1.3.1"
+dirs = "6.0.0"
+calamine = "0.32"
+
+# Terminal and display
+tabled = "0.20"
+axum = { version = "0.7", features = ["ws", "macros", "multipart"] }
+axum-macros = "0.4"
+rmcp = { version = "3.1.4", default-features = false, features = ["server", "transport-io"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "trace", "compression-full"] }
+hyper = "1.0"
+sysinfo = "0.30"
+
+# macOS window management (used for window utilities)
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-foundation = { version = "0.3", features = ["NSGeometry", "NSArray", "NSObject"] }
+objc2-app-kit = { version = "0.3", features = [
+  "NSWindow",
+  "NSScreen",
+  "NSApplication",
+  "NSRunningApplication",
+  "NSWorkspace",
+  "NSColor",
+] }
+machine-uid = "0.5"
+# Vendored OpenSSL so the x86_64 cross-compile does not depend on a system
+# install. openssl-sys is pulled in unconditionally by solana-secp256r1-program.
+openssl = { version = "0.10", features = ["vendored"] }
+
+# Windows-specific dependencies - vendored OpenSSL for Windows builds
+[target.'cfg(target_os = "windows")'.dependencies]
+machine-uid = "0.5"
+openssl = { version = "0.10", features = ["vendored"] }
+
+# Linux-specific dependencies - vendored OpenSSL for cross-compilation compatibility
+[target.'cfg(target_os = "linux")'.dependencies]
+machine-uid = "0.5"
+openssl = { version = "0.10", features = ["vendored"] }
+
+# Android target-specific dependencies - vendored OpenSSL for cross-compilation
+[target.'cfg(target_os = "android")'.dependencies]
+openssl = { version = "0.10", features = ["vendored"] }
+
+[target.'cfg(not(target_env = "msvc"))'.dependencies]
+tikv-jemallocator = { version = "0.6", optional = true }
+
+[build-dependencies]
+# No build dependencies needed
+
+# Features — keep placeholders but no dependencies by default
+[features]
+default = ["jemalloc"]
+jemalloc = ["tikv-jemallocator"]
+# debug-tools feature removed - debug binaries are now in crates/debug-tools
+web = []
+telegram = []
+# Profiling features that can be enabled with --features
+console = ["console-subscriber"]
+flamegraph = ["pprof"]
+logging = []
+firebase = []
+jupiter = []
+ui = []
+time-zones = []
+http-client = []
+crypto-extra = []
+fast = []
+full = []
+# Enable devtools in development (for debugging)
+devtools = []
+
+[dev-dependencies]
+tempfile = "3"
+# The mainnet swap tier signs with the app's OWN main wallet rather than an
+# exported key file, so the harness reads the encrypted row out of wallets.db and
+# decrypts it through the library's secure_storage. Integration test crates see
+# only dev-dependencies; these mirror the lib's versions and compile once.
+rusqlite = { version = "0.37", features = ["bundled", "unlock_notify"] }
+bs58 = "0.5"
+dirs = "6.0.0"
+# Route-level launch tests drive the real Axum router in-process (tower's oneshot)
+# and assert the JSON contract the dashboard loader parses. Integration test crates
+# see only dev-dependencies, so these mirror the lib's own versions and compile once.
+axum = { version = "0.7", features = ["ws", "macros", "multipart"] }
+tower = { version = "0.4", features = ["util"] }
+serde_json = "1.0"
+# Async runtime for #[tokio::test] in the L1/L2 integration suite (tests/). Integration
+# test crates only see dev-dependencies, not the lib's regular deps; features match the
+# main tokio dep so cargo compiles it once.
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }

@@ -1,0 +1,828 @@
+//! Config API Getters
+//!
+//! GET endpoints for viewing config sections, plus generic PATCH handler.
+
+use axum::{http::StatusCode, response::Response, Json};
+
+use crate::config;
+use crate::config::metadata::collect_config_metadata;
+use crate::config::schemas::default_tabs;
+use crate::webserver::{
+    utils::{error_response, success_response},
+    Error, Result,
+};
+
+use super::types::*;
+
+// ============================================================================
+// HANDLERS - GET ENDPOINTS
+// ============================================================================
+
+/// GET /api/config - Get full configuration (all sections)
+pub async fn get_full_config() -> Response {
+    let data = config::with_config(|cfg| FullConfigResponse {
+        rpc: cfg.rpc.clone(),
+        trader: cfg.trader.clone(),
+        copy_trading: cfg.copy_trading.clone(),
+        positions: cfg.positions.clone(),
+        filtering: cfg.filtering.clone(),
+        swaps: cfg.swaps.clone(),
+        tokens: cfg.tokens.clone(),
+        pools: cfg.pools.clone(),
+        maintenance: cfg.maintenance.clone(),
+        updates: cfg.updates.clone(),
+        sol_price: cfg.sol_price.clone(),
+        events: cfg.events.clone(),
+        services: cfg.services.clone(),
+        monitoring: cfg.monitoring.clone(),
+        ohlcv: cfg.ohlcv.clone(),
+        webserver: sanitized_webserver(cfg),
+        wallet: cfg.wallet.clone(),
+        strategies: cfg.strategies.clone(),
+        holder_watch: cfg.holder_watch.clone(),
+        performance: cfg.performance.clone(),
+        gui: cfg.gui.clone(),
+        telegram: cfg.telegram.clone(),
+        llm: cfg.llm.clone(),
+        llm_analysis: cfg.llm_analysis.clone(),
+        assistant: cfg.assistant.clone(),
+        agent_control: cfg.agent_control.clone(),
+        network: cfg.network.clone(),
+        referral: cfg.referral.clone(),
+        account: cfg.account.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// The webserver section carries auth secrets (password hash/salt, TOTP secret)
+/// that must never reach the dashboard. They are blanked here; PATCH merges only
+/// the fields the client sends, so a blanked field is never written back.
+fn sanitized_webserver(cfg: &config::Config) -> config::WebserverConfig {
+    let mut webserver = cfg.webserver.clone();
+    webserver.auth_password_hash = String::new();
+    webserver.auth_password_salt = String::new();
+    webserver.auth_totp_secret = String::new();
+    webserver
+}
+
+/// GET /api/config/webserver - Get webserver configuration (auth secrets blanked)
+pub async fn get_webserver_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: sanitized_webserver(cfg),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/rpc - Get RPC configuration
+pub async fn get_rpc_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.rpc.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/trader - Get trader configuration
+pub async fn get_trader_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.trader.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/positions - Get positions configuration
+pub async fn get_positions_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.positions.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/filtering - Get filtering configuration
+pub async fn get_filtering_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.filtering.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/swaps - Get swaps configuration
+pub async fn get_swaps_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.swaps.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/tokens - Get tokens configuration
+pub async fn get_tokens_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.tokens.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/pools - Get pools configuration
+pub async fn get_pools_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.pools.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/maintenance - Get maintenance configuration
+pub async fn get_maintenance_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.maintenance.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/updates - Get automatic update configuration
+pub async fn get_updates_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.updates.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/sol_price - Get SOL price service configuration
+pub async fn get_sol_price_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.sol_price.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/network - Get network proxy configuration
+pub async fn get_network_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.network.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/referral - Get referral attribution configuration
+pub async fn get_referral_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.referral.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/account - Get VeloxBot account configuration
+pub async fn get_account_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.account.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/summary - Get summary display configuration
+pub async fn get_summary_config() -> Response {
+    let data = config::with_config(|_cfg| ConfigResponse {
+        data: serde_json::json!({}),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/events - Get events system configuration
+pub async fn get_events_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.events.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/services - Get services configuration
+pub async fn get_services_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.services.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/monitoring - Get monitoring configuration
+pub async fn get_monitoring_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.monitoring.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/ohlcv - Get OHLCV configuration
+pub async fn get_ohlcv_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.ohlcv.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/gui - Get GUI/Dashboard configuration
+pub async fn get_gui_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.gui.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/gui/defaults - Get default GUI configuration (for reset operations)
+pub async fn get_gui_defaults() -> Response {
+    let response = GuiDefaultsResponse {
+        success: true,
+        data: GuiDefaultsData {
+            tabs: default_tabs(),
+        },
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    };
+
+    success_response(response)
+}
+
+/// GET /api/config/telegram - Get Telegram configuration
+pub async fn get_telegram_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.telegram.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/llm - Get outbound LLM provider configuration
+pub async fn get_llm_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.llm.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/llm_analysis - Get model-scored analysis configuration
+pub async fn get_llm_analysis_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.llm_analysis.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/assistant - Get dashboard assistant configuration
+pub async fn get_assistant_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.assistant.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/agent_control - Get agent-control configuration
+pub async fn get_agent_control_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.agent_control.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+
+    success_response(data)
+}
+
+/// GET /api/config/strategies - Get strategies configuration
+pub async fn get_strategies_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.strategies.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+    success_response(data)
+}
+
+/// GET /api/config/holder_watch - Get holder watch configuration
+pub async fn get_holder_watch_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.holder_watch.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+    success_response(data)
+}
+
+/// GET /api/config/wallet - Get wallet configuration
+pub async fn get_wallet_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.wallet.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+    success_response(data)
+}
+
+pub async fn get_copy_trading_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.copy_trading.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+    success_response(data)
+}
+
+/// GET /api/config/performance - Get performance configuration
+pub async fn get_performance_config() -> Response {
+    let data = config::with_config(|cfg| ConfigResponse {
+        data: cfg.performance.clone(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    });
+    success_response(data)
+}
+
+/// GET /api/config/metadata - Get configuration metadata for UI rendering
+pub async fn get_config_metadata() -> Response {
+    let response = ConfigMetadataResponse {
+        data: collect_config_metadata(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    };
+
+    success_response(response)
+}
+
+// ============================================================================
+// HANDLERS - PATCH ENDPOINTS (Config Updates)
+// ============================================================================
+
+/// Generic PATCH handler for any config section
+/// Accepts partial JSON updates - only fields provided will be updated
+pub async fn patch_any_config<T>(Json(updates): Json<serde_json::Value>) -> Response
+where
+    T: serde::Serialize + serde::de::DeserializeOwned + Clone + std::fmt::Debug + 'static,
+{
+    // Determine which section based on type T
+    let section_name = std::any::type_name::<T>()
+        .split("::")
+        .last()
+        .unwrap_or("unknown");
+
+    // Prepare the merged config outside closure
+    let merge_result: Result<()> = (|| {
+        // Get current config
+        let current_section = config::with_config(|cfg| match section_name {
+            "TraderConfig" => serde_json::to_value(&cfg.trader).ok(),
+            "PositionsConfig" => serde_json::to_value(&cfg.positions).ok(),
+            "FilteringConfig" => serde_json::to_value(&cfg.filtering).ok(),
+            "SwapsConfig" => serde_json::to_value(&cfg.swaps).ok(),
+            "TokensConfig" => serde_json::to_value(&cfg.tokens).ok(),
+            "PoolsConfig" => serde_json::to_value(&cfg.pools).ok(),
+            "MaintenanceConfig" => serde_json::to_value(&cfg.maintenance).ok(),
+            "UpdatesConfig" => serde_json::to_value(&cfg.updates).ok(),
+            "RpcConfig" => serde_json::to_value(&cfg.rpc).ok(),
+            "SolPriceConfig" => serde_json::to_value(&cfg.sol_price).ok(),
+            "EventsConfig" => serde_json::to_value(&cfg.events).ok(),
+            "ServicesConfig" => serde_json::to_value(&cfg.services).ok(),
+            "MonitoringConfig" => serde_json::to_value(&cfg.monitoring).ok(),
+            "OhlcvConfig" => serde_json::to_value(&cfg.ohlcv).ok(),
+            "GuiConfig" => serde_json::to_value(&cfg.gui).ok(),
+            "TelegramConfig" => serde_json::to_value(&cfg.telegram).ok(),
+            "LlmConfig" => serde_json::to_value(&cfg.llm).ok(),
+            "LlmAnalysisConfig" => serde_json::to_value(&cfg.llm_analysis).ok(),
+            "AssistantConfig" => serde_json::to_value(&cfg.assistant).ok(),
+            "AgentControlConfig" => serde_json::to_value(&cfg.agent_control).ok(),
+            "StrategiesConfig" => serde_json::to_value(&cfg.strategies).ok(),
+            "HolderWatchConfig" => serde_json::to_value(&cfg.holder_watch).ok(),
+            "WalletConfig" => serde_json::to_value(&cfg.wallet).ok(),
+            "WebserverConfig" => serde_json::to_value(&cfg.webserver).ok(),
+            "CopyTradingConfig" => serde_json::to_value(&cfg.copy_trading).ok(),
+            "PerformanceConfig" => serde_json::to_value(&cfg.performance).ok(),
+            "NetworkConfig" => serde_json::to_value(&cfg.network).ok(),
+            "ReferralConfig" => serde_json::to_value(&cfg.referral).ok(),
+            "AccountConfig" => serde_json::to_value(&cfg.account).ok(),
+            _ => None,
+        });
+
+        let mut section_json = current_section.ok_or_else(|| Error::InvalidImport {
+            detail: "failed to serialize current config".to_owned(),
+        })?;
+
+        // Merge updates into existing config
+        if let (Some(section_obj), Some(updates_obj)) =
+            (section_json.as_object_mut(), updates.as_object())
+        {
+            for (key, value) in updates_obj {
+                section_obj.insert(key.clone(), value.clone());
+            }
+        }
+
+        // Now update the config with merged values
+        let section_json = section_json; // Make immutable for the closure
+        let section_name = section_name; // Capture for closure
+
+        // Validate and deserialize before updating (fail fast on errors)
+        match section_name {
+            "TraderConfig" => {
+                let new_config: config::TraderConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid TraderConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.trader = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "PositionsConfig" => {
+                let new_config: config::PositionsConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid PositionsConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.positions = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "FilteringConfig" => {
+                let new_config: config::FilteringConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid FilteringConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.filtering = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "SwapsConfig" => {
+                let new_config: config::SwapsConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid SwapsConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.swaps = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "TokensConfig" => {
+                let new_config: config::TokensConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid TokensConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.tokens = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "PoolsConfig" => {
+                let new_config: config::PoolsConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid PoolsConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.pools = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "MaintenanceConfig" => {
+                let new_config: config::MaintenanceConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid MaintenanceConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.maintenance = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "UpdatesConfig" => {
+                let new_config: config::UpdatesConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid UpdatesConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.updates = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "RpcConfig" => {
+                let new_config: config::RpcConfig =
+                    serde_json::from_value(section_json).map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid RpcConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.rpc = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "SolPriceConfig" => {
+                let new_config: config::SolPriceConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid SolPriceConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.sol_price = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "EventsConfig" => {
+                let new_config: config::EventsConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid EventsConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.events = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "ServicesConfig" => {
+                let new_config: config::ServicesConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid ServicesConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.services = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "MonitoringConfig" => {
+                let new_config: config::MonitoringConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid MonitoringConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.monitoring = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "OhlcvConfig" => {
+                let new_config: config::OhlcvConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid OhlcvConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.ohlcv = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "GuiConfig" => {
+                let new_config: config::GuiConfig =
+                    serde_json::from_value(section_json).map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid GuiConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.gui = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "TelegramConfig" => {
+                let new_config: config::TelegramConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid TelegramConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.telegram = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "LlmConfig" => {
+                let new_config: config::LlmConfig =
+                    serde_json::from_value(section_json).map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid LlmConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.llm = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "LlmAnalysisConfig" => {
+                let new_config: config::LlmAnalysisConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid LlmAnalysisConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.llm_analysis = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "AssistantConfig" => {
+                let new_config: config::AssistantConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid AssistantConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.assistant = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "AgentControlConfig" => {
+                let new_config: config::AgentControlConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                    detail: format!("Invalid AgentControlConfig: {e}"),
+                })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.agent_control = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "StrategiesConfig" => {
+                let new_config: config::StrategiesConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid StrategiesConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.strategies = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "HolderWatchConfig" => {
+                let new_config: config::HolderWatchConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid HolderWatchConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.holder_watch = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "WalletConfig" => {
+                let new_config: config::WalletConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid WalletConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.wallet = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "WebserverConfig" => {
+                let new_config: config::WebserverConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid WebserverConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.webserver = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "CopyTradingConfig" => {
+                let new_config: config::CopyTradingConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid CopyTradingConfig: {e}"),
+                    })?;
+                new_config.validate()?;
+                config::update_config_section(|cfg| cfg.copy_trading = new_config, true)?;
+            }
+            "PerformanceConfig" => {
+                let new_config: config::PerformanceConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid PerformanceConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.performance = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "NetworkConfig" => {
+                let new_config: config::NetworkConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid NetworkConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.network = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "ReferralConfig" => {
+                let new_config: config::ReferralConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid ReferralConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.referral = new_config;
+                    },
+                    true,
+                )?;
+            }
+            "AccountConfig" => {
+                let new_config: config::AccountConfig = serde_json::from_value(section_json)
+                    .map_err(|e| Error::InvalidImport {
+                        detail: format!("Invalid AccountConfig: {e}"),
+                    })?;
+                config::update_config_section(
+                    |cfg| {
+                        cfg.account = new_config;
+                    },
+                    true,
+                )?;
+            }
+            _ => {
+                return Err(Error::UnknownConfigKey {
+                    key: section_name.to_owned(),
+                });
+            }
+        }
+
+        Ok(())
+    })();
+
+    match merge_result {
+        Ok(()) => {
+            let response = UpdateResponse {
+                message: format!("{section_name} updated successfully"),
+                saved_to_disk: true,
+                timestamp: chrono::Utc::now().to_rfc3339(),
+            };
+            success_response(response)
+        }
+        Err(e) => error_response(
+            StatusCode::BAD_REQUEST,
+            "CONFIG_UPDATE_FAILED",
+            &format!("Failed to update config: {e}"),
+            None,
+        ),
+    }
+}

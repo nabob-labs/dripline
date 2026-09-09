@@ -1,0 +1,1011 @@
+/* Trader Page Styles */
+
+.trader-page {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+
+  --trader-horizontal-padding: clamp(0.85rem, 1.8vw, 1.5rem);
+  --trader-vertical-gap: clamp(0.75rem, 1.2vw, 1.3rem);
+  --trader-card-radius: 8px;
+  --trader-card-padding: 1rem;
+  --trader-card-border: var(--border-color);
+  --trader-card-shadow: 0 2px 8px var(--shadow-md);
+}
+
+/* Trader content container - single scrolling layer */
+#trader-content {
+  padding: 0 var(--trader-horizontal-padding) calc(var(--trader-vertical-gap) * 2);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+#trader-content::-webkit-scrollbar,
+.stats-col::-webkit-scrollbar {
+  display: none;
+}
+
+.trader-tab-content {
+  display: none;
+  padding-top: 1.5rem; /* Space below subtabs row */
+}
+
+/* Embedded Strategies editor subtab: fill the content area edge-to-edge. The
+   strategies-page layout is height:100% based and manages its own internal
+   scrolling, so when this subtab is the visible one, drop #trader-content's
+   horizontal + bottom padding entirely (negative margins can't stretch the
+   height, leaving an empty strip at the bottom).
+
+   This is driven by an explicit class toggled in switchTab(), NOT a
+   :has([style*="display: block"]) selector. The old :has form keyed off an
+   inline-style substring and failed to re-invalidate after the router detached
+   (display:none) and re-attached the cached trader subtree on tab switch —
+   leaving #trader-content stuck at padding:0 (all content flush to the edge)
+   when returning to Auto Trader from another main tab. */
+#trader-content.trader-content--fullbleed {
+  padding: 0;
+  overflow: hidden;
+}
+
+#trader-content.trader-content--split-scroll {
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+#stats-tab {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding-top: 0;
+}
+
+#strategies-tab {
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+}
+
+#strategies-tab > * {
+  animation: none; /* avoid the fade transform clipping the full-height editor */
+}
+
+.trader-tab-content > * {
+  animation: trader-tab-fade 0.3s ease-out;
+}
+
+/* Add spacing between sections, but not between action bar and first content */
+.trader-tab-content > .trader-action-bar + * {
+  margin-top: 0;
+}
+
+.trader-tab-content > * + *:not(.trader-action-bar + *) {
+  margin-top: 1rem;
+}
+
+@keyframes trader-tab-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* ============================================================================
+   Trader Status Bar - Auto Trader Toggle Control
+   ============================================================================ */
+
+.trader-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--trader-card-radius);
+  margin-bottom: 1rem;
+  transition: all 0.25s ease;
+}
+
+.trader-status-bar[data-status="running"] {
+  border-color: var(--success-alpha-40);
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--success-alpha-5) 100%);
+}
+
+.trader-status-bar[data-status="stopped"] {
+  border-color: var(--danger-alpha-40);
+}
+
+.status-bar-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.status-bar-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-xl);
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-size: 1.25rem;
+  transition: all 0.25s ease;
+}
+
+.trader-status-bar[data-status="running"] .status-bar-icon {
+  background: var(--success-alpha-15);
+  color: var(--success-color);
+  animation: status-icon-activity 2s ease-in-out infinite;
+}
+
+.trader-status-bar[data-status="stopped"] .status-bar-icon {
+  background: var(--danger-alpha-15);
+  color: var(--danger-color);
+}
+
+@keyframes status-icon-activity {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--success-alpha-30);
+  }
+
+  50% {
+    box-shadow: 0 0 12px 3px var(--success-alpha-20);
+  }
+}
+
+.status-bar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.status-bar-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.status-bar-status {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.trader-status-bar[data-status="running"] .status-bar-status {
+  color: var(--success-color);
+}
+
+.trader-status-bar[data-status="stopped"] .status-bar-status {
+  color: var(--danger-color);
+}
+
+/* ============================================================================
+   Trader Action Bar - Sticky Actions at Top
+   ============================================================================ */
+
+.trader-action-bar {
+  position: sticky;
+  top: 0;
+  background: var(--surface-color);
+  border-bottom: 2px solid var(--border-color);
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  z-index: 10;
+  min-height: 52px;
+}
+
+.action-bar-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.action-bar-title i {
+  font-size: 18px;
+  color: var(--primary-color);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.action-bar-title h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-color);
+  letter-spacing: 0.01em;
+}
+
+.action-bar-actions {
+  display: flex;
+  gap: 0.375rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.trader-action-bar .btn {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  height: 32px;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--transition-base);
+}
+
+.trader-action-bar .btn-primary {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.trader-action-bar .btn-primary:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px var(--shadow-md);
+}
+
+.trader-action-bar .btn-secondary {
+  background: var(--background-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.trader-action-bar .btn-secondary:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--primary-alpha-30);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px var(--shadow-md);
+}
+
+.trader-action-bar .btn i {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.trader-action-bar .btn:active {
+  transform: translateY(1px);
+}
+
+/* ============================================================================
+   Stats Tab - Overview Metrics & Breakdown
+   ============================================================================ */
+
+/* Stats Grid */
+
+/* Two-column Stats layout: left = controls, right = analysis + current config.
+   Collapses to a single column on narrow/!desktop screens. */
+.stats-layout {
+  display: grid;
+  grid-template-columns: minmax(300px, 340px) minmax(0, 1fr);
+  gap: var(--trader-vertical-gap);
+  align-items: start;
+  height: 100%;
+  min-height: 0;
+}
+
+.stats-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--trader-vertical-gap);
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1.5rem 0.25rem calc(var(--trader-vertical-gap) * 2) 0;
+  box-sizing: border-box;
+  scrollbar-width: none;
+}
+
+/* In the narrow left column the Entry/Exit monitor cards must stack — their
+   side-by-side grid is sized for full width and otherwise overflows into the
+   right column. Keep section content clipped to the column on all widths. */
+.stats-col-left .controls-grid {
+  grid-template-columns: 1fr;
+}
+
+.stats-col > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (width <= 1024px) {
+  #trader-content.trader-content--split-scroll {
+    overflow-y: auto;
+  }
+
+  #stats-tab {
+    height: auto;
+    overflow: visible;
+  }
+
+  .stats-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .stats-col {
+    height: auto;
+    overflow: visible;
+    padding: 0;
+  }
+}
+
+.stats-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--trader-vertical-gap);
+  padding: 0;
+}
+
+/* ============================================================================
+   Shared Components - Cards
+   ============================================================================ */
+
+/* Base card component */
+.card-base {
+  background: var(--card-bg);
+  border-radius: var(--radius-md);
+  padding: 0.875rem;
+  box-shadow: 0 1px 3px rgb(0, 0, 0, 0.1);
+  transition: box-shadow var(--transition-base);
+}
+
+.card-base:hover {
+  box-shadow: 0 4px 12px rgb(0, 0, 0, 0.1);
+}
+
+/* ============================================================================
+   Stats Tab Components
+   ============================================================================ */
+
+.stats-section {
+  background: var(--card-bg);
+  border-radius: var(--trader-card-radius);
+  padding: 0.75rem; /* Reduced from var(--trader-card-padding) which is 1rem */
+  border: 1px solid var(--trader-card-border);
+  box-shadow: var(--trader-card-shadow);
+  transition: box-shadow var(--transition-base);
+}
+
+.stats-section:hover {
+  box-shadow: 0 4px 12px var(--shadow-md);
+}
+
+.stats-section-primary {
+  background: linear-gradient(135deg, var(--card-bg) 0%, var(--background-secondary) 100%);
+  border: 1px solid var(--primary-alpha-20);
+}
+
+.stats-period {
+  font-size: 0.813rem;
+  color: var(--text-secondary);
+  background: var(--background-secondary);
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+.stats-section h3 {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Configuration Snapshot Section */
+.stats-section-config {
+  background: linear-gradient(135deg, var(--card-bg) 0%, var(--primary-alpha-5) 100%);
+  border: 1px solid var(--border-color);
+}
+
+.stats-section-config .section-header {
+  margin-bottom: 1rem;
+}
+
+/* ============================================================================
+   Strategy Control Tab - Components
+   ============================================================================ */
+
+.strategy-control-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.strategy-control-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.strategy-lane-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.strategy-control-grid > .strategy-lane-card + .strategy-lane-card {
+  margin-top: 0;
+}
+
+.strategy-lane-card .card-header {
+  min-height: 76px;
+  margin-bottom: 0;
+}
+
+.strategy-lane-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 5.5rem;
+  padding: 0.3rem 0.6rem;
+  color: var(--primary-color);
+  font-family: var(--font-data);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--primary-alpha-10);
+  border: 1px solid var(--primary-alpha-20);
+  border-radius: var(--radius-xl);
+}
+
+.strategies-list {
+  display: grid;
+  gap: 0.75rem;
+  min-height: 190px;
+}
+
+.strategy-control-item {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.875rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.strategy-control-item:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+  box-shadow: 0 2px 8px var(--shadow-sm);
+}
+
+.strategy-control-item.is-enabled {
+  background: linear-gradient(135deg, var(--success-alpha-10), var(--bg-secondary) 70%);
+  border-color: var(--success-alpha-20);
+}
+
+.strategy-control-item.is-disabled {
+  opacity: 0.78;
+}
+
+.strategy-control-item-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.strategy-control-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.strategy-control-status-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px rgb(139, 148, 158, 0.08);
+  flex-shrink: 0;
+}
+
+.strategy-control-item.is-enabled .strategy-control-status-dot {
+  background: var(--success-color);
+  box-shadow: 0 0 0 4px var(--success-alpha-10);
+}
+
+.strategy-control-name {
+  overflow: hidden;
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.strategy-control-description {
+  display: -webkit-box;
+  margin: 0.35rem 0 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.strategy-control-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.strategy-control-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 24px;
+  padding: 0.25rem 0.5rem;
+  color: var(--text-secondary);
+  font-family: var(--font-data);
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.strategy-control-chip i {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.strategy-control-chip.is-entry {
+  color: var(--primary-color);
+  background: var(--primary-alpha-10);
+  border-color: var(--primary-alpha-20);
+}
+
+.strategy-control-chip.is-exit {
+  color: var(--warning-color);
+  background: var(--warning-alpha-10);
+  border-color: var(--warning-alpha-20);
+}
+
+.strategy-control-item .toggle {
+  margin-top: 0.1rem;
+}
+
+/* Reserve the state word's width so ENABLED -> DISABLED cannot shift the row. */
+.strategy-control-item .toggle-state {
+  min-width: 3.5rem;
+}
+
+.strategy-list-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 150px;
+  padding: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  text-align: center;
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+.strategy-list-state i {
+  color: var(--primary-color);
+  font-size: 1rem;
+}
+
+.strategy-list-state.is-empty i {
+  color: var(--text-muted);
+}
+
+.strategy-list-state.is-error i {
+  color: var(--error-color);
+}
+
+@media (width <= 1100px) {
+  .strategy-control-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (width <= 800px) {
+  .strategy-control-item-header {
+    grid-template-columns: 1fr;
+  }
+
+  .strategy-control-item .toggle {
+    justify-content: space-between;
+  }
+}
+
+/* ============================================================================
+   Form Components (Shared across tabs)
+   ============================================================================ */
+
+.form-section {
+  background: var(--card-bg);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgb(0, 0, 0, 0.1);
+}
+
+.form-section.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.form-section h4 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.trader-page .form-group .hint {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 400;
+  margin-top: 0.25rem;
+}
+
+.trader-page .form-group.readonly {
+  opacity: 0.7;
+}
+
+.readonly-value {
+  padding: 0.5rem;
+  background: var(--bg-secondary);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  font-family: var(--font-data);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+}
+
+.hint-text {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+.info-text {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+/* ============================================================================
+   Shared Components - Message Boxes
+   ============================================================================ */
+
+/* Base message box */
+.message-box {
+  padding: 1rem;
+  border-radius: 0.375rem;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+/* Message box variants */
+.example-box,
+.info-box {
+  background: var(--primary-alpha-10);
+  border: 1px solid var(--primary-alpha-30);
+  padding: 0.875rem;
+  margin: 0 1rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.info-box i {
+  color: var(--primary-color);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.info-box .link {
+  color: var(--primary-color);
+  font-weight: 500;
+  text-decoration: underline;
+}
+
+.warning-box {
+  background: var(--warning-alpha-10);
+  border: 1px solid var(--warning-alpha-30);
+}
+
+.error-message {
+  background: var(--danger-alpha-10);
+  border: 1px solid var(--danger-alpha-30);
+  color: var(--danger);
+  text-align: center;
+}
+
+.info-message,
+.loading {
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.form-actions .btn {
+  padding: 0.6rem 1.25rem;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+  min-width: 160px;
+}
+
+.form-actions .btn.primary {
+  background: var(--primary-color);
+  color: white;
+}
+
+.form-actions .btn.primary:hover {
+  background: var(--primary-hover);
+}
+
+.form-actions .btn.secondary {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.form-actions .btn.secondary:hover {
+  background: var(--bg-tertiary);
+}
+
+/* Status List */
+.status-list {
+  margin-top: 0.75rem;
+}
+
+.status-list-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.status-list-items li {
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  background: var(--bg-secondary);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+.strategies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.strategy-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.strategy-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.strategy-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.strategy-status {
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.strategy-status.success {
+  color: var(--success-color);
+}
+
+.strategy-status.muted {
+  color: var(--text-muted);
+}
+
+.strategy-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+}
+
+.strategy-card .link {
+  font-size: 0.875rem;
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.strategy-card .link:hover {
+  text-decoration: underline;
+}
+
+/* ============================================================================
+   Utility Classes
+   ============================================================================ */
+
+/* Badges — only the warning variant differs on the trader page */
+.trader-page .badge.warning {
+  background: rgb(245, 158, 11, 0.2);
+  color: #f59e0b;
+}
+
+/* Links */
+.link {
+  color: var(--primary-color);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+/* ============================================================================
+   Tab Feature Status Badges
+   ============================================================================ */
+
+/* Tab status badge */
+.sub-tab .tab-status-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 0.5rem;
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: var(--radius-sm, 4px);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.sub-tab .tab-status-badge.coming-soon {
+  background: var(--warning-alpha-20, rgb(255, 193, 7, 0.2));
+  color: var(--warning-color, #ffc107);
+}
+
+.sub-tab .tab-status-badge.beta {
+  background: var(--primary-alpha-20, rgb(88, 166, 255, 0.2));
+  color: var(--primary-color, #58a6ff);
+}
+
+.sub-tab .tab-status-badge.disabled {
+  background: var(--text-muted, #6c757d);
+  color: var(--bg-primary, #0d1117);
+  opacity: 0.7;
+}
+
+/* Make tab buttons position relative for badge positioning */
+[data-page="trader"] .sub-tab {
+  position: relative;
+}
+
+/* Disabled tab styling */
+.sub-tab.tab-feature-disabled,
+.sub-tab.tab-feature-coming-soon {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sub-tab.tab-feature-disabled:hover,
+.sub-tab.tab-feature-coming-soon:hover {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: transparent;
+}
+
+/* Beta tab styling - still usable but with indicator */
+.sub-tab.tab-feature-beta {
+  /* Beta tabs are fully functional, just have a badge */
+}
+
+/* ============================================================================
+   Responsive Layout Adjustments
+   ============================================================================ */
+
+@media (width <= 768px) {
+  .trader-page {
+    --trader-horizontal-padding: 1rem;
+    --trader-vertical-gap: 1.1rem;
+    --trader-card-padding: 1rem;
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .trader-page .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .stats-period {
+    align-self: flex-start;
+  }
+
+  .exit-bar-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .positions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    justify-content: stretch;
+  }
+
+  .form-actions .btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .strategies-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Hide badges on very small screens to save space */
+  .sub-tab .tab-status-badge {
+    display: none;
+  }
+}

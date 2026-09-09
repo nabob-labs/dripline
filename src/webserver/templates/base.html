@@ -1,0 +1,727 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-token-logo-shape="{{TOKEN_LOGO_SHAPE}}">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
+    <!-- Cache-busting version injected by server -->
+    <script>
+      window.__ASSET_VERSION__ = "{{ASSET_VERSION}}";
+    </script>
+
+    <!-- Security token injection for GUI mode (MUST run first) -->
+    <script>
+      (function() {
+        // Security credentials injected by server (empty in CLI mode)
+        window.__VELOXBOT_SECURITY_TOKEN = '{{SECURITY_TOKEN}}';
+        window.__VELOXBOT_PORT = {{WEBSERVER_PORT}};
+        window.__VELOXBOT_GUI_MODE = {{IS_GUI_MODE}};
+
+        // Only patch fetch/XHR if we have a security token (GUI mode)
+        if (window.__VELOXBOT_SECURITY_TOKEN) {
+          const TOKEN_HEADER = 'X-VeloxBot-Token';
+
+          // Patch fetch to include security header
+          const originalFetch = window.fetch;
+          window.fetch = function(url, options) {
+            options = options || {};
+            options.headers = options.headers || {};
+
+            if (options.headers instanceof Headers) {
+              options.headers.set(TOKEN_HEADER, window.__VELOXBOT_SECURITY_TOKEN);
+            } else {
+              options.headers[TOKEN_HEADER] = window.__VELOXBOT_SECURITY_TOKEN;
+            }
+
+            return originalFetch.call(this, url, options);
+          };
+
+          // Patch XMLHttpRequest
+          const originalXHROpen = XMLHttpRequest.prototype.open;
+          const originalXHRSend = XMLHttpRequest.prototype.send;
+
+          XMLHttpRequest.prototype.open = function() {
+            this._screenerBotUrl = arguments[1];
+            return originalXHROpen.apply(this, arguments);
+          };
+
+          XMLHttpRequest.prototype.send = function() {
+            this.setRequestHeader(TOKEN_HEADER, window.__VELOXBOT_SECURITY_TOKEN);
+            return originalXHRSend.apply(this, arguments);
+          };
+
+          console.log('[VeloxBot] Security token initialized for GUI mode');
+        }
+      })();
+    </script>
+
+    <!-- Theme initialization - MUST run before any rendering to prevent flash -->
+    <script>
+      (function () {
+        // Prefer the ?theme= URL param (Electron passes the last-run theme here):
+        // GUI mode loads on a new dynamic port each launch, so localStorage is
+        // empty every start and would fall back to dark, then flip to light once
+        // theme.js fetches the server value — a visible flash. The URL param lets
+        // us paint the correct theme synchronously before first render.
+        let theme;
+        try {
+          const p = new URLSearchParams(location.search).get("theme");
+          if (p === "light" || p === "dark") theme = p;
+        } catch {
+          /* no query */
+        }
+        if (!theme) theme = localStorage.getItem("theme") || "dark";
+        document.documentElement.setAttribute("data-theme", theme);
+        // Seed localStorage so later reads (theme.js, FOUC) stay consistent.
+        try {
+          localStorage.setItem("theme", theme);
+        } catch {
+          /* unavailable */
+        }
+      })();
+    </script>
+
+    <!-- Critical polyfills for WebView environments -->
+    <script>
+      (function () {
+        if (typeof window.queueMicrotask !== "function") {
+          window.queueMicrotask = function queueMicrotaskPolyfill(callback) {
+            if (typeof callback !== "function") {
+              throw new TypeError("queueMicrotask callback must be a function");
+            }
+
+            Promise.resolve()
+              .then(callback)
+              .catch(function (error) {
+                setTimeout(function () {
+                  throw error;
+                });
+              });
+          };
+        }
+      })();
+    </script>
+
+    <title>{{TITLE}} - VeloxBot</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/assets/logo.svg" />
+    <link rel="apple-touch-icon" href="/assets/logo.png" />
+
+    <script src="/assets/lightweight-charts.js"></script>
+    <style>
+      /* Critical styles to prevent a flash on startup. Theme-aware: the FOUC
+         script above already stamped data-theme on <html>, so a light-theme
+         launch must not paint the dark canvas for a frame. */
+      html,
+      body {
+        background-color: #0d1117;
+        color: #e6edf3;
+      }
+
+      [data-theme="light"],
+      [data-theme="light"] body {
+        background-color: #f8f9fb;
+        color: #1f2937;
+      }
+      /*__GLOBAL_STYLES__*/
+    </style>
+    <style data-page-style="{{ACTIVE_TAB}}">
+      /*__INITIAL_PAGE_STYLES__*/
+    </style>
+  </head>
+
+  <body>
+    <!-- Hide splash immediately if loaded from Electron (detected via query param) -->
+    <!-- Also add initialization-mode class immediately if setup is needed to prevent dashboard flash -->
+    <script>
+      (function() {
+        var isElectron = window.location.search.includes("electron=1") ||
+                         navigator.userAgent.includes("Electron");
+        var needsInit = {{NEEDS_INITIALIZATION}};
+
+        if (isElectron) {
+          document.documentElement.classList.add("electron-mode");
+        }
+
+        // Add initialization-mode immediately if setup is required
+        // This prevents dashboard from flashing before onboarding/setup screens appear
+        if (needsInit) {
+          document.body.classList.add("initialization-mode");
+        }
+      })();
+    </script>
+    <style>
+      .electron-mode #splashScreen {
+        display: none !important;
+      }
+
+      /* Hide dashboard elements during initialization mode */
+      /* This prevents dashboard from showing through during splash/onboarding/setup */
+      body.initialization-mode .modern-header,
+      body.initialization-mode .app-main,
+      body.initialization-mode .status-bar,
+      body.initialization-mode .electron-titlebar-bg {
+        display: none !important;
+        visibility: hidden !important;
+      }
+    </style>
+
+    <!-- Splash Screen - Shows on every app start (hidden in Electron via above) -->
+    {{SPLASH_SCREEN}}
+
+    <!-- Onboarding Screen - First-time user introduction -->
+    {{ONBOARDING_SCREEN}}
+
+    <!-- Setup Screen - Initial configuration (hidden by default) -->
+    <div id="setupScreenWrapper" style="display: none">{{SETUP_SCREEN}}</div>
+
+    <!-- Lockscreen - Security overlay (hidden by default) -->
+    {{LOCKSCREEN}}
+
+    <!-- Electron: Title bar background area (matches header color behind traffic lights on macOS) -->
+    <div class="electron-titlebar-bg"></div>
+
+    <!-- THREE-ROW HEADER: Main Control + Tabs + Live Ticker -->
+    <header class="modern-header">
+      <!-- Row 1: Main Control Bar -->
+      <div class="header-row header-row-1">
+        <!-- Logo & Brand -->
+        <button
+          type="button"
+          class="header-brand"
+          id="headerBrand"
+          aria-label="Open dashboard home"
+          title="Dashboard home"
+        >
+          <span class="brand-logo" aria-hidden="true"></span>
+          <span class="brand-text">VeloxBot</span>
+        </button>
+
+        <!-- Trader status: primary control, always visible next to brand.
+             Flat treatment (no pill/border) — state shown via icon + label color only. -->
+        <button
+          type="button"
+          class="header-card bot-card"
+          id="botCard"
+          data-status="loading"
+          aria-label="Auto Trader status loading"
+          aria-pressed="false"
+          aria-busy="true"
+          disabled
+        >
+          <span class="card-content">
+            <span class="card-top">
+              <i class="card-icon icon-bot" id="botIcon" aria-hidden="true"></i>
+              <span class="card-label">Auto</span>
+              <span class="card-status" id="botStatus">LOADING</span>
+            </span>
+            <span class="card-bottom">
+              <span class="card-sub">Today</span>
+              <span class="card-value" id="botPnL">—</span>
+            </span>
+          </span>
+        </button>
+
+        <button
+          type="button"
+          class="explore-setup-control"
+          id="exploreSetupControl"
+          aria-label="Explore Mode. Connect a wallet and RPC endpoint to enable all features"
+          title="Connect a wallet and RPC endpoint to enable trading, balances, and live on-chain data"
+          hidden
+        >
+          <i class="explore-setup-icon icon-info" aria-hidden="true"></i>
+          <span class="explore-setup-copy">
+            <strong class="explore-setup-title">Explore Mode</strong>
+            <span class="explore-setup-detail">Wallet &amp; RPC not connected</span>
+          </span>
+          <span class="explore-setup-action">Complete setup</span>
+          <i class="explore-setup-arrow icon-chevron-right" aria-hidden="true"></i>
+        </button>
+
+        <!-- Status / metric cards (secondary; scrollable when space is tight) -->
+        <div class="header-cards" id="headerCards">
+          <!-- Wallet Card — headline is the full wallet worth (cash + holdings), the
+               same figure the home hero shows. The bottom row breaks it down. -->
+          <button
+            type="button"
+            class="header-card"
+            id="walletCard"
+            aria-label="Wallet worth; open Positions"
+            title="Wallet worth (SOL + tokens) · open Positions"
+          >
+            <span class="card-content">
+              <span class="card-top">
+                <span class="card-label">WORTH</span>
+                <span class="card-value" id="walletWorth">—</span>
+                <span class="card-change" id="walletChange">—</span>
+              </span>
+              <span class="card-bottom">
+                <span class="card-sub">SOL</span>
+                <span class="card-sub-value" id="walletSol">—</span>
+                <span class="card-sub">TKN</span>
+                <span class="card-sub-value" id="walletTokenCount">—</span>
+              </span>
+            </span>
+          </button>
+
+          <!-- SOL Price Card (click → SOL/USD chart in token-details dialog) -->
+          <button
+            type="button"
+            class="header-card sol-price-card"
+            id="solPriceCard"
+            aria-label="SOL price in USD — open chart"
+            title="SOL price · click for chart"
+          >
+            <span class="card-content">
+              <span class="card-top">
+                <span class="card-label">SOL/USD</span>
+                <span class="card-value" id="solPriceValue">—</span>
+              </span>
+              <span class="card-bottom">
+                <span class="card-sub">24h</span>
+                <span class="card-change" id="solPriceChange">—</span>
+              </span>
+            </span>
+          </button>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="header-actions" id="headerActions">
+          <!-- Collapsed handle: only shown on mid screens where the full action row
+               would crowd the info cards. Hover/focus fans the items out to the left. -->
+          <button
+            type="button"
+            class="header-actions-toggle btn-icon"
+            id="headerActionsToggle"
+            aria-label="More header actions"
+            title="More actions"
+            aria-controls="headerActionsItems"
+            aria-expanded="false"
+          >
+            <i class="action-icon icon-ellipsis" aria-hidden="true"></i>
+          </button>
+
+          <div
+            class="header-actions-items"
+            id="headerActionsItems"
+            role="group"
+            aria-label="Header actions"
+          >
+            <!-- Search -->
+            <button
+              type="button"
+              class="header-action-btn btn-icon"
+              id="searchBtn"
+              aria-label="Search tokens"
+              title="Search tokens (Ctrl/Cmd+K)"
+            >
+              <i class="action-icon icon-search" aria-hidden="true"></i>
+            </button>
+
+            <!-- Featured -->
+            <button
+              type="button"
+              class="header-action-btn btn-icon"
+              id="featured-btn"
+              aria-label="Featured tokens"
+              title="Featured tokens"
+            >
+              <i class="action-icon icon-megaphone" aria-hidden="true"></i>
+            </button>
+
+            <!-- Notifications -->
+            <button
+              type="button"
+              class="header-action-btn btn-icon"
+              id="notificationBtn"
+              aria-label="Actions and notifications"
+              title="Actions and notifications"
+            >
+              <i class="action-icon icon-bell" aria-hidden="true"></i>
+              <span class="action-badge" id="notificationBadge" hidden>0</span>
+            </button>
+
+            <!-- Restart -->
+            <button
+              type="button"
+              class="header-action-btn btn-icon"
+              id="restartBtn"
+              aria-label="Restart app"
+              title="Restart app"
+            >
+              <i class="action-icon icon-refresh-cw" aria-hidden="true"></i>
+            </button>
+
+            <!-- Theme Toggle -->
+            <button
+              type="button"
+              class="header-action-btn btn-icon"
+              id="themeToggle"
+              aria-label="Toggle theme"
+              title="Toggle theme"
+            >
+              <i class="action-icon icon-moon" id="themeIcon" aria-hidden="true"></i>
+            </button>
+
+            <!-- Settings -->
+            <button
+              type="button"
+              class="header-action-btn btn-icon"
+              id="settingsBtn"
+              aria-label="Settings"
+              title="Settings"
+            >
+              <i class="action-icon icon-settings" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: Navigation Tabs -->
+      <div class="header-row-2-wrapper">
+        <nav class="header-row header-row-2">
+          <div class="nav-tabs" id="navTabs">{{NAV_TABS}}</div>
+        </nav>
+      </div>
+
+      <!-- Row 3: Live Metrics Ticker -->
+      <div class="header-row header-row-3">
+        <div class="ticker-container">
+          <div class="ticker-scroll" id="tickerScroll">
+            <button
+              type="button"
+              class="ticker-segment"
+              id="tickerMonitoring"
+              title="Tokens being monitored by Pool Service"
+            >
+              <i class="ticker-icon icon-scan"></i>
+              <span class="ticker-text"
+                >Monitoring: <strong id="tickerMonitoringCount">—</strong></span
+              >
+            </button>
+            <button
+              type="button"
+              class="ticker-segment"
+              id="tickerFiltering"
+              title="Tokens that passed/failed filtering criteria"
+            >
+              <i class="ticker-icon icon-funnel"></i>
+              <span class="ticker-text"
+                >Passed: <strong id="tickerPassedCount">—</strong> · Rejected:
+                <strong id="tickerRejectedCount">—</strong></span
+              >
+            </button>
+            <button
+              type="button"
+              class="ticker-segment"
+              id="tickerPnL"
+              title="Today's realized profit and loss"
+            >
+              <i class="ticker-icon icon-trending-up"></i>
+              <span class="ticker-text"
+                >Today P&amp;L: <strong class="ticker-value" id="tickerTodayPnL">—</strong></span
+              >
+            </button>
+            <div
+              class="ticker-segment"
+              id="tickerRPC"
+              title="RPC calls per minute and success rate"
+            >
+              <i class="ticker-icon icon-zap"></i>
+              <span class="ticker-text"
+                >RPC: <strong id="tickerRPCCalls">—</strong>/min ·
+                <strong id="tickerRPCSuccess">—</strong>%</span
+              >
+            </div>
+            <button
+              type="button"
+              class="ticker-segment"
+              id="tickerServices"
+              title="Background services health status"
+            >
+              <i class="ticker-icon icon-activity"></i>
+              <span class="ticker-text" id="tickerServicesText"
+                ><span class="status-dot"></span>Services: <strong>Loading</strong></span
+              >
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Notification Center - Compact slide-in panel -->
+    <div id="notificationDrawer" class="notification-drawer" data-state="closed" aria-hidden="true">
+      <div class="notification-drawer__backdrop" data-role="dismiss"></div>
+      <section
+        class="notification-drawer__panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="notificationDrawerTitle"
+      >
+        <!-- Compact header -->
+        <header class="notification-panel-header">
+          <div class="notification-panel-heading">
+            <h3 id="notificationDrawerTitle">Actions</h3>
+          </div>
+          <div class="notification-panel-actions">
+            <button
+              type="button"
+              id="markAllReadBtn"
+              class="panel-action-btn"
+              title="Mark all as read"
+            >
+              <i class="icon-check"></i>
+            </button>
+            <button type="button" id="clearAllBtn" class="panel-action-btn" title="Clear all">
+              <i class="icon-trash-2"></i>
+            </button>
+            <button
+              type="button"
+              id="notificationDrawerClose"
+              class="panel-close-btn"
+              aria-label="Close"
+            >
+              <i class="icon-x"></i>
+            </button>
+          </div>
+        </header>
+
+        <!-- Tab navigation -->
+        <nav class="notification-tabs" role="tablist">
+          <button
+            type="button"
+            class="notification-tab active"
+            data-tab="all"
+            role="tab"
+            aria-selected="true"
+          >
+            All <span class="tab-count" id="allCount">0</span>
+          </button>
+          <button
+            type="button"
+            class="notification-tab"
+            data-tab="active"
+            role="tab"
+            aria-selected="false"
+          >
+            Active <span class="tab-count" id="activeCount">0</span>
+          </button>
+          <button
+            type="button"
+            class="notification-tab"
+            data-tab="completed"
+            role="tab"
+            aria-selected="false"
+          >
+            Done <span class="tab-count" id="completedCount">0</span>
+          </button>
+          <button
+            type="button"
+            class="notification-tab"
+            data-tab="failed"
+            role="tab"
+            aria-selected="false"
+          >
+            Failed <span class="tab-count" id="failedCount">0</span>
+          </button>
+        </nav>
+
+        <!-- Filters for history tabs -->
+        <div class="notification-filters" id="notificationFilters">
+          <div class="filter-row">
+            <select id="filterActionType" class="filter-select" data-custom-select>
+              <option value="">All Types</option>
+              <option value="swap_buy">Buy</option>
+              <option value="swap_sell">Sell</option>
+              <option value="position_open">Open</option>
+              <option value="position_close">Close</option>
+              <option value="position_dca">DCA</option>
+              <option value="position_partial_exit">Partial</option>
+            </select>
+            <select id="filterState" class="filter-select" data-custom-select>
+              <option value="">All States</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="failed">Failed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            <button type="button" id="clearFiltersBtn" class="filter-clear-btn">
+              <i class="icon-x"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Notification list with infinite scroll -->
+        <div class="notification-list" id="notificationList" role="feed" aria-label="Notifications">
+          <div class="notification-empty">
+            <i class="icon-inbox"></i>
+            <p>No actions yet</p>
+          </div>
+        </div>
+
+        <!-- Loading indicator for infinite scroll -->
+        <div class="notification-loading" id="notificationLoading" style="display: none">
+          <i class="icon-loader"></i>
+          <span>Loading more...</span>
+        </div>
+
+        <!-- Back to top button -->
+        <button
+          type="button"
+          id="backToTopBtn"
+          class="back-to-top-btn"
+          style="display: none"
+          title="Back to top"
+        >
+          <i class="icon-chevron-up"></i>
+        </button>
+      </section>
+    </div>
+
+    <!-- Main App Container (everything below the fixed header) -->
+    <div class="app-main">
+      <!-- Sub-tabs container (populated dynamically per page) -->
+      <div id="subTabsContainer" class="sub-tabs-container" style="display: none">
+        <!-- Sub-tabs will be injected here by page-specific JavaScript -->
+      </div>
+
+      <!-- Toolbar container (for action buttons below sub-tabs) -->
+      <div id="toolbarContainer" class="toolbar-container" style="display: none">
+        <!-- Toolbar buttons will be injected here by page-specific JavaScript -->
+      </div>
+
+      <main class="content">{{CONTENT}}</main>
+    </div>
+
+    <!-- Status Bar - Fixed bottom bar with system metrics -->
+    <footer class="status-bar" id="statusBar">
+      <div class="status-bar-left">
+        <span class="status-item">
+          <i class="status-icon icon-info"></i>
+          <span class="status-label">v</span>
+          <span class="status-value" id="statusBarVersion">—</span>
+        </span>
+        <span class="status-separator">•</span>
+        <span class="status-item">
+          <i class="status-icon icon-clock"></i>
+          <span class="status-label">Up</span>
+          <span class="status-value" id="statusBarUptime">—</span>
+        </span>
+        <span class="status-separator">•</span>
+        <span class="status-item">
+          <i class="status-icon icon-cpu"></i>
+          <span class="status-label">Mem</span>
+          <span class="status-value" id="statusBarMemory">—</span>
+        </span>
+      </div>
+      <div class="status-bar-center">
+        <span class="status-item">
+          <i class="status-icon icon-zap"></i>
+          <span class="status-label">RPC</span>
+          <span class="status-value" id="statusBarRpcRate">—</span>
+        </span>
+        <span class="status-separator">•</span>
+        <span class="status-item status-health" id="statusBarRpcHealth" data-health="unknown">
+          <span class="status-value" id="statusBarRpcSuccess">—</span>
+        </span>
+        <span class="status-separator">•</span>
+        <span class="status-item">
+          <i class="status-icon icon-activity"></i>
+          <span class="status-value" id="statusBarRpcLatency">—</span>
+        </span>
+      </div>
+      <div class="status-bar-right">
+        <span class="status-item">
+          <i class="status-icon icon-trending-up"></i>
+          <span class="status-label">Trading</span>
+          <span class="status-value status-trading" id="statusBarTrading" data-active="false"
+            >—</span
+          >
+        </span>
+        <span class="status-separator">•</span>
+        <span class="status-item">
+          <i class="status-icon icon-layers"></i>
+          <span class="status-label">Pos</span>
+          <span class="status-value" id="statusBarPositions">—</span>
+        </span>
+        <span class="status-separator">•</span>
+        <span class="status-item">
+          <i class="status-icon icon-database"></i>
+          <span class="status-label">Tokens</span>
+          <span class="status-value" id="statusBarTokens">—</span>
+        </span>
+      </div>
+    </footer>
+
+    <!-- Core ES Modules - Only router.js needs to be loaded explicitly; it imports the others -->
+    <!-- NOTE: Do NOT add separate script tags for lifecycle.js, app_state.js, poller.js, dom.js, utils.js
+         They are imported by router.js. Adding them with ?v= query params would cause duplicate
+         module instances because ES modules treat different URLs as different modules. -->
+    <script src="/scripts/core/brand_text.js?v={{ASSET_VERSION}}"></script>
+    <script type="module" src="/scripts/core/router.js?v={{ASSET_VERSION}}"></script>
+    <script type="module" src="/scripts/core/connectivity_watcher.js?v={{ASSET_VERSION}}"></script>
+    <script type="module" src="/scripts/core/tooltip.js?v={{ASSET_VERSION}}"></script>
+    <script type="module" src="/scripts/core/header.js?v={{ASSET_VERSION}}"></script>
+
+    <!-- UI Components -->
+    <!-- Context Menu dependencies (must load before context_menu.js) -->
+    <script src="/scripts/ui/context_menu/builders.js?v={{ASSET_VERSION}}"></script>
+    <script src="/scripts/ui/context_menu/actions.js?v={{ASSET_VERSION}}"></script>
+    <script type="module" src="/scripts/ui/context_menu.js?v={{ASSET_VERSION}}"></script>
+    <script type="module" src="/scripts/ui/search_dialog.js?v={{ASSET_VERSION}}"></script>
+    <script type="module" src="/scripts/ui/exit_dialog.js?v={{ASSET_VERSION}}"></script>
+    <!-- AdvancedChart dependencies (must load before advanced_chart.js) -->
+    <script src="/scripts/ui/advanced_chart/themes.js?v={{ASSET_VERSION}}"></script>
+    <script src="/scripts/ui/advanced_chart/indicators.js?v={{ASSET_VERSION}}"></script>
+    <script src="/scripts/ui/advanced_chart.js?v={{ASSET_VERSION}}"></script>
+
+    <!-- Initialize global search dialog -->
+    <script type="module">
+      import {
+        initSearchDialog,
+        openDialog,
+      } from "/scripts/ui/search_dialog.js?v={{ASSET_VERSION}}";
+      initSearchDialog();
+      // Connect header search button
+      const searchBtn = document.getElementById("searchBtn");
+      if (searchBtn) {
+        searchBtn.addEventListener("click", openDialog);
+      }
+    </script>
+
+    <!-- Initialize featured dialog -->
+    <script type="module">
+      import { initFeaturedDialog } from "/scripts/ui/featured_dialog.js?v={{ASSET_VERSION}}";
+      initFeaturedDialog();
+    </script>
+
+    <!-- Global Assistant chat (floating button + dialog) -->
+    <script type="module" src="/scripts/core/global_chat.js?v={{ASSET_VERSION}}"></script>
+
+    <!-- External-agent approval prompts (MCP bridge) -->
+    <script type="module" src="/scripts/core/agent_approvals.js?v={{ASSET_VERSION}}"></script>
+
+    <!-- Splash, Onboarding, Setup, and Lockscreen Controllers (non-module for immediate execution) -->
+    <script src="/scripts/core/splash.js?v={{ASSET_VERSION}}"></script>
+    <script src="/scripts/core/onboarding.js?v={{ASSET_VERSION}}"></script>
+    <script src="/scripts/ui/account/panel.js?v={{ASSET_VERSION}}"></script>
+    <script src="/scripts/core/setup_runtime.js?v={{ASSET_VERSION}}"></script>
+    <script src="/scripts/core/setup.js?v={{ASSET_VERSION}}"></script>
+    <script src="/scripts/core/status_bar.js?v={{ASSET_VERSION}}"></script>
+    <script src="/scripts/core/lockscreen.js?v={{ASSET_VERSION}}"></script>
+
+    <!-- Theme toggle (non-module) -->
+    <script>
+      /*__THEME_SCRIPTS__*/
+    </script>
+
+    <!-- Promo Studio runtime. Injected only under --promo-capture, and last, so it
+         initialises against a dashboard that has already wired everything else. -->
+    <!--__PROMO_CAPTURE_SCRIPTS__-->
+  </body>
+</html>

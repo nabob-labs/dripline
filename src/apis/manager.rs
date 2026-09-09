@@ -1,0 +1,298 @@
+//! Global API manager singleton - ensures single instance of all API clients across the bot
+//! This provides centralized rate limiting and stats tracking per API
+
+use std::sync::{Arc, LazyLock};
+
+use crate::config::get_config_clone;
+use crate::events::{record_api_event, Severity};
+use crate::logger::{self, LogTag};
+
+use super::coingecko::CoinGeckoClient;
+use super::defillama::DefiLlamaClient;
+use super::dexscreener::{DexScreenerClient, TIMEOUT_SECS as DEX_TIMEOUT};
+use super::geckoterminal::{
+    GeckoTerminalClient, RATE_LIMIT_PER_MINUTE as GECKO_RATE_LIMIT, TIMEOUT_SECS as GECKO_TIMEOUT,
+};
+use super::jupiter::JupiterClient;
+use super::rugcheck::{
+    RugcheckClient, RATE_LIMIT_PER_MINUTE as RUG_RATE_LIMIT, TIMEOUT_SECS as RUG_TIMEOUT,
+};
+use super::solana_tracker::{
+    SolanaTrackerClient, RATE_LIMIT_PER_MINUTE as ST_RATE_LIMIT, TIMEOUT_SECS as ST_TIMEOUT,
+};
+use super::stats::ApiStats;
+
+/// Global API manager - holds all API clients with their individual rate limiters and stats
+pub struct ApiManager {
+    pub dexscreener: DexScreenerClient,
+    pub geckoterminal: GeckoTerminalClient,
+    pub rugcheck: RugcheckClient,
+    pub jupiter: JupiterClient,
+    pub coingecko: CoinGeckoClient,
+    pub defillama: DefiLlamaClient,
+    pub solana_tracker: SolanaTrackerClient,
+}
+
+impl ApiManager {
+    fn new() -> Self {
+        let cfg = get_config_clone();
+        let sources_cfg = &cfg.tokens.sources;
+        let discovery_cfg = &cfg.tokens.discovery;
+        let ohlcv_sources_cfg = &cfg.ohlcv.sources;
+        let discovery_enabled = discovery_cfg.enabled;
+
+        let dexscreener_cfg = &sources_cfg.dexscreener;
+        let geckoterminal_cfg = &sources_cfg.geckoterminal;
+
+        let dexscreener_enabled =
+            dexscreener_cfg.enabled && discovery_enabled && discovery_cfg.dexscreener.enabled;
+        // GeckoTerminal client enablement is shared between token discovery
+        // (new_pools / trending / recently_updated) and OHLCV candle fetching.
+        // The client stays on if EITHER consumer needs it, so the two can be
+        // enabled/disabled independently via their own config sections. The
+        // endpoint used is whichever side actually consumes the client right
+        // now (OHLCV's if it needs it, else the tokens source default).
+        let discovery_needs_gt =
+            geckoterminal_cfg.enabled && discovery_enabled && discovery_cfg.geckoterminal.enabled;
+        let ohlcv_needs_gt = ohlcv_sources_cfg.geckoterminal.enabled;
+        let geckoterminal_enabled =
+            geckoterminal_cfg.enabled && (discovery_needs_gt || ohlcv_needs_gt);
+        let gecko_endpoint = if ohlcv_needs_gt {
+            ohlcv_sources_cfg.geckoterminal.endpoint.clone()
+        } else if !geckoterminal_cfg.endpoint.is_empty() {
+            geckoterminal_cfg.endpoint.clone()
+        } else {
+            String::new()
+        };
+        // The Rugcheck CLIENT powers per-token security reports (fetch_report) used
+        // by both filtering and the token-details Security tab. Its enablement must
+        // follow ONLY the security-source toggle `[tokens.sources.rugcheck].enabled`
+        // (plus the master discovery switch), NOT the discovery-LIST toggle
+        // `[tokens.discovery.rugcheck].enabled`. Those are different concerns: the
+        // discovery toggle only controls whether we pull Rugcheck's new/trending
+        // token lists (enforced separately in tokens/discovery.rs). Previously the
+        // discovery flag was ANDed in here, so turning off Rugcheck as a discovery
+        // source silently disabled ALL security lookups — leaving the Security tab
+        // stuck "fetching" and tokens with no cached rugcheck data forever.
+        let rug_enabled = sources_cfg.rugcheck.enabled && discovery_enabled;
+
+        let dex_timeout = if dexscreener_cfg.timeout_seconds == 0 {
+            DEX_TIMEOUT
+        } else {
+            dexscreener_cfg.timeout_seconds
+        };
+
+        let gecko_rate_limit = if ohlcv_needs_gt {
+            if ohlcv_sources_cfg.geckoterminal.rate_limit_per_minute == 0 {
+                GECKO_RATE_LIMIT
+            } else {
+                ohlcv_sources_cfg.geckoterminal.rate_limit_per_minute as usize
+            }
+        } else if geckoterminal_cfg.rate_limit_per_minute == 0 {
+            GECKO_RATE_LIMIT
+        } else {
+            geckoterminal_cfg.rate_limit_per_minute as usize
+        };
+        let gecko_timeout = if ohlcv_needs_gt {
+            if ohlcv_sources_cfg.geckoterminal.timeout_seconds == 0 {
+                GECKO_TIMEOUT
+            } else {
+                ohlcv_sources_cfg.geckoterminal.timeout_seconds
+            }
+        } else if geckoterminal_cfg.timeout_seconds == 0 {
+            GECKO_TIMEOUT
+        } else {
+            geckoterminal_cfg.timeout_seconds
+        };
+
+        let jup_enabled = discovery_enabled && discovery_cfg.jupiter.enabled;
+        let coingecko_enabled = discovery_enabled
+            && discovery_cfg.coingecko.enabled
+            && discovery_cfg.coingecko.markets_enabled;
+        let defillama_enabled = discovery_enabled
+            && discovery_cfg.defillama.enabled
+            && discovery_cfg.defillama.protocols_enabled;
+
+        // SolanaTracker is exclusively an OHLCV fallback (its previous config
+        // home under [tokens.sources.solana_tracker] has been moved to
+        // [ohlcv.sources.solana_tracker]). All enablement, rate-limit, timeout,
+        // and endpoint settings now come from that section.
+        let st_cfg = &ohlcv_sources_cfg.solana_tracker;
+        let st_enabled = st_cfg.enabled && !st_cfg.api_key.is_empty();
+        let st_rate_limit = if st_cfg.rate_limit_per_minute == 0 {
+            ST_RATE_LIMIT
+        } else {
+            st_cfg.rate_limit_per_minute as usize
+        };
+        let st_timeout = if st_cfg.timeout_seconds == 0 {
+            ST_TIMEOUT
+        } else {
+            st_cfg.timeout_seconds
+        };
+
+        logger::info(LogTag::Api, "Initializing global API manager");
+
+        // Record API manager initialization event
+        tokio::spawn({
+            let dex = dexscreener_enabled;
+            let gecko = geckoterminal_enabled;
+            let rug = rug_enabled;
+            let jup = jup_enabled;
+            let cg = coingecko_enabled;
+            let dl = defillama_enabled;
+            let st = st_enabled;
+            async move {
+                record_api_event(
+                    "ApiManager",
+                    "initialization",
+                    Severity::Info,
+                    serde_json::json!({
+                        "enabled_apis": {
+                            "dexscreener": dex,
+                            "geckoterminal": gecko,
+                            "rugcheck": rug,
+                            "jupiter": jup,
+                            "coingecko": cg,
+                            "defillama": dl,
+                            "solana_tracker": st,
+                        },
+                    }),
+                )
+                .await;
+            }
+        });
+
+        Self {
+            dexscreener: DexScreenerClient::new(dexscreener_enabled, dex_timeout).unwrap_or_else(
+                |e| {
+                    logger::warning(
+                        LogTag::Api,
+                        &format!(
+                            "Failed to initialize DexScreener client: {} - using disabled client",
+                            e
+                        ),
+                    );
+                    DexScreenerClient::new(false, DEX_TIMEOUT)
+                        .expect("Failed to create disabled DexScreener client")
+                },
+            ),
+            geckoterminal: GeckoTerminalClient::with_base_url(
+                geckoterminal_enabled,
+                gecko_rate_limit,
+                gecko_timeout,
+                gecko_endpoint,
+            )
+            .unwrap_or_else(|e| {
+                logger::warning(
+                    LogTag::Api,
+                    &format!(
+                        "Failed to initialize GeckoTerminal client: {} - using disabled client",
+                        e
+                    ),
+                );
+                GeckoTerminalClient::new(false, GECKO_RATE_LIMIT, GECKO_TIMEOUT)
+                    .expect("Failed to create disabled GeckoTerminal client")
+            }),
+            rugcheck: RugcheckClient::new(rug_enabled, RUG_RATE_LIMIT, RUG_TIMEOUT).unwrap_or_else(
+                |e| {
+                    logger::warning(
+                        LogTag::Api,
+                        &format!(
+                            "Failed to initialize Rugcheck client: {} - using disabled client",
+                            e
+                        ),
+                    );
+                    RugcheckClient::new(false, RUG_RATE_LIMIT, RUG_TIMEOUT)
+                        .expect("Failed to create disabled Rugcheck client")
+                },
+            ),
+            jupiter: JupiterClient::new(jup_enabled).unwrap_or_else(|e| {
+                logger::warning(
+                    LogTag::Api,
+                    &format!(
+                        "Failed to initialize Jupiter client: {} - using disabled client",
+                        e
+                    ),
+                );
+                JupiterClient::new(false).expect("Failed to create disabled Jupiter client")
+            }),
+            coingecko: CoinGeckoClient::new(coingecko_enabled).unwrap_or_else(|e| {
+                logger::warning(
+                    LogTag::Api,
+                    &format!(
+                        "Failed to initialize CoinGecko client: {} - using disabled client",
+                        e
+                    ),
+                );
+                CoinGeckoClient::new(false).expect("Failed to create disabled CoinGecko client")
+            }),
+            defillama: DefiLlamaClient::new(defillama_enabled).unwrap_or_else(|e| {
+                logger::warning(
+                    LogTag::Api,
+                    &format!(
+                        "Failed to initialize DefiLlama client: {} - using disabled client",
+                        e
+                    ),
+                );
+                DefiLlamaClient::new(false).expect("Failed to create disabled DefiLlama client")
+            }),
+            solana_tracker: SolanaTrackerClient::with_base_url(
+                st_enabled,
+                st_cfg.api_key.clone(),
+                st_rate_limit,
+                st_timeout,
+                st_cfg.endpoint.clone(),
+            )
+            .unwrap_or_else(|e| {
+                logger::warning(
+                    LogTag::Api,
+                    &format!(
+                        "Failed to initialize SolanaTracker client: {} - using disabled client",
+                        e
+                    ),
+                );
+                SolanaTrackerClient::new(false, String::new(), ST_RATE_LIMIT, ST_TIMEOUT)
+                    .expect("Failed to create disabled SolanaTracker client")
+            }),
+        }
+    }
+
+    /// Get aggregated stats from all API clients
+    pub async fn get_all_stats(&self) -> ApiManagerStats {
+        ApiManagerStats {
+            dexscreener: self.dexscreener.get_stats().await,
+            geckoterminal: self.geckoterminal.get_stats().await,
+            rugcheck: self.rugcheck.get_stats().await,
+            jupiter: self.jupiter.get_stats().await,
+            coingecko: self.coingecko.get_stats().await,
+            defillama: self.defillama.get_stats().await,
+            solana_tracker: self.solana_tracker.get_stats().await,
+        }
+    }
+}
+
+/// Aggregated stats from all API clients
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct ApiManagerStats {
+    pub dexscreener: ApiStats,
+    pub geckoterminal: ApiStats,
+    pub rugcheck: ApiStats,
+    pub jupiter: ApiStats,
+    pub coingecko: ApiStats,
+    pub defillama: ApiStats,
+    pub solana_tracker: ApiStats,
+}
+
+/// Global singleton instance - lazy initialized on first access
+/// This ensures only ONE instance of each API client exists across the entire bot,
+/// providing true global rate limiting and centralized stats tracking
+static GLOBAL_API_MANAGER: LazyLock<Arc<ApiManager>> =
+    LazyLock::new(|| Arc::new(ApiManager::new()));
+
+/// Get global API manager (creates singleton on first call, reuses on subsequent calls)
+///
+/// This is the ONLY way to access API clients in the bot - ensures proper rate limiting
+/// and stats tracking across all usages
+pub fn get_api_manager() -> Arc<ApiManager> {
+    GLOBAL_API_MANAGER.clone()
+}

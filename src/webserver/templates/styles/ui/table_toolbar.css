@@ -1,0 +1,1128 @@
+/**
+ * Table toolbar — the single chrome strip above a DataTable.
+ *
+ * Layout is one band split into three zones:
+ *
+ *   [ lead: identity + stats ] [ controls: search / views / filters ] [ actions ]
+ *
+ * The bar is its own container (`container-type: inline-size`), so it adapts to the
+ * width of the PANEL it sits in rather than the viewport — the same table renders
+ * correctly in a full page, a split pane or a modal. Pages can opt into a stable
+ * query row when context, metrics, search and several filters cannot share one row.
+ * Pages must never stack a second info/action band above a table.
+ */
+
+/* ===================== Bar ===================== */
+
+.data-table-toolbar {
+  --table-toolbar-control-height: 32px;
+
+  container: table-toolbar / inline-size;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  padding: 0.4375rem 1rem;
+  min-height: 46px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  position: relative; /* Required for the loading indicator */
+  box-sizing: border-box;
+}
+
+/* A bar carrying a subject identity gets more vertical room for the two-line block. */
+.data-table-toolbar[data-density="default"] {
+  padding: 0.5rem 1rem;
+  min-height: 56px;
+}
+
+.table-toolbar__lead {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.table-toolbar__controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.table-toolbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+/* Data-heavy tables use two predictable rows instead of turning search into an
+   icon or allowing filters to crowd the context. Context and actions own row 1;
+   search and facets own row 2 and keep the same visual identity at every width. */
+.data-table-toolbar[data-layout="query-row"] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "lead actions"
+    "controls controls";
+}
+
+.data-table-toolbar[data-layout="query-row"] > .table-toolbar__lead {
+  grid-area: lead;
+}
+
+.data-table-toolbar[data-layout="query-row"] > .table-toolbar__controls {
+  grid-area: controls;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.data-table-toolbar[data-layout="query-row"] > .table-toolbar__actions {
+  grid-area: actions;
+}
+
+.data-table-toolbar[data-layout="query-row"] .table-toolbar-search {
+  flex: 0 1 20rem;
+  width: 20rem;
+  max-width: 20rem;
+}
+
+.data-table-toolbar[data-layout="query-row"] .table-toolbar-select-group {
+  margin-left: auto;
+}
+
+/* ===================== Identity ===================== */
+
+.table-toolbar-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+}
+
+/* Bare glyph — never a tile, ring or glow behind a toolbar icon. */
+.table-toolbar-identity__icon {
+  display: flex;
+  align-items: center;
+  font-size: 1.05rem;
+  line-height: 1;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.table-toolbar-identity__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.table-toolbar-identity__line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.table-toolbar-identity__title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table-toolbar-identity__tag {
+  padding: 0.0625rem 0.4375rem;
+  border-radius: var(--radius-full);
+  background: rgb(59, 130, 246, 0.12);
+  color: var(--primary-color);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.table-toolbar-identity__tag[data-variant="success"] {
+  background: rgb(34, 197, 94, 0.14);
+  color: var(--success-color, #16a34a);
+}
+
+.table-toolbar-identity__tag[data-variant="warning"] {
+  background: rgb(250, 204, 21, 0.16);
+  color: var(--warning-color, #ca8a04);
+}
+
+.table-toolbar-identity__tag[data-variant="muted"] {
+  background: rgb(148, 163, 184, 0.16);
+  color: var(--text-tertiary);
+}
+
+.table-toolbar-identity__sub {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  font-size: 0.7rem;
+  line-height: 1.3;
+  color: var(--text-tertiary);
+}
+
+.table-toolbar-identity__subtitle {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table-toolbar-identity__address-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1875rem;
+  min-width: 0;
+}
+
+.table-toolbar-identity__address {
+  font-family: var(--font-data);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 22ch;
+}
+
+/* Ghost icon affordance — transparent at rest so the glyph reads as a glyph. */
+.table-toolbar-identity__act {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color var(--transition-base);
+  flex-shrink: 0;
+}
+
+.table-toolbar-identity__act:hover {
+  color: var(--text-primary);
+}
+
+/* ===================== Stats ===================== */
+
+.table-toolbar-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+/* Hairline between adjacent stats instead of a glyph separator. */
+.data-table-toolbar[data-has-identity="true"] .table-toolbar-summary {
+  padding-left: 0.625rem;
+  border-left: 1px solid var(--border-color);
+}
+
+.table-toolbar-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.table-toolbar-chip[hidden] {
+  display: none;
+}
+
+.table-toolbar-chip__icon {
+  font-size: 0.8em;
+  color: var(--text-tertiary);
+}
+
+.table-toolbar-chip__label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.table-toolbar-chip__value {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font-data);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+}
+
+.table-toolbar-chip[data-variant="success"] .table-toolbar-chip__value {
+  color: #4ade80;
+}
+
+.table-toolbar-chip[data-variant="warning"] .table-toolbar-chip__value {
+  color: #facc15;
+}
+
+.table-toolbar-chip[data-variant="error"] .table-toolbar-chip__value {
+  color: #f87171;
+}
+
+.table-toolbar-chip[data-variant="info"] .table-toolbar-chip__value {
+  color: #60a5fa;
+}
+
+.table-toolbar-chip[data-variant="secondary"] .table-toolbar-chip__value {
+  color: var(--text-secondary);
+}
+
+/* ===================== Inline text ===================== */
+
+.table-toolbar-text {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.table-toolbar-text[hidden] {
+  display: none;
+}
+
+.table-toolbar-text__label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+}
+
+.table-toolbar-text[data-variant="accent"] .table-toolbar-text__value {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* ===================== Structure helpers ===================== */
+
+.table-toolbar-divider {
+  width: 1px;
+  align-self: stretch;
+  min-height: 20px;
+  background: var(--border-color);
+  flex-shrink: 0;
+}
+
+.table-toolbar-spacer {
+  flex: 1 1 auto;
+}
+
+.table-toolbar-slot {
+  display: contents;
+}
+
+/* A cluster groups related controls so many tools read as few objects. */
+.table-toolbar-cluster {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.table-toolbar-cluster[hidden] {
+  display: none;
+}
+
+.table-toolbar-cluster__label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Attached: members share edges and read as one control. */
+.table-toolbar-cluster--attached {
+  gap: 0;
+}
+
+.table-toolbar-cluster--attached > .table-toolbar-btn:not(:first-child),
+.table-toolbar-cluster--attached > .table-toolbar-field:not(:first-child) .table-toolbar-input {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  margin-left: -1px;
+}
+
+.table-toolbar-cluster--attached > .table-toolbar-btn:not(:last-child),
+.table-toolbar-cluster--attached > .table-toolbar-field:not(:last-child) .table-toolbar-input {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.table-toolbar-cluster--attached > .table-toolbar-btn:hover {
+  z-index: 1;
+}
+
+/* Adjacent dropdowns form one stable segmented field. Structural ownership,
+   rather than transient field visibility, controls the attached appearance. */
+.table-toolbar-select-group {
+  display: inline-flex;
+  align-items: stretch;
+  min-width: 0;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.table-toolbar-select-group:not(:has(> .table-toolbar-field:not([hidden]))) {
+  display: none;
+}
+
+.table-toolbar-select-group > .table-toolbar-field:not([hidden]) {
+  /* Label + trigger chevron + menu checkmark column. The old 2rem allowance
+     forced common labels to collide with the selected icon or ellipsize. */
+  flex: 0 0 clamp(8rem, calc(var(--table-toolbar-select-label-width, 5rem) + 3.5rem), 12rem);
+  width: clamp(8rem, calc(var(--table-toolbar-select-label-width, 5rem) + 3.5rem), 12rem);
+  min-width: 0;
+}
+
+.table-toolbar-select-group
+  > .table-toolbar-field:not([hidden]):nth-child(n + 2 of .table-toolbar-field:not([hidden])) {
+  margin-left: -1px;
+}
+
+.table-toolbar-select-group > .table-toolbar-field:not([hidden]) > .custom-select-host {
+  width: 100%;
+  min-width: 0;
+}
+
+.table-toolbar-select-group
+  > .table-toolbar-field:not([hidden])
+  > .custom-select-host
+  > .custom-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.table-toolbar-select-group > .table-toolbar-field:not([hidden]) .cs-trigger,
+.table-toolbar-select-group > .table-toolbar-field:not([hidden]) > .table-toolbar-select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 0;
+  background: var(--bg-secondary);
+  box-shadow: none;
+}
+
+.table-toolbar-select-group
+  > .table-toolbar-field:not([hidden]):nth-child(1 of .table-toolbar-field:not([hidden]))
+  .cs-trigger,
+.table-toolbar-select-group
+  > .table-toolbar-field:not([hidden]):nth-child(1 of .table-toolbar-field:not([hidden]))
+  > .table-toolbar-select {
+  border-top-left-radius: var(--radius-md);
+  border-bottom-left-radius: var(--radius-md);
+}
+
+.table-toolbar-select-group
+  > .table-toolbar-field:not([hidden]):nth-last-child(1 of .table-toolbar-field:not([hidden]))
+  .cs-trigger,
+.table-toolbar-select-group
+  > .table-toolbar-field:not([hidden]):nth-last-child(1 of .table-toolbar-field:not([hidden]))
+  > .table-toolbar-select {
+  border-top-right-radius: var(--radius-md);
+  border-bottom-right-radius: var(--radius-md);
+}
+
+.table-toolbar-select-group > .table-toolbar-field:not([hidden]) .cs-trigger {
+  gap: 0.25rem;
+  height: var(--table-toolbar-control-height);
+  padding-block: 0;
+  padding-inline: 0.4375rem;
+  box-sizing: border-box;
+}
+
+.table-toolbar-select-group > .table-toolbar-field:not([hidden]) .cs-arrow {
+  width: 1rem;
+  height: 1rem;
+}
+
+.table-toolbar-select-group
+  > .table-toolbar-field:not([hidden])
+  > .custom-select-host
+  > .custom-select:hover
+  .cs-trigger {
+  background: var(--bg-card-hover);
+}
+
+.table-toolbar-select-group
+  > .table-toolbar-field:not([hidden])
+  > .custom-select-host
+  > .custom-select:is(.open, .closing) {
+  z-index: 1;
+}
+
+.table-toolbar-select-group
+  > .table-toolbar-field:not([hidden])
+  > .custom-select-host
+  > .custom-select:is(.open, .closing)
+  .cs-trigger {
+  border-color: var(--primary-color);
+  border-radius: 0;
+  background: var(--bg-card-hover);
+  box-shadow: none;
+}
+
+.table-toolbar-select-group
+  > .table-toolbar-field:not([hidden])
+  > .custom-select-host
+  > .custom-select:is(.open, .closing):not(.dropdown-above)
+  .cs-trigger {
+  border-bottom-color: transparent;
+}
+
+.table-toolbar-select-group
+  > .table-toolbar-field:not([hidden])
+  > .custom-select-host
+  > .custom-select:is(.open, .closing).dropdown-above
+  .cs-trigger {
+  border-top-color: transparent;
+}
+
+.table-toolbar-select-group
+  > .table-toolbar-field:not([hidden]):nth-child(1 of .table-toolbar-field:not([hidden]))
+  > .custom-select-host
+  > .custom-select:is(.open, .closing):not(.dropdown-above)
+  .cs-trigger {
+  border-top-left-radius: var(--radius-md);
+}
+
+.table-toolbar-select-group
+  > .table-toolbar-field:not([hidden]):nth-last-child(1 of .table-toolbar-field:not([hidden]))
+  > .custom-select-host
+  > .custom-select:is(.open, .closing):not(.dropdown-above)
+  .cs-trigger {
+  border-top-right-radius: var(--radius-md);
+}
+
+.table-toolbar-select-group
+  > .table-toolbar-field:not([hidden]):nth-child(1 of .table-toolbar-field:not([hidden]))
+  > .custom-select-host
+  > .custom-select:is(.open, .closing).dropdown-above
+  .cs-trigger {
+  border-bottom-left-radius: var(--radius-md);
+}
+
+.table-toolbar-select-group
+  > .table-toolbar-field:not([hidden]):nth-last-child(1 of .table-toolbar-field:not([hidden]))
+  > .custom-select-host
+  > .custom-select:is(.open, .closing).dropdown-above
+  .cs-trigger {
+  border-bottom-right-radius: var(--radius-md);
+}
+
+.table-toolbar-custom {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.table-toolbar-custom[hidden] {
+  display: none;
+}
+
+/* ===================== Fields ===================== */
+
+.table-toolbar-field {
+  display: flex;
+  align-items: center;
+  min-width: var(--table-toolbar-field-min-width, 0);
+  flex: 0 1 auto;
+}
+
+.table-toolbar-field > .custom-select-host {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+}
+
+.table-toolbar-field > .custom-select-host > .custom-select {
+  width: 100%;
+}
+
+.table-toolbar-field[hidden] {
+  display: none;
+}
+
+/* Labels are screen-reader only — the control's own text carries the meaning. */
+.table-toolbar-field__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* `background-color` (not the `background` shorthand) so the global select arrow survives. */
+.table-toolbar-input,
+.table-toolbar-select,
+.dt-filter,
+.dt-search-input {
+  padding: 0 0.6875rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  height: var(--table-toolbar-control-height);
+  box-sizing: border-box;
+  transition:
+    border-color var(--transition-base),
+    box-shadow var(--transition-base);
+}
+
+/* Select-specific styles. The chevron arrow comes from the single global
+   `select {}` rule in form_controls.css — never re-declare background-image
+   here (that is what produced duplicate/again-broken arrows historically). */
+.table-toolbar-select,
+.dt-filter {
+  padding-right: 1.75rem;
+  min-width: 120px;
+  cursor: pointer;
+  background-position: right 7px center;
+}
+
+.table-toolbar-input:hover,
+.table-toolbar-select:hover,
+.dt-filter:hover,
+.dt-search-input:hover {
+  border-color: var(--border-strong, var(--text-muted));
+}
+
+.table-toolbar-input:focus,
+.table-toolbar-select:focus,
+.dt-filter:focus,
+.dt-search-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgb(59, 130, 246, 0.1);
+}
+
+/* ===================== Search ===================== */
+
+.table-toolbar-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 220px;
+  min-width: var(--table-toolbar-search-min-width, 130px);
+  max-width: 340px;
+}
+
+.table-toolbar-search[data-grow="false"],
+.table-toolbar-search--inline {
+  flex: 0 1 auto;
+}
+
+.table-toolbar-search .dt-search-input,
+.table-toolbar-search .table-toolbar-input--text {
+  width: 100%;
+  height: var(--table-toolbar-control-height);
+  min-width: 0;
+  padding-left: 1.875rem;
+  padding-right: 1.625rem;
+}
+
+.table-toolbar-search__icon {
+  position: absolute;
+  left: 0.625rem;
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.table-toolbar-search__clear,
+.table-toolbar-input__clear {
+  position: absolute;
+  right: 0.375rem;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  width: 18px;
+  height: 18px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: color var(--transition-base);
+}
+
+/* The explicit `display` above beats the UA `[hidden]` rule, and both buttons are
+   toggled via `el.hidden` as the field empties — restore the attribute's effect. */
+.table-toolbar-search__clear[hidden],
+.table-toolbar-input__clear[hidden] {
+  display: none;
+}
+
+.table-toolbar-search__clear:hover,
+.table-toolbar-input__clear:hover {
+  color: var(--text-primary);
+}
+
+.table-toolbar-search[data-control-wrapper] {
+  width: 100%;
+}
+
+/* ===================== Switch ===================== */
+
+.table-toolbar-field--switch {
+  gap: 0.5rem;
+  padding: 0 0.625rem;
+  height: var(--table-toolbar-control-height);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  box-sizing: border-box;
+  transition: border-color var(--transition-base);
+}
+
+.table-toolbar-field--switch:not(.is-disabled):hover {
+  border-color: var(--border-strong, var(--text-muted));
+}
+
+.table-toolbar-field--switch.is-disabled {
+  opacity: 0.55;
+}
+
+/* Reserve the state word so ON -> ALL cannot reflow the toolbar row. */
+.table-toolbar-field--switch .toggle-state {
+  min-width: 24px;
+}
+
+.table-toolbar-field--switch.is-disabled .toggle-state {
+  color: var(--text-muted);
+}
+
+/* ===================== Segmented view switcher ===================== */
+
+.table-toolbar-seg-wrap {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.table-toolbar-seg-wrap[hidden] {
+  display: none;
+}
+
+.table-toolbar-seg {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  gap: 2px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  box-sizing: border-box;
+}
+
+.table-toolbar-seg__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: 26px;
+  padding: 0 0.625rem;
+  border: none;
+  border-radius: calc(var(--radius-md) - 2px);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background var(--transition-base),
+    color var(--transition-base);
+}
+
+.table-toolbar-seg__btn:hover:not(.active) {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.table-toolbar-seg__btn.active {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgb(15, 23, 42, 0.08);
+}
+
+.table-toolbar-seg__icon {
+  display: flex;
+  align-items: center;
+  font-size: 0.85em;
+}
+
+.table-toolbar-seg__count {
+  font-family: var(--font-data);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  font-feature-settings: "tnum" 1;
+}
+
+.table-toolbar-seg__btn.active .table-toolbar-seg__count {
+  color: var(--primary-color);
+}
+
+/* ===================== Buttons ===================== */
+
+.table-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0 0.75rem;
+  height: var(--table-toolbar-control-height);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 0.8125rem;
+  line-height: 1;
+  box-sizing: border-box;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background var(--transition-base),
+    border-color var(--transition-base),
+    color var(--transition-base);
+}
+
+/* The explicit `display: inline-flex` above overrides the browser's `[hidden]`
+   default, so `btn.hidden = true` (e.g. the positions "Delete all" button shown only
+   in the Archived sub-tab) would not hide the button. Restore it — this attribute
+   selector (0,2,0) wins over the base `.table-toolbar-btn` rule (0,1,0). */
+.table-toolbar-btn[hidden] {
+  display: none;
+}
+
+.table-toolbar-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--border-strong, var(--text-muted));
+}
+
+.table-toolbar-btn:disabled,
+.table-toolbar-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.table-toolbar-btn--icon {
+  padding: 0;
+  width: 32px;
+  min-width: 32px;
+}
+
+.table-toolbar-btn--primary {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #fff;
+}
+
+.table-toolbar-btn--primary:hover:not(:disabled) {
+  background: var(--primary-hover, var(--primary-color));
+  border-color: var(--primary-hover, var(--primary-color));
+  color: #fff;
+}
+
+.table-toolbar-btn--danger {
+  background: transparent;
+  border-color: rgb(248, 113, 113, 0.4);
+  color: var(--danger-color, #f87171);
+}
+
+.table-toolbar-btn--danger:hover:not(:disabled) {
+  background: rgb(248, 113, 113, 0.12);
+  border-color: var(--danger-color, #f87171);
+}
+
+.table-toolbar-btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-secondary);
+}
+
+.table-toolbar-btn--ghost:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: transparent;
+  color: var(--text-primary);
+}
+
+.table-toolbar-btn .dt-btn-icon {
+  display: flex;
+  align-items: center;
+  font-size: 0.9em;
+}
+
+/* Busy: the button is running its action. Communicates real state, so it animates,
+   but degrades to a static dimmed state under reduced motion. */
+.table-toolbar-btn.is-busy {
+  position: relative;
+  color: transparent;
+}
+
+.table-toolbar-btn.is-busy .dt-btn-icon,
+.table-toolbar-btn.is-busy .dt-btn-label {
+  visibility: hidden;
+}
+
+.table-toolbar-btn.is-busy::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid currentcolor;
+  border-top-color: transparent;
+  color: var(--text-secondary);
+  animation: table-toolbar-spin 0.7s linear infinite;
+}
+
+.table-toolbar-btn--primary.is-busy::after {
+  color: #fff;
+}
+
+@keyframes table-toolbar-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .table-toolbar-btn.is-busy::after {
+    animation: none;
+    border-top-color: currentcolor;
+    opacity: 0.4;
+  }
+}
+
+/* ===================== Overflow menu ===================== */
+
+.table-toolbar-overflow {
+  position: relative;
+  display: inline-flex;
+}
+
+.table-toolbar-menu {
+  position: absolute;
+  top: calc(100% - 1px);
+  right: 0;
+  z-index: var(--z-dropdown);
+  min-width: 180px;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md) 0 var(--radius-md) var(--radius-md);
+  background: var(--bg-card);
+  font-family: var(--font-mono);
+  box-shadow: var(--shadow-floating-md);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px) scaleY(0.985);
+  transform-origin: top right;
+  transition:
+    opacity var(--floating-duration) var(--floating-easing),
+    transform var(--floating-duration) var(--floating-easing);
+}
+
+.table-toolbar-menu[hidden] {
+  display: none;
+}
+
+.table-toolbar-menu.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scaleY(1);
+}
+
+.table-toolbar-overflow__trigger.active {
+  border-color: var(--primary-color);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: var(--bg-hover);
+}
+
+.table-toolbar-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: var(--table-toolbar-control-height);
+  padding: 0.375rem 0.6875rem;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition-base);
+}
+
+.table-toolbar-menu__item[hidden] {
+  display: none;
+}
+
+.table-toolbar-menu__item:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
+.table-toolbar-menu__item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.table-toolbar-menu__item[data-variant="danger"] {
+  color: var(--danger-color, #f87171);
+}
+
+.table-toolbar-menu__icon {
+  display: flex;
+  align-items: center;
+  font-size: 0.85em;
+  color: var(--text-tertiary);
+}
+
+.table-toolbar-menu__item[data-variant="danger"] .table-toolbar-menu__icon {
+  color: inherit;
+}
+
+.table-toolbar-settings {
+  position: relative;
+}
+
+/* ===================== Adaptive collapse =====================
+   Driven by the toolbar's own inline size, not the viewport, so a table inside a
+   narrow pane collapses even on a wide screen. */
+
+/* 1. Labelled buttons shed their text before anything reflows. */
+@container table-toolbar (width < 1000px) {
+  .table-toolbar-btn--collapsible {
+    padding: 0;
+    width: 32px;
+    min-width: 32px;
+    gap: 0;
+  }
+
+  .table-toolbar-btn--collapsible .dt-btn-label {
+    display: none;
+  }
+
+  .table-toolbar-seg__btn .table-toolbar-seg__label {
+    display: none;
+  }
+
+  .table-toolbar-seg__btn {
+    padding: 0 0.5rem;
+  }
+}
+
+/* 2. Compact inline toolbars move controls to a second row when necessary. */
+@container table-toolbar (width < 780px) {
+  .table-toolbar__controls {
+    flex: 1 1 100%;
+    order: 3;
+  }
+
+  .table-toolbar__lead {
+    flex: 1 1 auto;
+  }
+
+  .table-toolbar-search {
+    max-width: none;
+  }
+}
+
+/* A query row becomes a clear search row plus a facet row before its search
+   label would truncate. Both controls stay full-featured and discoverable. */
+@container table-toolbar (width < 760px) {
+  .data-table-toolbar[data-layout="query-row"] > .table-toolbar__controls {
+    flex-wrap: wrap;
+  }
+
+  .data-table-toolbar[data-layout="query-row"] .table-toolbar-search {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: none;
+  }
+}
+
+/* 3. Identity and stats stack; every control spans the bar. */
+@container table-toolbar (width < 520px) {
+  .table-toolbar__lead {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .data-table-toolbar[data-has-identity="true"] .table-toolbar-summary {
+    padding-left: 0;
+    border-left: none;
+    width: 100%;
+  }
+
+  .table-toolbar-identity__address {
+    max-width: 14ch;
+  }
+
+  .table-toolbar__controls {
+    flex-wrap: wrap;
+  }
+
+  .table-toolbar-select-group:has(
+    > .table-toolbar-field:not([hidden]) ~ .table-toolbar-field:not([hidden])
+  ) {
+    flex: 1 1 100%;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .table-toolbar-search {
+    flex: 1 1 100%;
+  }
+
+  .table-toolbar-field,
+  .table-toolbar-select,
+  .dt-filter {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}

@@ -1,0 +1,538 @@
+/* ============================================================================
+   Shared Configuration Components (Reusable across all configuration tabs)
+   ============================================================================ */
+
+/* Unified Section Base Class - replaces stats-section, config-section, form-section */
+.config-section {
+  padding: 0 1rem 1rem;
+}
+
+/* Unified Card Container — responsive grid so config items use the available
+   width (multiple per row on wide screens, auto-collapsing to fewer/one column
+   on narrow screens) instead of one item per row wasting horizontal space. */
+.config-card {
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 8px var(--shadow-sm);
+  transition: box-shadow var(--transition-base);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 1rem 1.25rem;
+  align-items: start;
+}
+
+.config-card:hover {
+  box-shadow: 0 4px 12px var(--shadow-md);
+}
+
+.config-card + .config-card {
+  margin-top: 1rem;
+}
+
+/* Field groups in the same card share the card's row tracks via subgrid, so the
+   labels, hints, inputs and impact boxes all line up on the same vertical
+   position across columns regardless of differing hint/line heights. Each group
+   maps its children to four rows: label-row, hint, input, impact (missing parts
+   leave their row empty, preserving alignment). Full-width groups are excluded. */
+.config-card > .config-group:not(.config-group-full) {
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span 4;
+  row-gap: 0.4rem;
+  align-items: start;
+  margin: 0;
+}
+
+/* Subgrid row-gap handles internal rhythm — drop legacy child margins so they
+   don't add to it. */
+.config-card > .config-group:not(.config-group-full) > * {
+  margin: 0;
+}
+
+/* Impact boxes carry a visible background, so stretch them to equal height
+   across columns (their shared row track) instead of top-aligning. */
+.config-card > .config-group:not(.config-group-full) > .config-impact {
+  align-self: stretch;
+}
+
+.config-card > .config-group-full {
+  margin: 0;
+}
+
+/* Elements that must occupy the full card width (headers, full-width groups,
+   how-it-works examples, lists, previews) span every grid column. */
+.config-card > .card-header,
+.config-card > .config-group-full,
+.config-card > .visual-example,
+.config-card > .feature-preview {
+  grid-column: 1 / -1;
+}
+
+/* Card Header — the single title bar for every config card. Holds the title +
+   description on the left and, for feature cards, the on/off toggle on the
+   right (one header per card — never a separate title block below). */
+.config-card .card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: -1.25rem -1.25rem 1rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, var(--primary-alpha-5), transparent);
+  border-bottom: 1px solid var(--border-color);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.card-header-text {
+  min-width: 0;
+}
+
+.config-card .card-header > .toggle {
+  flex-shrink: 0;
+}
+
+.config-card .card-header > .card-header-actions {
+  margin-left: auto;
+}
+
+/* Right-aligned cluster holding the per-card Save/Reset buttons and (for feature
+   cards) the on/off toggle. Injected by the config_cards module. */
+.card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.config-card-save,
+.config-card-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+/* Save/Reset only appear when the card has unsaved changes (toggled via the
+   [hidden] attribute) — this rule outranks the inline-flex above. */
+.config-card-save[hidden],
+.config-card-reset[hidden] {
+  display: none;
+}
+
+.config-card .card-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.config-card .card-header h3 i {
+  color: var(--primary-color);
+  font-size: 1.125rem;
+}
+
+.card-subtitle {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.config-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.config-label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.config-label i {
+  color: var(--primary);
+  font-size: 0.875rem;
+}
+
+.config-badge {
+  flex: 0 0 auto;
+  padding: 0.1875rem 0.5rem;
+  border-radius: var(--radius-xl);
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.config-badge-info {
+  background: var(--primary-alpha-10);
+  color: var(--primary);
+}
+
+.config-badge-warning {
+  background: var(--warning-alpha-10);
+  color: var(--warning);
+}
+
+.config-hint {
+  margin: 0 0 0.625rem;
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.input-group-enhanced {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* The numeric shell is the flex item here, so it — not the input — carries the
+   row's share of the width and the compact cap. */
+.input-group-enhanced .number-field {
+  flex: 1;
+  max-width: 120px;
+}
+
+.input-large {
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--background-secondary);
+  color: var(--text-primary);
+  transition: all var(--transition-base);
+}
+
+.input-large:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-alpha-10);
+}
+
+.input-text-compact {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--background-secondary);
+  color: var(--text-primary);
+  transition: all var(--transition-base);
+}
+
+.input-text-compact:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-alpha-10);
+}
+
+.config-impact {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--background-tertiary);
+  border-radius: var(--radius-md);
+}
+
+.impact-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.impact-text {
+  font-size: 0.6875rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* Visual Example */
+.visual-example {
+  background: linear-gradient(135deg, var(--background-secondary) 0%, var(--card-bg) 100%);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+}
+
+.visual-example h4 {
+  margin: 0 0 0.625rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.example-timeline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.625rem;
+  overflow-x: auto;
+  padding: 0.5rem 0;
+}
+
+.timeline-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 75px;
+}
+
+.step-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  box-shadow: 0 2px 6px rgb(0, 0, 0, 0.1);
+  transition: all var(--transition-normal);
+}
+
+.step-icon-entry {
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  color: white;
+}
+
+.step-icon-activation {
+  background: linear-gradient(135deg, var(--warning), var(--warning-color-dark));
+  color: white;
+}
+
+.step-icon-peak {
+  background: linear-gradient(135deg, var(--success), var(--success-hover));
+  color: white;
+}
+
+.step-icon-exit {
+  background: linear-gradient(135deg, var(--danger), var(--danger-hover));
+  color: white;
+}
+
+.step-content {
+  text-align: center;
+}
+
+.step-title {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.125rem;
+}
+
+.step-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font-data);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+  margin-bottom: 0.125rem;
+}
+
+.step-detail {
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+}
+
+.timeline-arrow {
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+  opacity: 0.5;
+  margin: 0 0.125rem;
+}
+
+.example-summary {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.summary-item {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+}
+
+.summary-item i {
+  font-size: 1.125rem;
+  flex-shrink: 0;
+}
+
+.summary-item-success {
+  background: var(--success-alpha-10);
+  color: var(--success);
+}
+
+.summary-item-success strong {
+  color: var(--success);
+}
+
+.summary-item-info {
+  background: var(--primary-alpha-10);
+  color: var(--primary);
+}
+
+.summary-item-info strong {
+  color: var(--primary);
+}
+
+.summary-item-warning {
+  background: var(--warning-alpha-10);
+  color: var(--warning);
+}
+
+.summary-item-warning strong {
+  color: var(--warning);
+}
+
+/* Feature Preview */
+.feature-preview {
+  background: var(--card-bg);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+  border: 1px solid var(--border-color);
+}
+
+.feature-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.feature-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.feature-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--background-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+}
+
+.feature-item i {
+  font-size: 1.5rem;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.feature-content {
+  flex: 1;
+}
+
+.feature-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.feature-desc {
+  font-size: 0.813rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* Quick Stats */
+.stats-section-compact {
+  background: var(--card-bg);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgb(0, 0, 0, 0.1);
+}
+
+.stats-section-compact h4 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.quick-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+.quick-stat-card {
+  background: var(--background-secondary);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  text-align: center;
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-base);
+}
+
+.quick-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgb(0, 0, 0, 0.08);
+  border-color: var(--primary-alpha-30);
+}
+
+.quick-stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.quick-stat-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}

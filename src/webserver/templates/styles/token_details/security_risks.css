@@ -1,0 +1,86 @@
+/* =============================================================================
+   SECURITY TAB — RISK SIGNALS
+   ============================================================================= */
+
+.security-risk-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.security-risk-row {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 46px;
+  padding: 7px 12px;
+  transition: background var(--transition-fast);
+}
+
+.security-risk-row + .security-risk-row {
+  border-top: 1px solid var(--border-subtle, var(--border-color));
+}
+
+.security-risk-row:hover {
+  background: var(--bg-card-hover);
+}
+
+.security-risk-icon {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.security-risk-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.security-risk-name {
+  color: var(--text-primary);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.security-risk-description {
+  color: var(--text-secondary);
+  font-size: 0.66rem;
+  line-height: 1.4;
+}
+
+.security-risk-level {
+  color: var(--text-muted);
+  font-size: 0.57rem;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.security-risk-row.risk-danger .security-risk-icon,
+.security-risk-row.risk-danger .security-risk-level {
+  color: var(--danger);
+}
+
+.security-risk-row.risk-warn .security-risk-icon,
+.security-risk-row.risk-warn .security-risk-level {
+  color: var(--warning-color);
+}
+
+.security-risk-row.risk-info .security-risk-icon,
+.security-risk-row.risk-info .security-risk-level {
+  color: var(--primary-color);
+}
+
+@container (width <= 420px) {
+  .security-risk-row {
+    grid-template-columns: 18px minmax(0, 1fr);
+  }
+
+  .security-risk-level {
+    grid-column: 2;
+    justify-self: start;
+  }
+}

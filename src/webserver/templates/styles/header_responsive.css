@@ -1,0 +1,638 @@
+/* Header navigation, live ticker, theme surfaces, and responsive layout. */
+
+[data-theme="light"] {
+  --header-solid-bg: #f1f5f9;
+  --header-border: #d1d5db;
+  --header-shadow: 0 4px 20px rgb(0, 0, 0, 0.08);
+  --ticker-bg: linear-gradient(180deg, #e2e8f0 0%, #f1f5f9 100%);
+  --ticker-border: rgb(0, 0, 0, 0.08);
+  --ticker-hover-bg: rgb(0, 0, 0, 0.04);
+}
+
+[data-theme="dark"] {
+  --header-solid-bg: #0d1117;
+  --header-border: #30363d;
+  --header-shadow: 0 4px 20px rgb(0, 0, 0, 0.4);
+  --ticker-bg: linear-gradient(180deg, rgb(15, 23, 42, 0.85) 0%, rgb(15, 23, 42, 0.7) 100%);
+  --ticker-border: rgb(255, 255, 255, 0.06);
+  --ticker-hover-bg: rgb(255, 255, 255, 0.04);
+}
+
+/* Horizontally scrollable primary navigation with fixed edge fades. */
+.header-row-2-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+
+.header-row-2-wrapper::before,
+.header-row-2-wrapper::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  width: 40px;
+  z-index: var(--z-dropdown);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-base);
+}
+
+.header-row-2-wrapper::before {
+  left: 0;
+  background: linear-gradient(to right, var(--bg-secondary), transparent);
+}
+
+.header-row-2-wrapper::after {
+  right: 0;
+  background: linear-gradient(to left, var(--bg-secondary), transparent);
+}
+
+.header-row-2-wrapper.can-scroll-left::before,
+.header-row-2-wrapper.can-scroll-right::after {
+  opacity: 1;
+}
+
+.header-row-2 {
+  height: 36px;
+  overflow: auto hidden;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.header-row-2::-webkit-scrollbar {
+  display: none;
+}
+
+.nav-tabs {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  width: max-content;
+  min-width: 100%;
+  height: 100%;
+  padding: 0 var(--header-inline-padding);
+  gap: 6px;
+}
+
+/* One light that TRAVELS from the old tab to the new one, instead of a mark fading out
+   here and another fading in there. It is created by `core/header.js` (which measures
+   the active tab and drives `--nav-indicator-x`/`-w`); until it exists, `.nav-tabs` has
+   no `has-indicator` class and each tab lights its own `::after` — so navigation still
+   looks right if the script never runs. It lives inside `.nav-tabs`, the full-width flex
+   row, so it scrolls with the tabs for free.
+
+   This is a GLOW, not a drawn bar: a faint light lying along the bottom edge across the
+   tab's full width, fading upward over 4px and blurred so it has no drawable edge. A
+   crisp filled rectangle would read as a border the row wears, rather than the tab
+   emitting light. Kept deliberately dim — it marks the current tab, it does not announce
+   it, and the row is only 36px tall. */
+.nav-tabs-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: var(--nav-indicator-w, 0);
+  height: 4px;
+  background: linear-gradient(to top, var(--primary-alpha-20), transparent);
+  mask: linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent);
+  opacity: 0;
+  transform: translateX(var(--nav-indicator-x, 0));
+  filter: blur(1px);
+  pointer-events: none;
+}
+
+.nav-tabs-indicator.is-visible {
+  opacity: 0.9;
+}
+
+/* Only animate once it has been placed: transitioning the first measurement would slide
+   the bar in from the left edge of the row on every page load. */
+.nav-tabs-indicator.is-ready {
+  transition:
+    transform var(--transition-base) cubic-bezier(0.2, 0.8, 0.3, 1),
+    width var(--transition-base) cubic-bezier(0.2, 0.8, 0.3, 1),
+    opacity var(--transition-fast);
+}
+
+.nav-tabs.has-indicator a.active::after {
+  display: none;
+}
+
+/* The ONE source of truth for a main tab. `tab_bar.css` owns `.sub-tab`; a main tab
+   is `.nav-tabs a` and nothing else styles it (a duplicate `.tab` block used to sit in
+   tab_bar.css, fully shadowed by this higher-specificity rule — editing it did
+   nothing). Every state below changes only paint properties (colour, background,
+   opacity, transform), never geometry: the row is 36px and a tab that grows or
+   re-weights on hover would shove its neighbours sideways. */
+.nav-tabs a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-bottom: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.075em;
+  line-height: 1;
+  text-decoration: none;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+/* The icon is quieter than its label until the tab is hovered or current. */
+.nav-tabs a i {
+  font-size: 13px;
+  opacity: 0.6;
+  transition: opacity var(--transition-fast);
+}
+
+/* Each tab's own light on the bottom edge — the hover warmth, and the fallback when the
+   travelling indicator has not been created. Same substance as the indicator: a faint
+   glow, never a filled line. It spans the tab's FULL width and fades out within 4px, so
+   only the sliver of row directly beneath the label is touched. Only opacity changes
+   between states — the light brightens and dims, it never grows or moves. */
+.nav-tabs a::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 4px;
+  background: linear-gradient(to top, var(--primary-alpha-20), transparent);
+
+  /* The ends fade out so the glow has no vertical edge where the tab stops. */
+  mask: linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent);
+  opacity: 0;
+  filter: blur(1px);
+  pointer-events: none;
+  transition: opacity var(--transition-fast);
+}
+
+.nav-tabs a:hover {
+  background: var(--primary-alpha-5);
+  color: var(--text-primary);
+}
+
+.nav-tabs a:hover i {
+  opacity: 0.95;
+}
+
+/* Hover barely warms the edge, so the current tab stays the brightest thing in the row
+   and hovering never looks like navigating. */
+.nav-tabs a:hover::after {
+  opacity: 0.25;
+}
+
+.nav-tabs a.active {
+  /* No wash across the tab and no glow on the label: the colour plus the light beneath it
+     is the whole state. Anything more turns a 36px row into a light show. */
+  color: var(--primary-color);
+  background: var(--primary-alpha-5);
+}
+
+.nav-tabs a.active i {
+  opacity: 1;
+}
+
+.nav-tabs a.active::after {
+  opacity: 0.9;
+}
+
+/* The ticker scrolls by touch/trackpad when it cannot fit; the old dormant
+   marquee clipped tablet content and had no reachable start/end state. */
+.header-row-3 {
+  height: 24px;
+  overflow: auto hidden;
+  border-top: 1px solid var(--ticker-border);
+  background: var(--ticker-bg);
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.header-row-3::-webkit-scrollbar {
+  display: none;
+}
+
+.ticker-container {
+  width: max-content;
+  min-width: 100%;
+  height: 100%;
+}
+
+.ticker-scroll {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  min-width: 100%;
+  height: 100%;
+  padding: 0 var(--header-inline-padding);
+  white-space: nowrap;
+}
+
+.ticker-segment {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 6px;
+  height: 100%;
+  margin: 0;
+  padding: 0 14px;
+  border: 0;
+  border-right: 1px solid var(--ticker-border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-data);
+  font-size: 0.6875rem;
+  line-height: 1;
+  letter-spacing: 0.01em;
+}
+
+button.ticker-segment {
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+button.ticker-segment:hover {
+  background: var(--ticker-hover-bg);
+  color: var(--text-primary);
+}
+
+.ticker-segment:last-child {
+  border-right: 0;
+}
+
+.ticker-icon {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.6875rem;
+  line-height: 1;
+  opacity: 0.65;
+}
+
+button.ticker-segment:hover .ticker-icon {
+  opacity: 1;
+}
+
+.ticker-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-data);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+  line-height: 1;
+}
+
+.ticker-text strong {
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.ticker-text .ticker-value.positive {
+  color: var(--semantic-success-text);
+}
+
+.ticker-text .ticker-value.negative {
+  color: var(--semantic-error-text);
+}
+
+.ticker-text .ticker-value.neutral {
+  color: var(--text-secondary);
+}
+
+.ticker-segment .status-dot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  margin-right: 2px;
+  border-radius: var(--radius-full);
+  background: var(--semantic-success-text);
+}
+
+.ticker-segment .status-dot.warning {
+  background: var(--semantic-warning-text);
+}
+
+.ticker-segment .status-dot.error {
+  background: var(--semantic-error-text);
+}
+
+/* Wide desktop */
+@media (width >= 1600px) {
+  .modern-header {
+    --header-inline-padding: 40px;
+  }
+
+  .header-row-1 {
+    gap: 14px;
+  }
+
+  .modern-header .header-cards {
+    gap: 18px;
+  }
+}
+
+/* Compact desktop */
+@media (width >= 1100px) and (width <= 1279px) {
+  .modern-header {
+    --header-inline-padding: 20px;
+  }
+
+  .header-row-1 {
+    gap: 8px;
+  }
+
+  .modern-header .header-cards {
+    gap: 8px;
+  }
+
+  .brand-text {
+    font-size: 19px;
+  }
+}
+
+/* Tablet */
+@media (width >= 800px) and (width <= 1099px) {
+  .modern-header {
+    --header-inline-padding: 16px;
+  }
+
+  .header-row-1 {
+    height: 56px;
+    gap: 7px;
+  }
+
+  .brand-text {
+    display: none;
+  }
+
+  .modern-header .header-cards {
+    justify-content: flex-start;
+    gap: 4px;
+  }
+
+  .modern-header .header-card {
+    padding-inline: 7px;
+  }
+
+  .modern-header .bot-card {
+    min-width: 130px;
+  }
+}
+
+/* Mid-width overflow drawer. It opens below the row instead of covering metrics. */
+@media (width >= 800px) and (width <= 1279px) {
+  .explore-setup-control {
+    flex-basis: auto;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .explore-setup-detail,
+  .explore-setup-arrow {
+    display: none;
+  }
+
+  .modern-header .header-actions {
+    position: relative;
+    margin-left: 0;
+    padding-left: 4px;
+  }
+
+  .modern-header .header-actions-toggle {
+    display: inline-flex;
+  }
+
+  .modern-header .header-actions-items {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: var(--z-popover);
+    padding: 8px 10px;
+    border: 1px solid var(--header-border);
+    border-radius: var(--radius-xl);
+    background: var(--header-solid-bg);
+    box-shadow: var(--shadow-floating-md);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-6px) scale(0.98);
+    transform-origin: top right;
+    transition:
+      opacity var(--transition-base),
+      transform var(--transition-base),
+      visibility 0s linear var(--transition-base);
+  }
+
+  .modern-header .header-actions.is-open .header-actions-items {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+    transition:
+      opacity var(--transition-base),
+      transform var(--transition-base),
+      visibility 0s;
+  }
+}
+
+/* Mobile: logo + vertical trader + actions on top, truthful metrics below. */
+@media (width <= 799px) {
+  .modern-header {
+    --header-inline-padding: 10px;
+  }
+
+  .header-row-1 {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-areas:
+      "brand trader actions"
+      "cards cards cards";
+    height: auto;
+    padding-block: 5px;
+    gap: 4px 8px;
+  }
+
+  .header-brand {
+    grid-area: brand;
+    padding-block: 2px;
+  }
+
+  .brand-text {
+    display: none;
+  }
+
+  .modern-header .bot-card {
+    grid-area: trader;
+    min-width: 130px;
+    min-height: 40px;
+    margin: 0;
+    padding-inline: 6px;
+  }
+
+  .modern-header .header-actions {
+    grid-area: actions;
+    justify-self: end;
+    margin-left: 0;
+    padding-left: 0;
+  }
+
+  .modern-header .header-actions-items {
+    gap: 4px;
+  }
+
+  .modern-header .header-action-btn {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+  }
+
+  .modern-header .header-cards {
+    grid-area: cards;
+    justify-content: flex-start;
+    width: 100%;
+    gap: 4px;
+    padding-top: 4px;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .explore-setup-control {
+    grid-area: explore;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    height: 36px;
+    padding-inline: 8px;
+  }
+
+  .modern-header.has-explore-setup .header-row-1 {
+    grid-template-areas:
+      "brand trader actions"
+      "explore explore explore"
+      "cards cards cards";
+  }
+
+  .explore-setup-copy {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 7px;
+  }
+
+  .explore-setup-detail,
+  .explore-setup-arrow {
+    display: inline;
+  }
+
+  .modern-header .header-card {
+    padding-inline: 7px;
+  }
+
+  .header-row-3 {
+    display: none;
+  }
+}
+
+/* Small phone: one 40px More control opens a touch-safe action grid. */
+@media (width <= 500px) {
+  .modern-header {
+    --header-inline-padding: 8px;
+  }
+
+  .header-row-1 {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    column-gap: 6px;
+  }
+
+  .modern-header .bot-card {
+    min-width: 0;
+  }
+
+  .modern-header .header-actions {
+    position: relative;
+  }
+
+  .modern-header .header-actions-toggle {
+    display: inline-flex;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+  }
+
+  .modern-header .header-actions-items {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: var(--z-popover);
+    display: grid;
+    grid-template-columns: repeat(4, 40px);
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid var(--header-border);
+    border-radius: var(--radius-xl);
+    background: var(--header-solid-bg);
+    box-shadow: var(--shadow-floating-md);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-6px) scale(0.98);
+    transform-origin: top right;
+    transition:
+      opacity var(--transition-base),
+      transform var(--transition-base),
+      visibility 0s linear var(--transition-base);
+  }
+
+  .modern-header .header-actions.is-open .header-actions-items {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+    transition:
+      opacity var(--transition-base),
+      transform var(--transition-base),
+      visibility 0s;
+  }
+
+  .modern-header .header-action-btn {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+  }
+
+  .explore-setup-detail {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header-row-2-wrapper::before,
+  .header-row-2-wrapper::after,
+  .nav-tabs a,
+  .nav-tabs a i,
+  button.ticker-segment,
+  .modern-header .header-actions-items {
+    transition: none;
+  }
+
+  /* The glow still appears, it just does not fade in or travel. */
+  .nav-tabs a::after {
+    transition: none;
+  }
+
+  .nav-tabs-indicator.is-ready {
+    transition: opacity var(--transition-fast);
+  }
+}

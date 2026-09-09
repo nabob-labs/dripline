@@ -1,0 +1,664 @@
+/**
+ * Featured Dialog - Full featured + trending view
+ *
+ * Clean desktop-app fullscreen dialog.
+ * Categories with horizontal cards.
+ * Consistent with settings / other dialogs: vars, spacing, flat cards, mono.
+ */
+
+/* =============================================================================
+   BASE
+   ============================================================================= */
+
+.featured-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-featured-dialog);
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.featured-dialog.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* macOS titlebar spacer */
+.featured-dialog::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0;
+  background: var(--bg-secondary);
+  z-index: 1;
+  transition: height 0.15s ease;
+}
+
+.electron-macos .featured-dialog::before {
+  height: 28px;
+}
+
+.featured-backdrop {
+  position: absolute;
+  inset: 0 0 24px;
+  background: transparent;
+  cursor: default;
+}
+
+.electron-macos .featured-backdrop {
+  top: 28px;
+}
+
+/* Container */
+.featured-container {
+  position: relative;
+  margin-top: 0;
+  margin-bottom: 24px;
+  background: var(--bg-primary);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 2;
+}
+
+.electron-macos .featured-container {
+  margin-top: 28px;
+}
+
+/* =============================================================================
+   HEADER — same skin as the other full-screen dialogs (token/position details)
+   ============================================================================= */
+
+/* Paints --bg-secondary, identical to the .featured-dialog::before title-bar
+   strip above it, so the macOS traffic-light area and the header are one
+   continuous surface with no tonal step. Do NOT make this transparent: the
+   container below is --bg-primary and the strip would show as a seam. */
+.featured-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 20px 12px;
+  min-height: 68px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.featured-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.featured-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.featured-subtitle {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.featured-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.featured-boost-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 14px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.featured-boost-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+/* =============================================================================
+   BODY + CATEGORIES
+   ============================================================================= */
+
+.featured-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-md, 16px);
+  scrollbar-gutter: stable;
+}
+
+.featured-categories {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg, 24px);
+}
+
+.featured-category {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm, 8px);
+}
+
+/* Category header - compact */
+.featured-cat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--spacing-xs, 4px);
+}
+
+.featured-cat-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs, 4px);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.featured-cat-title i {
+  font-size: 0.875rem;
+  color: var(--link-color);
+}
+
+.featured-cat-source {
+  font-size: 0.625rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: rgb(255, 255, 255, 0.06);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.featured-cat-count {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+}
+
+/* =============================================================================
+   CATEGORY GRID
+   Cards wrap into a responsive grid and the BODY scrolls vertically, so every
+   token in a category is reachable. (Previously each category was a single
+   horizontally-scrolling row, hiding most of its tokens behind arrows.)
+   ============================================================================= */
+
+.featured-cat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-md, 16px);
+  align-items: start;
+}
+
+/* =============================================================================
+   TOKEN CARD - social-profile layout
+   Banner across the top (rounded on its top corners only, square at the bottom),
+   circular avatar straddling the banner's lower edge, identity + stats beneath.
+
+   Each card carries --feat-hue / --feat-sat, derived from the token's logo (or, when
+   it has none, a stable hash of its mint). Every tint below is an ALPHA wash built
+   from those, so it layers over the theme's own surfaces and stays readable in
+   both light and dark rather than baking in a fixed colour.
+   ============================================================================= */
+
+.feat-card {
+  --feat-hue: 210;
+  --feat-sat: 55%;
+  --bb-tint: hsl(var(--feat-hue), var(--feat-sat), 50%);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    border-color var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+/* The wash: strong enough to read as "this token's colour", light enough that the
+   text tokens above it keep their contrast in both themes. */
+.feat-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--bb-tint);
+  opacity: 0.05;
+  pointer-events: none;
+}
+
+[data-theme="dark"] .feat-card::before {
+  opacity: 0.08;
+}
+
+.feat-card:hover {
+  border-color: hsl(var(--feat-hue), var(--feat-sat), 50%, 0.55);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px hsl(var(--feat-hue), var(--feat-sat), 30%, 0.18);
+}
+
+/* A boosted card is the same card with a gold edge -- the paid signal lives on
+   the frame, never on the token's numbers. Golden gets the brighter edge and a
+   faint gold wash; neither ever adds a glow or a tile behind an icon. */
+.feat-card.boosted {
+  border-color: var(--boost-edge);
+}
+
+.feat-card.boosted:hover {
+  border-color: var(--boost-gold);
+}
+
+.feat-card.boosted.golden {
+  border-color: var(--boost-edge-golden);
+  background-image: linear-gradient(var(--boost-wash), transparent 60%);
+}
+
+.feat-card.boosted.golden:hover {
+  border-color: var(--boost-gold-bright);
+}
+
+/* --- Banner ---------------------------------------------------------------- */
+
+/* Fixed 3:1 box. The image is object-fit: cover, so banners of any source width
+   fill it edge to edge with no letterboxing -- they are cropped, never padded. */
+.feat-card-banner {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 1;
+
+  /* Bannerless tokens get a gradient from the token's own accent instead of a
+     blank strip, so the card never opens on dead white space. */
+  background:
+    linear-gradient(
+      135deg,
+      hsl(var(--feat-hue), var(--feat-sat), 55%, 0.55) 0%,
+      hsl(calc(var(--feat-hue) + 40), var(--feat-sat), 45%, 0.35) 100%
+    ),
+    var(--bg-card-hover);
+  overflow: hidden;
+}
+
+.feat-card-banner-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* --- Head: avatar straddling the banner's lower edge ----------------------- */
+
+.feat-card-head {
+  display: flex;
+  align-items: flex-end;
+  padding: 0 12px;
+
+  /* Pulls the row up by half the avatar, so the avatar sits half over the banner
+     and half below it. */
+  margin-top: -26px;
+}
+
+.feat-card-avatar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: var(--token-logo-radius, 3px);
+
+  /* Ring in the CARD's background, not a colour, so the avatar reads as cut out
+     of the banner in either theme. */
+  border: 3px solid var(--bg-card);
+  background: hsl(var(--feat-hue), var(--feat-sat), 50%);
+  overflow: hidden;
+}
+
+.feat-card-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.feat-card-avatar-initial {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+}
+
+/* --- Actions footer -------------------------------------------------------- */
+
+.feat-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Socials (only when the token has them) + the always-present shortcuts, which
+   need nothing but the mint. */
+.feat-card-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.feat-card-social,
+.feat-card-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.feat-card-social:hover,
+.feat-card-link:hover {
+  color: hsl(var(--feat-hue), var(--feat-sat), 45%);
+  background: hsl(var(--feat-hue), var(--feat-sat), 50%, 0.12);
+}
+
+[data-theme="dark"] .feat-card-social:hover,
+[data-theme="dark"] .feat-card-link:hover {
+  color: hsl(var(--feat-hue), var(--feat-sat), 70%);
+}
+
+/* The one primary action on the card. Deliberately the success/buy green rather
+   than the token accent: it must read as the same "buy" control everywhere,
+   not change colour per token. */
+.feat-card-buy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-shrink: 0;
+  height: 26px;
+  padding: 0 10px;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--success-color);
+  background: var(--success-alpha-10);
+  border: 1px solid var(--success-alpha-10);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.feat-card-buy:hover {
+  color: #fff;
+  background: var(--success-color);
+  border-color: var(--success-color);
+}
+
+.feat-card-buy i {
+  font-size: 0.75rem;
+}
+
+/* --- Identity: price/change sit beside the name and symbol they describe ---- */
+
+.feat-card-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px 0;
+  min-width: 0;
+}
+
+.feat-card-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.feat-card-name {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Category note - one line of plain text saying what a paid category is. */
+.featured-cat-note {
+  font-size: 0.625rem;
+  color: var(--text-secondary);
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
+.feat-card-symbol {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.feat-card-security {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border-radius: var(--radius-sm);
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.feat-card-security.good {
+  color: var(--success-color);
+  background: var(--success-alpha-10);
+}
+
+.feat-card-security.mid {
+  color: var(--warning-color, #d29922);
+  background: var(--warning-alpha-10, rgb(210, 153, 34, 0.12));
+}
+
+.feat-card-security.bad {
+  color: var(--error-color);
+  background: var(--danger-alpha-10);
+}
+
+/* `margin-left: auto` pins these to the right edge of their own row, so price
+   lines up with the name and change lines up with the symbol. */
+.feat-card-price,
+.feat-card-change {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum";
+}
+
+.feat-card-price {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.feat-card-change {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.feat-card-change.pos {
+  color: var(--success-color);
+}
+
+.feat-card-change.neg {
+  color: var(--error-color);
+}
+
+/* --- Stats ----------------------------------------------------------------- */
+
+/* Flex-wrap, not a fixed grid: with 5 stats a 3-column grid leaves a visible
+   empty cell on the last row. Wrapping lets the final row's cells grow to fill
+   the width whatever the stat count (a token missing one simply shows fewer). */
+.feat-card-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px;
+}
+
+.feat-card-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1 1 calc(33.333% - 6px);
+  padding: 6px 8px;
+  background: var(--bg-card-hover);
+  border-radius: var(--radius-md);
+  min-width: 0;
+}
+
+.feat-card-stat-label {
+  font-size: 0.5625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.feat-card-stat-value {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-feature-settings: "tnum";
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* =============================================================================
+   STATES + RESPONSIVE
+   ============================================================================= */
+
+.featured-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm, 8px);
+  padding: 3rem 1rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.featured-state i {
+  font-size: 2rem;
+  opacity: 0.6;
+}
+
+.featured-state span {
+  font-size: 0.875rem;
+}
+
+.featured-loading i {
+  color: var(--link-color);
+  opacity: 1;
+}
+
+.featured-error i {
+  color: var(--error-color);
+  opacity: 1;
+}
+
+.spin {
+  animation: featured-spin 1s linear infinite;
+}
+
+@keyframes featured-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (width <= 1100px) {
+  .featured-cat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (width <= 768px) {
+  .featured-body {
+    padding: var(--spacing-sm, 12px);
+  }
+
+  .featured-categories {
+    gap: var(--spacing-md, 16px);
+  }
+
+  .featured-cat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .feat-card-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .featured-boost-btn {
+    padding: 0 10px;
+    font-size: 0.75rem;
+  }
+}

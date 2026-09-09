@@ -1,0 +1,14 @@
+//! System monitoring, metrics, and health check configuration.
+
+use crate::config_struct;
+
+// ============================================================================
+// MONITORING CONFIGURATION
+// ============================================================================
+
+config_struct! {
+    /// System monitoring configuration
+    pub struct MonitoringConfig {
+        // Reserved for future monitoring configuration (metrics, profiling, etc.)
+    }
+}

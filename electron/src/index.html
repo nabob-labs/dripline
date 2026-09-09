@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self'">
+  <title>VeloxBot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    /* Reset */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    /* Variables matching dashboard */
+    :root {
+      --bg-primary: #0d1117;
+      --bg-secondary: #161b22;
+      --bg-card: #1c2128;
+      --text-primary: #e6edf3;
+      --text-secondary: #8b949e;
+      --text-muted: #6e7681;
+      --border-color: #30363d;
+      --accent: #58a6ff;
+    }
+    
+    /* Light theme — values mirror the dashboard's foundation.css :root (light)
+       so the splash matches the last-run theme set by the main process via
+       ?theme=light (applied in boot.js). Default (no attribute) stays dark. */
+    [data-theme="light"] {
+      --bg-primary: #f8f9fb;
+      --bg-secondary: #fff;
+      --bg-card: #fff;
+      --text-primary: #1f2937;
+      --text-secondary: #6b7280;
+      --text-muted: #9ca3af;
+      --border-color: #d1d5db;
+    }
+
+    /* Flat, and the same value as the window's own backgroundColor and the
+       dashboard's --bg-primary, so the hand-over from this page to the dashboard
+       is invisible. A gradient here made that moment a visible pop. */
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Menlo', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-app-region: drag;
+    }
+
+    /* The logo SVG hexagons are white (right on the dark ground, invisible on
+       light) — recolor them to the brand navy for the light splash. */
+    html[data-theme="light"] .splash-logo g {
+      fill: #0d3b66;
+    }
+
+    .splash-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+    
+    .splash-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.75rem;
+      animation: splashFadeIn 0.5s ease-out;
+    }
+
+    @keyframes splashFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* The mark is a bare glyph: no tile, no ring, no glow behind it. */
+    .splash-logo {
+      width: 104px;
+      height: 104px;
+      display: block;
+    }
+
+    /* Brand text */
+    .splash-brand {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.875rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text-primary);
+      /* The letter-spacing above adds trailing space; pull it back so the
+         wordmark stays optically centred under the mark. */
+      margin-right: -0.16em;
+    }
+
+    /* Launch state. One line for what is happening, one quiet line under it for
+       anything worth adding — and space reserved for both, so appearing text
+       never shifts the mark above it. */
+    .splash-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      min-height: 3.25rem;
+      max-width: 30rem;
+      text-align: center;
+    }
+
+    .splash-status-row {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+    }
+
+    .splash-spinner {
+      flex: 0 0 auto;
+      width: 15px;
+      height: 15px;
+      border: 2px solid var(--border-color);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: splashSpin 0.9s linear infinite;
+    }
+
+    @keyframes splashSpin {
+      to { transform: rotate(360deg); }
+    }
+
+    .splash-status {
+      font-size: 0.875rem;
+      color: var(--text-primary);
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+
+    .splash-detail {
+      font-size: 0.75rem;
+      line-height: 1.5;
+      color: var(--text-muted);
+    }
+
+    .splash-detail:empty { display: none; }
+
+    /* Version badge */
+    .splash-version {
+      position: fixed;
+      bottom: 2rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Menlo', monospace;
+    }
+
+    /* Rotation is the one thing that has to go for a reduced-motion viewer; the
+       ring keeps breathing so the launch still shows a sign of life. */
+    @media (prefers-reduced-motion: reduce) {
+      .splash-content { animation: none; }
+
+      .splash-spinner {
+        border-color: var(--border-color);
+        border-top-color: var(--accent);
+        animation: splashBreathe 1.8s ease-in-out infinite;
+      }
+
+      @keyframes splashBreathe {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.35; }
+      }
+    }
+
+    /* ====================================================================
+       Boot-error screen — shown only when the backend cannot start.
+       Hidden by default so a healthy boot is completely silent.
+       ==================================================================== */
+    .boot-error {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      padding: 2.5rem 1.5rem;
+      -webkit-app-region: no-drag;
+    }
+
+    .boot-error.visible { display: flex; }
+    .splash-screen.hidden { display: none; }
+
+    .boot-error-card {
+      width: 100%;
+      max-width: 620px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      animation: splashFadeIn 0.4s ease-out;
+    }
+
+    .boot-error-head {
+      display: flex;
+      align-items: center;
+      gap: 0.875rem;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    /* A bare glyph — never a tile or a tinted box behind it. */
+    .boot-error-icon {
+      flex: 0 0 auto;
+      width: 1.5rem;
+      text-align: center;
+      color: #f85149;
+      font-size: 1.75rem;
+      line-height: 1;
+      font-weight: 700;
+    }
+
+    .boot-error-title {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .boot-error-subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.15rem;
+    }
+
+    .boot-error-body { padding: 1.25rem 1.5rem; }
+
+    .boot-error-detail {
+      font-size: 0.85rem;
+      line-height: 1.55;
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+      text-align: left;
+      word-break: break-word;
+      max-height: 220px;
+      overflow-y: auto;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.875rem 1rem;
+    }
+
+    .boot-error-remedy {
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      line-height: 1.55;
+      color: var(--text-primary);
+      word-break: break-word;
+      text-align: left;
+    }
+
+    #bootErrorRemedy {
+      display: block;
+      white-space: pre-wrap;
+      text-align: left;
+    }
+
+    .boot-error-remedy-label {
+      display: block;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .boot-error-logpath {
+      margin-top: 1rem;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Menlo', monospace;
+      word-break: break-all;
+    }
+
+    .boot-error-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 0.625rem;
+      padding: 1rem 1.5rem 1.25rem;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .boot-btn {
+      -webkit-app-region: no-drag;
+      padding: 0.55rem 1.1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .boot-btn.primary { background: #2ea043; color: #fff; }
+    .boot-btn.primary:hover { background: #3fb950; }
+
+    .boot-btn.secondary {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border-color: var(--border-color);
+    }
+    .boot-btn.secondary:hover { border-color: #484f58; }
+
+    .boot-btn.ghost { background: transparent; color: var(--text-secondary); }
+    .boot-btn.ghost:hover { color: var(--text-primary); }
+
+    .boot-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <div class="splash-screen" id="splashScreen">
+    <div class="splash-content">
+      <!-- VeloxBot Logo SVG - hexagon pattern only, no background box -->
+      <svg class="splash-logo" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+          <g fill="white" transform="translate(400 400) scale(2.02) translate(-400 -400)">
+            <polygon points="456,280 428,328.5 372,328.5 344,280 372,231.5 428,231.5"/>
+            <polygon points="559.923,340 531.923,388.5 475.923,388.5 447.923,340 475.923,291.5 531.923,291.5"/>
+            <polygon points="559.923,460 531.923,508.5 475.923,508.5 447.923,460 475.923,411.5 531.923,411.5"/>
+            <polygon points="456,520 428,568.5 372,568.5 344,520 372,471.5 428,471.5"/>
+            <polygon points="352.077,460 324.077,508.5 268.077,508.5 240.077,460 268.077,411.5 324.077,411.5"/>
+            <polygon points="352.077,340 324.077,388.5 268.077,388.5 240.077,340 268.077,291.5 324.077,291.5"/>
+          </g>
+      </svg>
+
+      <div class="splash-brand">VeloxBot</div>
+
+      <div class="splash-state" role="status" aria-live="polite">
+        <div class="splash-status-row">
+          <div class="splash-spinner" aria-hidden="true"></div>
+          <div class="splash-status" id="status">Starting VeloxBot</div>
+        </div>
+        <div class="splash-detail" id="statusDetail"></div>
+      </div>
+    </div>
+
+    <div class="splash-version" id="version"></div>
+  </div>
+
+  <!-- Boot-error screen — hidden unless the backend fails to start -->
+  <div class="boot-error" id="bootError">
+    <div class="boot-error-card">
+      <div class="boot-error-head">
+        <div class="boot-error-icon">!</div>
+        <div>
+          <div class="boot-error-title" id="bootErrorTitle">VeloxBot could not start</div>
+          <div class="boot-error-subtitle" id="bootErrorSubtitle"></div>
+        </div>
+      </div>
+      <div class="boot-error-body">
+        <div class="boot-error-detail" id="bootErrorDetail"></div>
+        <div class="boot-error-remedy" id="bootErrorRemedyWrap" hidden>
+          <span class="boot-error-remedy-label">How to fix</span>
+          <span id="bootErrorRemedy"></span>
+        </div>
+        <div class="boot-error-logpath" id="bootErrorLogPath"></div>
+      </div>
+      <div class="boot-error-actions" id="bootErrorActions"></div>
+    </div>
+  </div>
+
+  <script src="boot.js"></script>
+</body>
+</html>

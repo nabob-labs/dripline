@@ -1,0 +1,1672 @@
+//! Source-scanning guards for the chain-ownership boundary.
+//!
+//! Shared domain modules (everything outside `src/chains/solana/`) define
+//! chain-neutral intent/models/contracts; `src/chains/solana` implements
+//! concrete Solana mechanics; app/service composition selects it through
+//! `ChainId` or the router/discovery registries. These tests fail fast if
+//! that boundary regresses — e.g. a new file bypassing the
+//! `crate::chains::solana` vendor façade, or a shared module re-exporting a
+//! chain-specific type as its own public API.
+//!
+//! Pure source-text scans: no network, no DB, no compilation.
+
+use std::fs;
+use std::path::{Path, PathBuf};
+
+/// Walks `src/`, yielding `(relative_path, file_contents)` for every `.rs` file.
+fn walk_src() -> Vec<(PathBuf, String)> {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let mut out = Vec::new();
+    let mut stack = vec![root.clone()];
+    while let Some(dir) = stack.pop() {
+        for entry in fs::read_dir(&dir).expect("read_dir(src) must succeed") {
+            let entry = entry.expect("dir entry must be readable");
+            let path = entry.path();
+            if path.is_dir() {
+                stack.push(path);
+            } else if path.extension().is_some_and(|ext| ext == "rs") {
+                let contents = fs::read_to_string(&path).expect("read .rs file");
+                let relative = path.strip_prefix(&root).unwrap().to_path_buf();
+                out.push((relative, contents));
+            }
+        }
+    }
+    out
+}
+
+fn is_solana_owned(relative: &Path) -> bool {
+    relative.starts_with("chains/solana")
+}
+
+/// Strips doc-comment lines (`//!`, `///`), which are free to name Solana
+/// concepts in prose when explaining the chain boundary — only code lines
+/// are a real import/reference.
+fn code_lines(contents: &str) -> String {
+    contents
+        .lines()
+        .filter(|line| {
+            let trimmed = line.trim_start();
+            !trimmed.starts_with("//!") && !trimmed.starts_with("///")
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+/// Vendor crates that must be reached through `crate::chains::solana` (the
+/// single façade declared in `src/chains/solana/mod.rs`), never imported raw.
+const VENDOR_CRATES: &[&str] = &[
+    "solana_sdk",
+    "solana_client",
+    "solana_program",
+    "solana_transaction_status",
+    "solana_account_decoder",
+    "spl_token_2022",
+    "spl_associated_token_account",
+    "spl_token",
+    "bs58",
+    "borsh",
+];
+
+#[test]
+fn shared_modules_never_import_solana_vendor_crates_raw() {
+    let mut violations = Vec::new();
+    for (relative, contents) in walk_src() {
+        if is_solana_owned(&relative) {
+            continue; // the façade itself is allowed to name the vendor crates.
+        }
+        for line in contents.lines() {
+            let trimmed = line.trim_start();
+            let Some(rest) = trimmed.strip_prefix("use ") else {
+                continue;
+            };
+            for crate_name in VENDOR_CRATES {
+                let raw_prefix = format!("{crate_name}::");
+                let raw_bare = format!("{crate_name};");
+                if rest.starts_with(&raw_prefix) || rest.starts_with(&raw_bare) {
+                    violations.push(format!(
+                        "src/{}: raw `use {crate_name}` — import via `crate::chains::solana::{crate_name}` instead",
+                        relative.display()
+                    ));
+                }
+            }
+        }
+    }
+    assert!(
+        violations.is_empty(),
+        "shared (non-Solana-owned) modules must reach Solana vendor crates through the \
+         crate::chains::solana façade, never import them raw:\n{}",
+        violations.join("\n")
+    );
+}
+
+/// DEX/aggregator program-ID literals owned by `chains/solana/constants.rs`.
+/// Kept in sync manually with that file — this is a small, explicit
+/// allowlist of exact base58 strings, not a pattern match, so it only ever
+/// fires on a genuine reintroduced duplicate.
+const OWNED_PROGRAM_ID_LITERALS: &[(&str, &str)] = &[
+    (
+        "METAPLEX_PROGRAM_ID",
+        "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
+    ),
+    ("SYSTEM_PROGRAM_ID", "11111111111111111111111111111111"),
+    (
+        "SPL_TOKEN_PROGRAM_ID",
+        "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    ),
+    (
+        "TOKEN_2022_PROGRAM_ID",
+        "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    ),
+    (
+        "ASSOCIATED_TOKEN_PROGRAM_ID",
+        "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+    ),
+    (
+        "MEMO_PROGRAM_ID",
+        "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
+    ),
+    (
+        "JUPITER_V6_PROGRAM_ID",
+        "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4",
+    ),
+    (
+        "JUPITER_V4_PROGRAM_ID",
+        "JUP4Fb2cqiRUcaTHdrPC8h2gNsA2ETXiPDD33WcGuJB",
+    ),
+    (
+        "RAYDIUM_LEGACY_AMM_PROGRAM_ID",
+        "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8",
+    ),
+    (
+        "RAYDIUM_CPMM_PROGRAM_ID",
+        "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C",
+    ),
+    (
+        "RAYDIUM_CLMM_PROGRAM_ID",
+        "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+    ),
+    (
+        "ORCA_WHIRLPOOL_PROGRAM_ID",
+        "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    ),
+    (
+        "METEORA_DAMM_PROGRAM_ID",
+        "cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG",
+    ),
+    (
+        "METEORA_DLMM_PROGRAM_ID",
+        "LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo",
+    ),
+    (
+        "METEORA_DBC_PROGRAM_ID",
+        "dbcij3LWUppWqq96dh6gJWwBifmcGfLSB5D4DuSMaqN",
+    ),
+    (
+        "PUMP_FUN_AMM_PROGRAM_ID",
+        "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA",
+    ),
+    (
+        "PUMP_FUN_LEGACY_PROGRAM_ID",
+        "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P",
+    ),
+    (
+        "MOONIT_AMM_PROGRAM_ID",
+        "MoonCVVNZFSYkqNXP6bxHLPL6QQJiMagDL3qcqUQTrG",
+    ),
+    (
+        "FLUXBEAM_AMM_PROGRAM_ID",
+        "FLUXubRmkEi2q6K3Y9kBPg9248ggaZVsoSFhtJHSrm1X",
+    ),
+];
+
+/// The one file allowed to define each literal, plus its re-export site.
+const PROGRAM_ID_OWNER: &str = "chains/solana/constants.rs";
+const PROGRAM_ID_REEXPORTER: &str = "chains/solana/transactions/program_ids.rs";
+
+/// True if `line` is a `const NAME: &str = "<literal>";` definition (any
+/// visibility) — not merely a line that happens to mention the literal
+/// (e.g. matching it against transaction program IDs, or a placeholder
+/// all-ones address used for an unrelated purpose).
+fn defines_const_literal(line: &str, literal: &str) -> bool {
+    let trimmed = line.trim_start();
+    (trimmed.starts_with("const ") || trimmed.starts_with("pub const "))
+        && trimmed.contains(": &str")
+        && trimmed.trim_end().ends_with(&format!("\"{literal}\";"))
+}
+
+#[test]
+fn dex_program_id_literals_have_exactly_one_owner() {
+    let files = walk_src();
+    let mut violations = Vec::new();
+    for (name, literal) in OWNED_PROGRAM_ID_LITERALS {
+        for (relative, contents) in &files {
+            let path_str = relative.to_string_lossy();
+            if path_str == PROGRAM_ID_OWNER || path_str == PROGRAM_ID_REEXPORTER {
+                continue;
+            }
+            if contents
+                .lines()
+                .any(|line| defines_const_literal(line, literal))
+            {
+                violations.push(format!(
+                    "src/{path_str}: redefines {name} ({literal}) instead of importing it \
+                     from crate::chains::solana::constants"
+                ));
+            }
+        }
+    }
+    assert!(
+        violations.is_empty(),
+        "DEX/aggregator program IDs must have exactly one literal `const` definition, in \
+         crate::chains::solana::constants:\n{}",
+        violations.join("\n")
+    );
+}
+
+/// Chain-specific discovery/fetcher types must not leak into the shared
+/// `crate::pools` public surface — callers that need them import
+/// `crate::chains::solana::pools` directly (regression guard, see
+/// `src/pools/mod.rs` doc comment).
+#[test]
+fn shared_pools_module_does_not_reexport_solana_discovery_types() {
+    let pools_mod =
+        fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("src/pools/mod.rs"))
+            .expect("src/pools/mod.rs must exist");
+
+    for banned_reexport in [
+        "pub use crate::chains::solana::pools::discovery",
+        "pub use crate::chains::solana::pools::fetcher::AccountData",
+    ] {
+        assert!(
+            !pools_mod.contains(banned_reexport),
+            "src/pools/mod.rs must not re-export Solana-specific discovery/fetcher types \
+             (`{banned_reexport}`) — callers should import crate::chains::solana::pools directly"
+        );
+    }
+}
+
+/// `PoolDescriptor` and the rest of the shared pool domain
+/// (`src/pools/types.rs`, `cache.rs`, `api.rs`, `utils.rs`, `database/`) must
+/// stay chain-neutral: no `Pubkey`, no `crate::chains::solana::pools::types`
+/// (the Solana `ProgramKind` enum), and no vendor-crate façade for Solana
+/// address types. This is a regression guard for the leak fixed by moving
+/// `PoolDescriptor` to typed `PoolId`/`AssetId`/`AccountId`/`ProtocolId`
+/// identities and relocating the `Pubkey`-driven pool price calculator to
+/// `crate::chains::solana::pools::calculator`.
+#[test]
+fn shared_pools_domain_never_names_a_solana_address_type() {
+    let banned_needles = [
+        "Pubkey",
+        "solana_sdk",
+        "chains::solana::pools::types::ProgramKind",
+        "chains::solana::solana_sdk",
+    ];
+
+    let mut violations = Vec::new();
+    for (relative, contents) in walk_src() {
+        let path_str = relative.to_string_lossy();
+        if !path_str.starts_with("pools/") {
+            continue;
+        }
+        // Only scan code lines — doc comments (`//!`, `///`) are free to name
+        // Solana concepts in prose when explaining the chain boundary.
+        let code_only: String = contents
+            .lines()
+            .filter(|line| {
+                let trimmed = line.trim_start();
+                !trimmed.starts_with("//!") && !trimmed.starts_with("///")
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        for needle in banned_needles {
+            if code_only.contains(needle) {
+                violations.push(format!("src/{path_str}: names `{needle}`"));
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "the shared pool domain (src/pools/) must stay chain-neutral — Solana address \
+         types belong under src/chains/solana/pools instead, with PoolDescriptor's \
+         PoolId/AssetId/AccountId/ProtocolId converted at that boundary:\n{}",
+        violations.join("\n")
+    );
+}
+
+/// Wallet ownership boundary: shared wallet records, manager APIs,
+/// configuration and multi-wallet tooling must never hold a decrypted
+/// `Keypair` or a `Pubkey` — only `crate::chains::solana::accounts` (and the
+/// concrete swap/asset executors it hands a resolved keypair to) may. Shared
+/// code passes a `wallet_id`, an address string, or relies on "the main
+/// wallet"; it gets back signatures and addresses, never key material.
+///
+/// Scoped to the exact files audited when this boundary was introduced, not
+/// a whole-directory ban: `src/wallets/watch/**` still parses a `Pubkey`
+/// inline for the observation pipeline's own use (RPC subscriptions,
+/// Solana subject conversion) and is out of scope. `balance_ops.rs`/
+/// `balance_queries.rs` are IN scope — their RPC balance reads were moved
+/// behind `crate::chains::solana::accounts::{fetch_wallet_sol_balance,
+/// fetch_wallet_token_balances}`.
+#[test]
+fn wallet_ownership_never_names_a_solana_key_type() {
+    const SCOPED_FILES: &[&str] = &[
+        "wallets/types.rs",
+        "wallets/mod.rs",
+        "wallets/manager.rs",
+        "wallets/manager/access.rs",
+        "wallets/manager/cache.rs",
+        "wallets/manager/main_wallet.rs",
+        "wallets/manager/tools.rs",
+        "wallets/manager/crud.rs",
+        "wallets/manager/bulk_ops.rs",
+        "wallets/manager/migration.rs",
+        "wallets/manager/balance_ops.rs",
+        "wallets/manager/balance_queries.rs",
+        "config/wallet.rs",
+        "tools/swap_executor.rs",
+        "tools/multi_wallet/buy.rs",
+        "tools/multi_wallet/sell.rs",
+        "tools/multi_wallet/consolidate.rs",
+        "tools/multi_wallet/transfer.rs",
+    ];
+    let banned_needles = ["Keypair", "Pubkey", "solana_sdk"];
+
+    let mut violations = Vec::new();
+    for (relative, contents) in walk_src() {
+        let path_str = relative.to_string_lossy();
+        if !SCOPED_FILES.contains(&path_str.as_ref()) {
+            continue;
+        }
+        // Only scan code lines — doc comments are free to name Solana
+        // concepts in prose when explaining the chain boundary.
+        let code_only: String = contents
+            .lines()
+            .filter(|line| {
+                let trimmed = line.trim_start();
+                !trimmed.starts_with("//!") && !trimmed.starts_with("///")
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        for needle in banned_needles {
+            if code_only.contains(needle) {
+                violations.push(format!("src/{path_str}: names `{needle}`"));
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "shared wallet ownership code must never hold a decrypted Keypair or a Pubkey — \
+         resolve/sign through crate::chains::solana::accounts (by wallet_id or \"the main \
+         wallet\") instead:\n{}",
+        violations.join("\n")
+    );
+}
+
+/// Pool runtime composition boundary: `src/pools/service.rs` (the
+/// chain-neutral supervisor: running flag, shutdown protocol, event
+/// recording, db/cache init) must never import the concrete Solana pool
+/// runtime — it selects an implementation via an injected closure instead
+/// (see `initialize_pool_components`/`stop_pool_service` and their caller in
+/// `src/services/implementations/pools_service.rs`). Regression guard for
+/// the leak fixed by moving `PoolAnalyzer`/`PoolDiscovery`/`AccountFetcher`/
+/// `PriceCalculator` management to `crate::chains::solana::pools::service`.
+#[test]
+fn shared_pools_service_never_imports_solana_runtime() {
+    let path = "pools/service.rs";
+    let contents = fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("src").join(path))
+        .expect("src/pools/service.rs must exist");
+
+    assert!(
+        !code_lines(&contents).contains("chains::solana"),
+        "src/{path} must not import crate::chains::solana — it orchestrates lifecycle \
+         generically and takes the concrete runtime as an injected closure"
+    );
+}
+
+/// Swap router registry boundary: `src/swaps/registry.rs` must hold only
+/// `Arc<dyn SwapRouter>` injected via `set_router_factory`, never construct a
+/// concrete Solana router itself. Regression guard for the leak fixed by
+/// moving `JupiterRouter`/`RaydiumRouter` construction to
+/// `crate::chains::solana::swaps::routers::build_routers`, registered once by
+/// the composition root (`src/run/services.rs`).
+#[test]
+fn shared_swaps_registry_never_imports_solana_routers() {
+    let path = "swaps/registry.rs";
+    let contents = fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("src").join(path))
+        .expect("src/swaps/registry.rs must exist");
+
+    assert!(
+        !code_lines(&contents).contains("chains::solana"),
+        "src/{path} must not import crate::chains::solana — the router factory is injected \
+         by the composition root, never constructed here"
+    );
+}
+
+/// Registry access is fallible. Boot registers a factory; quote/execution
+/// paths convert a missing factory into a structured error. Reintroducing
+/// `expect`/`unwrap`/`panic` on initialization would abort tests and
+/// library callers that reach swaps before `set_router_factory`.
+#[test]
+fn shared_swaps_registry_never_panics_on_missing_factory() {
+    let path = "swaps/registry.rs";
+    let contents = fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("src").join(path))
+        .expect("src/swaps/registry.rs must exist");
+    let production = contents
+        .split("#[cfg(test)]")
+        .next()
+        .expect("production source");
+    let code = code_lines(&production);
+
+    for needle in [
+        ".expect(",
+        "panic!(",
+        ".unwrap()",
+        ".unwrap_or_else(|| panic!",
+    ] {
+        assert!(
+            !code.contains(needle),
+            "src/{path} must not {needle} — uninitialized registry access is fallible"
+        );
+    }
+}
+
+/// Tool swaps must bind execution to the quoting router via the SwapRouter
+/// contract. Calling Jupiter's wallet helper with another router's quote
+/// submits foreign `execution_data` to Jupiter.
+#[test]
+fn tool_swap_executor_never_calls_jupiter_wallet_helper() {
+    let path = "tools/swap_executor.rs";
+    let contents = fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("src").join(path))
+        .expect("src/tools/swap_executor.rs must exist");
+    let code = code_lines(&contents);
+
+    for needle in [
+        "swaps::routers::execute_for_wallet",
+        "execute_with_keypair",
+        "JupiterRouter",
+        "enabled_routers()",
+        "enabled[0]",
+    ] {
+        assert!(
+            !code.contains(needle),
+            "src/{path} must not {needle} — quote and wallet execution go through \
+             crate::swaps::quote_and_execute_for_wallet so the producing router owns the payload"
+        );
+    }
+}
+
+/// Shared transaction subject and delta domain files stay chain-neutral:
+/// Solana pubkey conversion lives under `src/chains/solana/transactions/subject.rs`,
+/// and native fees use a raw-unit name rather than Solana lamports.
+#[test]
+fn shared_transaction_subject_and_delta_domain_stay_chain_neutral() {
+    const SCOPED_FILES: &[&str] = &["transactions/subject.rs", "transactions/deltas.rs"];
+    let banned_needles = ["solana_sdk", "lamports", "Pubkey"];
+
+    let mut violations = Vec::new();
+    for (relative, contents) in walk_src() {
+        let path_str = relative.to_string_lossy();
+        if !SCOPED_FILES.contains(&path_str.as_ref()) {
+            continue;
+        }
+        let code = code_lines(&contents);
+        for needle in banned_needles {
+            if code.contains(needle) {
+                violations.push(format!("src/{path_str}: names `{needle}`"));
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "src/transactions/subject.rs and src/transactions/deltas.rs must not import \
+         solana_sdk or name lamports — Solana conversion belongs under \
+         src/chains/solana/transactions:\n{}",
+        violations.join("\n")
+    );
+}
+
+/// The empty `src/constants.rs` compatibility façade was removed. Solana
+/// mint/native-unit constants live in `crate::chains::solana::constants`;
+/// do not reintroduce a crate-root constants module as a re-export shim.
+#[test]
+fn crate_root_constants_facade_must_not_return() {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/constants.rs");
+    assert!(
+        !path.exists(),
+        "src/constants.rs must not return — Solana literals belong in \
+         crate::chains::solana::constants, not a crate-root façade"
+    );
+}
+
+/// The file with its `#[cfg(test)]` items removed, line numbering preserved.
+///
+/// This used to truncate at the FIRST `#[cfg(test)]`, which made every guard
+/// blind to everything after an inline test module. In `swaps/operations.rs`
+/// that module sits at line 409 and the quote path it hid, at line 490, is
+/// exactly where the no-route blacklist was silently reading error prose.
+/// Removing only the test items — and replacing them with blank lines so
+/// reported line numbers still point at the real source — closes that hole.
+fn production_text(contents: &str) -> String {
+    let mut out = String::with_capacity(contents.len());
+    let mut skipping_depth: Option<i32> = None;
+    let mut awaiting_block = false;
+    for line in contents.lines() {
+        if skipping_depth.is_none()
+            && !awaiting_block
+            && line.trim_start().starts_with("#[cfg(test)]")
+        {
+            awaiting_block = true;
+            out.push('\n');
+            continue;
+        }
+        if awaiting_block || skipping_depth.is_some() {
+            let mut depth = skipping_depth.unwrap_or(0);
+            let mut in_str = false;
+            let mut escaped = false;
+            for c in line.chars() {
+                if in_str {
+                    if escaped {
+                        escaped = false;
+                    } else if c == '\\' {
+                        escaped = true;
+                    } else if c == '"' {
+                        in_str = false;
+                    }
+                    continue;
+                }
+                match c {
+                    '"' => in_str = true,
+                    '{' => {
+                        depth += 1;
+                        awaiting_block = false;
+                    }
+                    '}' => depth -= 1,
+                    _ => {}
+                }
+            }
+            out.push('\n');
+            if !awaiting_block && depth <= 0 {
+                skipping_depth = None;
+            } else {
+                skipping_depth = Some(depth);
+            }
+            continue;
+        }
+        out.push_str(line);
+        out.push('\n');
+    }
+    out
+}
+
+fn is_chain_module(relative: &Path) -> bool {
+    relative.starts_with("chains")
+}
+
+fn is_composition_root(relative: &Path) -> bool {
+    relative.starts_with("run")
+}
+
+fn is_test_support_file(relative: &Path) -> bool {
+    relative
+        .file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| name == "tests.rs")
+}
+
+/// Schema-evolution / backfill owners may name Solana as a historical data
+/// fact (unscoped rows inherited by the only chain that existed then).
+fn is_legacy_schema_evolution(relative: &Path) -> bool {
+    let path = relative.to_string_lossy();
+    path.contains("migration")
+        || relative
+            .file_name()
+            .is_some_and(|name| name == "data_version.rs")
+}
+
+fn is_solana_identity_constructor(previous_lines: &[&str]) -> bool {
+    for line in previous_lines.iter().rev() {
+        let trimmed = line.trim_start();
+        if trimmed.contains("fn solana(") {
+            return true;
+        }
+        if trimmed.starts_with("fn ")
+            || trimmed.starts_with("pub fn ")
+            || trimmed.starts_with("pub(crate) fn ")
+            || trimmed.starts_with("pub const fn ")
+            || trimmed.starts_with("const fn ")
+        {
+            return false;
+        }
+    }
+    false
+}
+
+/// Operational shared code selects the process chain through
+/// `crate::chains::active_chain()`. Direct `ChainId::Solana` literals are
+/// reserved for the chain module, the composition root, adapter tests,
+/// Solana-typed identity constructors (`fn solana`), and legacy schema
+/// backfills that record a historical unscoped-row default.
+#[test]
+fn operational_shared_code_uses_active_chain_seam() {
+    let mut violations = Vec::new();
+    for (relative, contents) in walk_src() {
+        if is_chain_module(&relative)
+            || is_composition_root(&relative)
+            || is_test_support_file(&relative)
+            || is_legacy_schema_evolution(&relative)
+        {
+            continue;
+        }
+        let production = production_text(&contents);
+        let mut previous = Vec::new();
+        for (idx, line) in production.lines().enumerate() {
+            let trimmed = line.trim_start();
+            if trimmed.starts_with("//!") || trimmed.starts_with("///") || trimmed.starts_with("//")
+            {
+                previous.push(line);
+                continue;
+            }
+            if line.contains("ChainId::Solana") && !is_solana_identity_constructor(&previous) {
+                violations.push(format!(
+                    "src/{}:{}: operational `ChainId::Solana` — call crate::chains::active_chain() \
+                     instead",
+                    relative.display(),
+                    idx + 1
+                ));
+            }
+            previous.push(line);
+        }
+    }
+    assert!(
+        violations.is_empty(),
+        "shared operational code must select the process chain through \
+         crate::chains::active_chain(), not by naming ChainId::Solana:\n{}",
+        violations.join("\n")
+    );
+}
+
+/// Neutral modules must not re-export Solana-owned items. Callers that need
+/// ATA helpers, mint constants, classification, or address validation import
+/// `crate::chains::solana` directly.
+#[test]
+fn modules_outside_chains_must_not_reexport_solana_items() {
+    let mut violations = Vec::new();
+    for (relative, contents) in walk_src() {
+        if is_chain_module(&relative) {
+            continue;
+        }
+        for (idx, line) in code_lines(&contents).lines().enumerate() {
+            let trimmed = line.trim_start();
+            let is_pub_use = trimmed.starts_with("pub use ")
+                || trimmed.starts_with("pub(crate) use ")
+                || trimmed.starts_with("pub(super) use ");
+            if !is_pub_use {
+                continue;
+            }
+            if trimmed.contains("chains::solana")
+                || trimmed.contains("SOL_MINT")
+                || trimmed.contains("SOL_DECIMALS")
+            {
+                violations.push(format!("src/{}:{}: {trimmed}", relative.display(), idx + 1));
+            }
+        }
+    }
+    assert!(
+        violations.is_empty(),
+        "modules outside src/chains must not pub-use Solana-owned items \
+         (`crate::chains::solana`, SOL_MINT, SOL_DECIMALS):\n{}",
+        violations.join("\n")
+    );
+}
+
+/// Wallet management must not alias the Solana keypair module as a local
+/// `crypto` façade. Import `crate::chains::solana::accounts` at the call site.
+#[test]
+fn wallets_module_must_not_alias_solana_crypto() {
+    let mut violations = Vec::new();
+    for (relative, contents) in walk_src() {
+        if is_chain_module(&relative) {
+            continue;
+        }
+        for (idx, line) in code_lines(&contents).lines().enumerate() {
+            let trimmed = line.trim_start();
+            if trimmed.contains("chains::solana") && trimmed.contains(" as crypto") {
+                violations.push(format!("src/{}:{}: {trimmed}", relative.display(), idx + 1));
+            }
+        }
+    }
+    assert!(
+        violations.is_empty(),
+        "shared modules must not alias crate::chains::solana items as `crypto`:\n{}",
+        violations.join("\n")
+    );
+}
+
+/// Wallet-watch execution boundary: `src/wallets/watch/**` production code
+/// owns targets, persistence, dedupe, scheduling and lifecycle, and must
+/// reach chain execution only through the injected `runtime::WalletWatchRuntime`
+/// seam (`crate::wallets::watch::runtime`) — never by importing
+/// `crate::chains::solana`, `solana_sdk`, or naming a concrete
+/// `TransactionFetcher`/`TransactionProcessor`/`Pubkey` directly. The concrete
+/// Solana runtime lives in `crate::chains::solana::wallets::runtime::
+/// build_runtime`, registered once by the composition root
+/// (`src/run/services.rs`). Test code is scanned too: a co-located unit test
+/// must build its fixtures from chain-neutral `AccountId`/`Subject`
+/// constructors or the `runtime::test_support::FakeRuntime`, never a
+/// Solana-typed constructor merely to satisfy a test helper.
+#[test]
+fn wallet_watch_production_code_never_reaches_solana_directly() {
+    let banned_needles = [
+        "chains::solana",
+        "solana_sdk",
+        "TransactionFetcher",
+        "TransactionProcessor",
+        "Pubkey",
+    ];
+
+    let mut violations = Vec::new();
+    for (relative, contents) in walk_src() {
+        let path_str = relative.to_string_lossy();
+        if !path_str.starts_with("wallets/watch/") {
+            continue;
+        }
+        for (idx, line) in code_lines(&contents).lines().enumerate() {
+            for needle in banned_needles {
+                if line.contains(needle) {
+                    violations.push(format!("src/{path_str}:{}: names `{needle}`", idx + 1));
+                }
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "src/wallets/watch must reach chain execution only through \
+         runtime::WalletWatchRuntime, injected by the composition root — never by \
+         importing crate::chains::solana or a concrete Solana type directly:\n{}",
+        violations.join("\n")
+    );
+}
+
+/// Every SQLite write path must open its transaction through
+/// `database::WriteTransaction::write_tx` (IMMEDIATE), never through
+/// rusqlite's bare `Connection::transaction()` (DEFERRED).
+///
+/// A DEFERRED transaction that reads before it writes must upgrade its lock on
+/// the first write statement, and in WAL mode SQLite fails that upgrade with
+/// `SQLITE_BUSY` **immediately, ignoring `busy_timeout`** — because another
+/// connection may have committed since the read snapshot was taken. That is
+/// what produced `Failed to clear token pools: database is locked` under the
+/// eight concurrent `TOKEN_POOLS` refresh workers, and it was latent in every
+/// other read-then-write transaction in the tree.
+///
+/// Every transaction in this codebase writes, so there is no legitimate bare
+/// `.transaction()` call site. See `src/database/transaction.rs`.
+#[test]
+fn sqlite_writers_use_immediate_transactions() {
+    let mut offenders: Vec<String> = Vec::new();
+
+    for (relative, contents) in walk_src() {
+        // The trait's own unit test calls `.transaction()` deliberately, to
+        // demonstrate the upgrade failure it exists to prevent.
+        if relative == Path::new("database/transaction.rs") {
+            continue;
+        }
+        for (idx, line) in contents.lines().enumerate() {
+            let trimmed = line.trim_start();
+            if trimmed.starts_with("//!") || trimmed.starts_with("///") {
+                continue;
+            }
+            if line.contains(".transaction()") {
+                offenders.push(format!(
+                    "{}:{} -> {}",
+                    relative.display(),
+                    idx + 1,
+                    line.trim()
+                ));
+            }
+        }
+    }
+
+    assert!(
+        offenders.is_empty(),
+        "bare DEFERRED `.transaction()` is forbidden — use `write_tx()` from \
+         `crate::database::WriteTransaction` so the write lock is taken before \
+         the first read and `busy_timeout` actually applies:\n{}",
+        offenders.join("\n")
+    );
+}
+
+/// The vendor façade is not a loophole. `shared_modules_never_import_solana_vendor_crates_raw`
+/// only inspects lines beginning `use <crate>::`, so a fully-qualified
+/// `crate::chains::solana::solana_sdk::pubkey::Pubkey` in a type position slipped
+/// straight past it — which is how `Pubkey` survived in `src/transactions` long
+/// after that module's own doc comment declared it chain-neutral. Reaching a vendor
+/// type through the façade path is the same dependency as importing it raw.
+///
+/// Test code is exempt: a `#[cfg(test)]` block may build a real `Keypair` when that
+/// is what the test is proving (see `services/implementations/referral_service.rs`,
+/// where the test signs a referral proof for real). Weakening such a test to satisfy
+/// a textual scan would delete the check, not the coupling.
+#[test]
+fn shared_modules_never_name_solana_vendor_types_through_the_facade() {
+    let mut violations = Vec::new();
+    for (relative, contents) in walk_src() {
+        if is_solana_owned(&relative) {
+            continue;
+        }
+        let production = production_text(&contents);
+        for (idx, line) in code_lines(&production).lines().enumerate() {
+            for crate_name in VENDOR_CRATES {
+                if line.contains(&format!("chains::solana::{crate_name}")) {
+                    violations.push(format!(
+                        "src/{}:{}: reaches `{crate_name}` through the chains::solana façade — \
+                         shared code must use a chain-neutral type (Subject, AccountId, AssetId) \
+                         and let src/chains/solana convert at the boundary",
+                        relative.display(),
+                        idx + 1
+                    ));
+                }
+            }
+        }
+    }
+    assert!(
+        violations.is_empty(),
+        "shared modules must not name a Solana vendor type, even through the façade:\n{}",
+        violations.join("\n")
+    );
+}
+
+/// Asset and native-unit facts come from `chains::adapter()`, not from a direct
+/// import of the Solana constants. `SOL_MINT`, the stable mints, `SOL_DECIMALS`
+/// and the lamport converters all have adapter equivalents
+/// (`native_asset_address`, `is_native_asset`, `stable_assets`,
+/// `native_asset_decimals`, `raw_to_native`, `native_to_raw`).
+///
+/// The ATA/rent constants are deliberately NOT on this list: the ATA-cleanup and
+/// multi-wallet tools model a Solana-only concept end to end, so importing the
+/// constant is honest there. When those tools move behind a chain-asset-operations
+/// seam, add the names here.
+#[test]
+fn shared_modules_take_asset_and_unit_facts_from_the_adapter() {
+    const ADAPTER_OWNED: &[&str] = &[
+        "SOL_MINT",
+        "USDC_MINT",
+        "USDT_MINT",
+        "SOL_DECIMALS",
+        "LAMPORTS_PER_SOL",
+        "SYSTEM_PROGRAM_ID",
+        "lamports_to_sol",
+        "sol_to_lamports",
+    ];
+
+    let mut violations = Vec::new();
+    for (relative, contents) in walk_src() {
+        if is_chain_module(&relative) {
+            continue;
+        }
+        for (idx, line) in code_lines(&contents).lines().enumerate() {
+            if !line.contains("chains::solana::constants") {
+                continue;
+            }
+            for name in ADAPTER_OWNED {
+                if line.contains(name) {
+                    violations.push(format!(
+                        "src/{}:{}: imports `{name}` — ask crate::chains::adapter() instead",
+                        relative.display(),
+                        idx + 1
+                    ));
+                }
+            }
+        }
+    }
+    assert!(
+        violations.is_empty(),
+        "shared modules must take asset and native-unit facts from the chain adapter, \
+         not from Solana constants:\n{}",
+        violations.join("\n")
+    );
+}
+
+/// A provider's name for this chain is a chain fact. Hardcoding `"solana"` as a
+/// network/chainId/platform argument pins every market-data call to one chain;
+/// it comes from `chains::adapter().market_data_network()`.
+///
+/// Doc comments may still name Solana when documenting a parameter, and the
+/// legacy schema-evolution files record it as a historical row value.
+#[test]
+fn shared_modules_never_hardcode_the_market_data_network_slug() {
+    let mut violations = Vec::new();
+    for (relative, contents) in walk_src() {
+        if is_chain_module(&relative)
+            || is_composition_root(&relative)
+            || is_test_support_file(&relative)
+            || is_legacy_schema_evolution(&relative)
+        {
+            continue;
+        }
+        let production = production_text(&contents);
+        for (idx, line) in code_lines(&production).lines().enumerate() {
+            if line.contains("\"solana\"") {
+                violations.push(format!(
+                    "src/{}:{}: hardcodes the \"solana\" network slug — call \
+                     crate::chains::adapter().market_data_network()",
+                    relative.display(),
+                    idx + 1
+                ));
+            }
+        }
+    }
+    assert!(
+        violations.is_empty(),
+        "the provider network slug must come from the chain adapter:\n{}",
+        violations.join("\n")
+    );
+}
+
+/// Every chain-parameter value has exactly one owning `const`. These four were
+/// each duplicated across modules — the rent-exempt minimum existed twice in
+/// different units (890_880 lamports and 0.00089088 SOL) and the ATA rent value
+/// seven times in three forms. Copies that share a value but not a name are
+/// invisible to a name-based search, so this guard scans by value.
+#[test]
+fn chain_parameter_values_have_exactly_one_owning_const() {
+    const OWNED_VALUES: &[(&str, &str)] = &[
+        ("ATA rent (lamports)", "2_039_280"),
+        ("ATA rent (SOL)", "0.00203928"),
+        ("rent-exempt minimum (lamports)", "890_880"),
+        ("rent-exempt minimum (SOL)", "0.00089088"),
+        ("lamports per SOL", "1_000_000_000"),
+    ];
+    const OWNER: &str = "chains/solana/constants.rs";
+
+    let mut violations = Vec::new();
+    for (relative, contents) in walk_src() {
+        let path_str = relative.to_string_lossy();
+        if path_str == OWNER {
+            continue;
+        }
+        let production = production_text(&contents);
+        for (label, value) in OWNED_VALUES {
+            for (idx, line) in production.lines().enumerate() {
+                let trimmed = line.trim_start();
+                let is_const_def = (trimmed.starts_with("const ")
+                    || trimmed.starts_with("pub const ")
+                    || trimmed.starts_with("pub(crate) const ")
+                    || trimmed.starts_with("pub(super) const "))
+                    && trimmed.contains('=');
+                if is_const_def && trimmed.contains(value) {
+                    violations.push(format!(
+                        "src/{path_str}:{}: redefines the {label} value {value} — import it \
+                         from crate::chains::solana::constants",
+                        idx + 1
+                    ));
+                }
+            }
+        }
+    }
+    assert!(
+        violations.is_empty(),
+        "chain parameter values must have exactly one owning const, in \
+         crate::chains::solana::constants:\n{}",
+        violations.join("\n")
+    );
+}
+
+// =============================================================================
+// Error-architecture migration ratchet (see the migration contract).
+// =============================================================================
+
+/// Top-level module directories under `src/` that have finished migrating off
+/// stringly-typed errors onto their own `error.rs`. Each migration task
+/// appends its module here — this list may only ever grow.
+const MIGRATED_TO_TYPED_ERRORS: &[&str] = &[
+    "net",
+    "ohlcvs",
+    "swaps",
+    "filtering",
+    "positions",
+    "transactions",
+    "trader",
+    "wallets",
+    "tools",
+    "chains",
+    "apis",
+    "pools",
+    "tokens",
+    "agent_control",
+    "assistant",
+    "llm_analysis",
+    "telegram",
+    "actions",
+    "strategies",
+    "events",
+    "version",
+    "config",
+    "webserver",
+    "reset",
+    "secure_storage",
+    "run",
+    "database",
+    "paths",
+    "connectivity",
+    "account",
+    "arguments",
+    "logger",
+    "process",
+];
+
+/// True when `line` declares a two-parameter `Result<_, String>` — a signature
+/// that still flattens its error channel to a bare `String` instead of a real
+/// type.
+///
+/// A one-parameter `Result<String>` is deliberately NOT a violation: through a
+/// module's own `Result<T>` alias it means the *success* value is a `String`
+/// (a signature, a mint address), and `std::result::Result` cannot be spelled
+/// with a single parameter at all. Only the error half counts. Angle-bracket
+/// depth is tracked so a nested `Result<Vec<String>, String>` is still caught.
+fn contains_result_of_string(line: &str) -> bool {
+    let mut haystack = line;
+    while let Some((_, after)) = haystack.split_once("Result<") {
+        let mut depth = 1usize;
+        let mut params: Vec<&str> = Vec::new();
+        let mut param_start = 0usize;
+        let mut closed = false;
+        for (idx, ch) in after.char_indices() {
+            match ch {
+                '<' => depth += 1,
+                '>' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        params.push(&after[param_start..idx]);
+                        closed = true;
+                        break;
+                    }
+                }
+                ',' if depth == 1 => {
+                    params.push(&after[param_start..idx]);
+                    param_start = idx + 1;
+                }
+                _ => {}
+            }
+        }
+        if closed && params.len() == 2 && params[1].trim() == "String" {
+            return true;
+        }
+        haystack = after;
+    }
+    false
+}
+
+/// **The ratchet.** Once a module is listed in [`MIGRATED_TO_TYPED_ERRORS`],
+/// its production code may never again return a bare `Result<_, String>`.
+#[test]
+fn migrated_modules_never_return_string_errors() {
+    let mut violations = Vec::new();
+    for (relative, contents) in walk_src() {
+        let path_str = relative.to_string_lossy();
+        let top_level = path_str.split('/').next().unwrap_or("");
+        if !MIGRATED_TO_TYPED_ERRORS.contains(&top_level) {
+            continue;
+        }
+        let production = production_text(&contents);
+        for (idx, line) in production.lines().enumerate() {
+            if contains_result_of_string(line) {
+                violations.push(format!("src/{path_str}:{}: {}", idx + 1, line.trim()));
+            }
+        }
+    }
+    assert!(
+        violations.is_empty(),
+        "migrated modules must not return Result<_, String> — define the module's own \
+         error type in src/<module>/error.rs and return that instead (never re-add the \
+         module to MIGRATED_TO_TYPED_ERRORS to make this pass):\n{}",
+        violations.join("\n")
+    );
+}
+
+/// A string-to-error conversion lets any caller launder prose into a typed
+/// error, and re-guessing the type from that text is how the boot path kept
+/// sniffing messages long after its signatures were typed.
+#[test]
+fn errors_never_convert_strings_into_typed_errors() {
+    let mut violations = Vec::new();
+    for (relative, contents) in walk_src() {
+        if !relative.starts_with("errors") {
+            continue;
+        }
+        for (index, line) in code_lines(&contents).lines().enumerate() {
+            let trimmed = line.trim_start();
+            if trimmed.starts_with("impl From<String> for")
+                || trimmed.starts_with("impl From<&str> for")
+            {
+                violations.push(format!(
+                    "src/{}:{}: {}",
+                    relative.display(),
+                    index + 1,
+                    trimmed
+                ));
+            }
+        }
+    }
+    assert!(
+        violations.is_empty(),
+        "src/errors must never implement From<String> or From<&str> for a typed error; \
+         callers must construct a named variant instead:\n{}",
+        violations.join("\n")
+    );
+}
+
+/// Exact current violators of [`error_types_live_in_their_module`], scanned
+/// against today's tree. Entries are removed as each module moves its error type
+/// into an `error.rs`. The list shrinks as that work lands; it grows only when
+/// the guard itself is tightened and reveals debt an earlier, looser rule had
+/// been hiding — never to make a new violation pass.
+///
+/// The three `chains/solana` entries are exactly that case: the rule used to
+/// exempt everything under `src/chains/` wholesale, so these were never
+/// reported. They are misfiled by the same standard that put `ApiError` inside
+/// `tokens/types.rs`, and they must reach zero with the rest.
+const PENDING_RELOCATION: &[&str] = &[
+    "apis/llm/types.rs",
+    "ohlcvs/types.rs",
+    "rpc/errors.rs",
+    "chains/solana/swaps/types.rs",
+    "chains/solana/assets/metaplex.rs",
+    "chains/solana/pools/reserve_accounts.rs",
+];
+
+/// A `pub enum <Something>Error` (or `pub enum Error`) may only be declared in
+/// `src/errors/*.rs` or in a file named `error.rs` beside the code it describes
+/// — at any depth, so a submodule with a genuinely separate failure domain
+/// (`apis/llm/error.rs`, `chains/solana/error.rs`) owns its own vocabulary
+/// without a special case. The rule is "errors live in an `error.rs`"; anything
+/// else means the type is filed under an unrelated subject, which is how
+/// `ApiError` ended up inside `tokens/types.rs`.
+#[test]
+fn error_types_live_in_their_module() {
+    fn is_allowed_location(relative: &Path) -> bool {
+        let mut components = relative.components();
+        let Some(first) = components.next() else {
+            return false;
+        };
+        let first = first.as_os_str().to_string_lossy();
+        if first == "errors" {
+            return true;
+        }
+        if relative.file_name().and_then(|n| n.to_str()) == Some("error.rs") {
+            return true;
+        }
+        false
+    }
+
+    let mut violations = Vec::new();
+    for (relative, contents) in walk_src() {
+        let path_str = relative.to_string_lossy().into_owned();
+        if is_allowed_location(&relative) {
+            continue;
+        }
+        let production = production_text(&contents);
+        for (idx, line) in production.lines().enumerate() {
+            let trimmed = line.trim_start();
+            let enum_name = trimmed.strip_prefix("pub enum ").map(|rest| {
+                rest.split(|c: char| !(c.is_alphanumeric() || c == '_'))
+                    .next()
+                    .unwrap_or("")
+            });
+            let declares_error_enum = enum_name.is_some_and(|name| name.ends_with("Error"));
+            if declares_error_enum {
+                if PENDING_RELOCATION.contains(&path_str.as_str()) {
+                    continue;
+                }
+                violations.push(format!(
+                    "src/{path_str}:{}: {} — error enums may only live in src/errors/*.rs or in an \
+                     error.rs beside the code they describe; move the type into one rather \
+                     than adding a path here — PENDING_RELOCATION tracks pre-existing debt \
+                     only and must reach zero",
+                    idx + 1,
+                    trimmed
+                ));
+            }
+        }
+    }
+    assert!(
+        violations.is_empty(),
+        "error types must live in their owning module:\n{}",
+        violations.join("\n")
+    );
+}
+
+/// No error enum may declare a catch-all `Generic { ... }`, `Other(String)`
+/// or `Unknown(String)` variant — that is the exact escape hatch that let
+/// errors collapse back into strings. Scoped to [`MIGRATED_TO_TYPED_ERRORS`]
+/// modules only in T0: several `src/errors/` central types (`AccountError`,
+/// `NetworkError`, ...) still carry `Generic` because they are kept alive by
+/// the builder helpers on `crate::Error`. `src/errors/` joins this guard once
+/// those builder helpers — and the `Generic` variants they construct — are
+/// deleted in a later task.
+#[test]
+fn no_catch_all_error_variants() {
+    let mut violations = Vec::new();
+    for (relative, contents) in walk_src() {
+        let path_str = relative.to_string_lossy();
+        let top_level = path_str.split('/').next().unwrap_or("");
+        if !MIGRATED_TO_TYPED_ERRORS.contains(&top_level) {
+            continue;
+        }
+        // Only files that are allowed to declare an error type. `Generic`,
+        // `Other(String)` and `Unknown(String)` are perfectly ordinary variant
+        // names in a domain enum (a DEX detector, a parse result); this guard
+        // is about error vocabularies, so scanning every file would force
+        // unrelated domain types to be renamed to satisfy a test.
+        if relative.file_name().and_then(|n| n.to_str()) != Some("error.rs") {
+            continue;
+        }
+        let production = production_text(&contents);
+        for (idx, line) in production.lines().enumerate() {
+            let trimmed = line.trim_start();
+            let is_catch_all = trimmed.starts_with("Generic {")
+                || trimmed.starts_with("Other(String)")
+                || trimmed.starts_with("Unknown(String)");
+            if is_catch_all {
+                violations.push(format!("src/{path_str}:{}: {}", idx + 1, trimmed));
+            }
+        }
+    }
+    assert!(
+        violations.is_empty(),
+        "no catch-all error variant (Generic/Other(String)/Unknown(String)) is allowed in a \
+         migrated module's error type — name the failure instead:\n{}",
+        violations.join("\n")
+    );
+}
+
+/// The only functions in `src/` allowed to return a bare error value instead of
+/// constructing one at the site that fails.
+///
+/// Each entry earns its place by doing real work: `map_llm_error` maps one
+/// error enum onto another arm by arm, `classify_quote_failure` inspects a list
+/// of router failures to decide which failure it was, and `json_error` adapts a
+/// `serde_json::Error` into the foreign `rusqlite::Error` that rusqlite's row
+/// mappers are required to return. None of them is a variant in disguise.
+/// Functions that MAP an existing failure onto another vocabulary rather than
+/// inventing one. Each already holds the failure it is translating, so there is
+/// no "failure site" further in for it to be pushed to.
+///
+/// - `select_quote_failure` picks among per-router errors already built at
+///   their own failure sites.
+/// - `into_error` / `into_quote_error` convert a captured Jupiter HTTP failure
+///   (status + body) into the crate and quote channels. Keeping the status and
+///   the raw body structured until this point is the whole reason a quote
+///   failure can still be classified by type; rendering a message at the
+///   failure site is what the migration is removing.
+const ERROR_MAPPING_FUNCTIONS: &[&str] = &[
+    "map_llm_error",
+    "select_quote_failure",
+    "into_error",
+    "into_quote_error",
+    "json_error",
+];
+
+/// A function whose whole job is to return an error is a variant wearing a
+/// function costume: `fn db_not_initialized() -> Error` and
+/// `fn database_error(operation, e) -> Error` say nothing that
+/// `Error::NotInitialized` and `DatabaseError::Query { operation, message }`
+/// do not, while hiding the vocabulary from every reader and diverging from
+/// the hundreds of sites that construct the same variants inline.
+///
+/// The failure mode this prevents is silent: a module gets a private
+/// constructor helper, callers use it because it is nearest, and the module's
+/// errors stop looking like the rest of the codebase. Construct the variant at
+/// the site that fails. A function that genuinely *maps* one error type onto
+/// another belongs in [`ERROR_MAPPING_FUNCTIONS`] with a reason.
+#[test]
+fn errors_are_constructed_at_the_failure_site() {
+    fn returned_type(signature: &str) -> Option<&str> {
+        let after = signature.split("->").nth(1)?;
+        let returned = after
+            .trim()
+            .trim_end_matches(|c: char| c == '{' || c.is_whitespace());
+        (!returned.contains("Result") && returned.ends_with("Error")).then_some(returned)
+    }
+
+    fn declared_name(trimmed: &str) -> Option<&str> {
+        let after = trimmed.split_once("fn ")?.1;
+        Some(
+            after
+                .split(|c: char| !(c.is_alphanumeric() || c == '_'))
+                .next()
+                .unwrap_or(""),
+        )
+    }
+
+    let mut violations = Vec::new();
+    for (relative, contents) in walk_src() {
+        let path_str = relative.to_string_lossy();
+        let production = production_text(&contents);
+        for (idx, line) in production.lines().enumerate() {
+            let trimmed = line.trim_start();
+            let is_fn = trimmed.starts_with("fn ")
+                || trimmed.starts_with("pub fn ")
+                || trimmed.starts_with("async fn ")
+                || (trimmed.starts_with("pub(") && trimmed.contains(") fn "));
+            if !is_fn {
+                continue;
+            }
+            let Some(returned) = returned_type(trimmed) else {
+                continue;
+            };
+            let name = declared_name(trimmed).unwrap_or("");
+            if ERROR_MAPPING_FUNCTIONS.contains(&name) {
+                continue;
+            }
+            violations.push(format!(
+                "src/{path_str}:{}: fn {name}(..) -> {returned} — construct the variant at the \
+                 failure site instead of behind a helper",
+                idx + 1
+            ));
+        }
+    }
+    assert!(
+        violations.is_empty(),
+        "an error-returning helper hides the module's error vocabulary and diverges from every \
+         other construction site — build the variant where the failure happens:\n{}",
+        violations.join("\n")
+    );
+}
+
+/// Identifiers that hold an error, or the text of one, in a route handler.
+/// Matching `.contains(..)` against any of them is the boot path's
+/// message-sniffing defect moved into the HTTP layer.
+const ERROR_TEXT_BINDINGS: &[&str] = &[
+    "e",
+    "e_str",
+    "err",
+    "err_str",
+    "error",
+    "error_msg",
+    "error_str",
+    "msg",
+    "message",
+];
+
+/// Directories whose decisions must come from an error's TYPE, never its text.
+///
+/// `webserver/routes` picks an HTTP status; `swaps` decides whether a token has
+/// a market; `positions/operations` and `trader` decide whether to back off,
+/// blacklist, or which step of a trade to report as failed. All four were
+/// caught guessing from prose, and all four failed silently when the prose
+/// changed — the money-path ones in the direction of doing nothing at all.
+const TYPED_DECISION_DIRS: &[&str] = &[
+    "webserver/routes",
+    "swaps",
+    "positions/operations",
+    "trader",
+];
+
+/// `positions/verifier.rs` is out of scope on purpose: its entire job is to
+/// translate the RPC's own free-text transaction errors into verification
+/// outcomes. That is an anti-corruption boundary, not a decision taken from one
+/// of OUR errors, and the same is true of the four wire values below — Solana
+/// program error codes and markers that arrive as text from the chain, never
+/// from a Rust error type we control.
+const EXTERNAL_WIRE_VALUES: &[&str] = &["0x1787", "6023", "insufficient funds", "[PERMANENT]"];
+
+/// Locals that are an error's text: `let x = err.to_string()`, or anything
+/// derived from such a local with `.to_lowercase()`/`.to_uppercase()`.
+///
+/// Naming the bindings alone was not enough — `manual.rs` renamed the error's
+/// text to `raw`, lowercased it into `low`, and ran a five-branch prose ladder
+/// that this guard could not see.
+fn error_text_locals(production: &str) -> Vec<String> {
+    let mut locals: Vec<String> = ERROR_TEXT_BINDINGS
+        .iter()
+        .map(|s| (*s).to_owned())
+        .collect();
+    // Two passes so a local derived from a derived local is also caught.
+    for _ in 0..2 {
+        for line in production.lines() {
+            let trimmed = line.trim_start();
+            let Some(rest) = trimmed.strip_prefix("let ") else {
+                continue;
+            };
+            let Some((binding, value)) = rest.split_once('=') else {
+                continue;
+            };
+            let name = binding
+                .trim()
+                .trim_start_matches("mut ")
+                .trim()
+                .trim_end_matches(':')
+                .split(':')
+                .next()
+                .unwrap_or("")
+                .trim()
+                .to_owned();
+            if name.is_empty() || locals.contains(&name) {
+                continue;
+            }
+            let receiver = |call: &str| -> Option<String> {
+                let idx = value.find(call)?;
+                Some(
+                    value[..idx]
+                        .trim_end()
+                        .rsplit(|c: char| !(c.is_alphanumeric() || c == '_'))
+                        .next()
+                        .unwrap_or("")
+                        .to_owned(),
+                )
+            };
+            let derived = [".to_string()", ".to_lowercase()", ".to_uppercase()"]
+                .iter()
+                .filter_map(|call| receiver(call))
+                .any(|r| locals.contains(&r));
+            if derived {
+                locals.push(name);
+            }
+        }
+    }
+    locals
+}
+
+/// **Decisions come from the error's type, never from its prose.**
+///
+/// Every module error implements `ErrorClass`, so code that re-derives an
+/// answer with `msg.contains("not found")` is guessing at a fact the value
+/// already carries — and the guess breaks silently when the error vocabulary is
+/// reworded. Three separate incidents:
+///
+/// - `src/wallets/` migrated, `Watch target {id} not found` became `watch
+///   target {address} is not being watched`, and three endpoints started
+///   answering 500 where they had answered 404.
+/// - `classify_quote_failure` rendered a friendly "No swap route available"
+///   message, and `get_best_quote_for_opening` then searched that message for
+///   the lowercase words "no route" — which it no longer contained. No token
+///   was blacklisted for having no market for as long as that stood.
+/// - Five copies of `error.contains("Quote")` picked which step of a manual
+///   trade to mark failed, and reported a failed SWAP for trades where nothing
+///   had been submitted.
+///
+/// Take the answer from the value: `webserver::utils::status_for(&error)`,
+/// `ErrorClass::is_rate_limited()`, the `QuoteError` variant, `TradeStep`.
+///
+/// Reading a PROVIDER's body — Jupiter's `errorCode`, for instance —
+/// is a different thing and stays allowed: that is the boundary whose whole
+/// job is translating a wire format into our vocabulary. It is allowed because
+/// those router files live outside `TYPED_DECISION_DIRS`.
+#[test]
+fn decisions_are_never_made_from_error_text() {
+    let mut violations = Vec::new();
+    for (relative, contents) in walk_src() {
+        let path = relative.to_string_lossy().replace('\\', "/");
+        if !TYPED_DECISION_DIRS.iter().any(|dir| path.starts_with(dir)) {
+            continue;
+        }
+        let production = production_text(&contents);
+        let bindings = error_text_locals(&production);
+        for (index, line) in production.lines().enumerate() {
+            // A doc comment describing the defect is not the defect.
+            if line.trim_start().starts_with("//") {
+                continue;
+            }
+            if EXTERNAL_WIRE_VALUES.iter().any(|v| line.contains(v)) {
+                continue;
+            }
+            let mut haystack = line;
+            while let Some((before, after)) = haystack.split_once(".contains(") {
+                let receiver = before
+                    .trim_end()
+                    .rsplit(|c: char| !(c.is_alphanumeric() || c == '_'))
+                    .next()
+                    .unwrap_or("")
+                    .to_owned();
+                if bindings.contains(&receiver) {
+                    violations.push(format!(
+                        "src/{}:{}: {}",
+                        relative.display(),
+                        index + 1,
+                        line.trim()
+                    ));
+                    break;
+                }
+                haystack = after;
+            }
+        }
+    }
+    assert!(
+        violations.is_empty(),
+        "a decision must not be made by reading an error's message — take it from the value: \
+         ErrorClass::http_status() (via webserver::utils::status_for), \
+         ErrorClass::is_rate_limited(), the QuoteError variant, or TradeStep:\n{}",
+        violations.join("\n")
+    );
+}
+
+// ============================================================================
+// Agent-control native MCP boundary (checkpoint 3)
+// ============================================================================
+//
+// The stdio MCP adapter is a bridge client with no local tool execution; the
+// live-app bridge is the only agent-control route exempt from the dashboard
+// token, and only from that; every bridge handler authenticates a pairing
+// credential; and pairing secrets never reach a list/summary type.
+
+fn read_src(relative: &str) -> String {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("src")
+        .join(relative);
+    fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {relative}: {e}"))
+}
+
+#[test]
+fn mcp_adapter_has_no_local_tool_execution_or_policy() {
+    let code = code_lines(&read_src("mcp/mod.rs"));
+    for forbidden in [
+        "create_tool_registry",
+        "InvocationSource",
+        "agent_control::decide",
+        "::decide(",
+        "tool.execute(",
+        "permissions::",
+    ] {
+        assert!(
+            !code.contains(forbidden),
+            "src/mcp/mod.rs must not reference `{forbidden}` — all tool listing, policy and \
+             execution belong to the live app reached through the bridge, never the MCP \
+             subprocess"
+        );
+    }
+    // It must actually go through the bridge.
+    assert!(
+        code.contains("/api/agent-bridge/"),
+        "src/mcp/mod.rs must call the live-app bridge"
+    );
+}
+
+#[test]
+fn only_the_bridge_prefix_is_token_exempt_and_only_from_the_token() {
+    let middleware = read_src("webserver/middleware.rs");
+
+    // Both gates reference the shared const, never a hardcoded path.
+    let uses = middleware.matches("agent_bridge::BRIDGE_PREFIX").count();
+    assert!(
+        uses >= 2,
+        "both `is_security_token_exempt_path` and `auth_gate` must exempt \
+         agent_bridge::BRIDGE_PREFIX (found {uses} references)"
+    );
+    assert!(
+        !middleware.contains("\"/api/agent-bridge"),
+        "the bridge path must come from routes::agent_bridge::BRIDGE_PREFIX, not a literal"
+    );
+    // The management API is never exempted.
+    assert!(
+        !middleware.contains("/api/agent-control"),
+        "no agent-control management route may be named in a middleware exemption"
+    );
+
+    // The const is exactly the intended prefix.
+    let routes = read_src("webserver/routes/agent_bridge/mod.rs");
+    assert!(
+        routes.contains(r#"BRIDGE_PREFIX: &str = "/api/agent-bridge/""#),
+        "BRIDGE_PREFIX must be \"/api/agent-bridge/\""
+    );
+
+    // The exemption is only in the two intended gates. `initialization_gate`
+    // must NOT list the bridge (pre-init it fails closed with 503).
+    let init_gate = middleware
+        .split_once("pub async fn initialization_gate")
+        .map(|(_, rest)| rest.split("pub async fn").next().unwrap_or(""))
+        .unwrap_or("");
+    assert!(
+        !init_gate.contains("agent_bridge") && !init_gate.contains("agent-bridge"),
+        "initialization_gate must not exempt the bridge"
+    );
+}
+
+#[test]
+fn every_bridge_handler_authenticates_a_pairing_credential() {
+    let handlers = read_src("webserver/routes/agent_bridge/handlers.rs");
+    let handler_count = handlers.matches("pub async fn ").count();
+    let auth_calls = handlers.matches("credential(&headers)").count();
+    assert!(handler_count >= 4, "expected the four bridge handlers");
+    assert_eq!(
+        handler_count, auth_calls,
+        "every bridge handler must call `credential(&headers)` before doing anything else"
+    );
+}
+
+#[test]
+fn pairing_secret_never_appears_in_a_list_or_summary_type() {
+    let pairing = read_src("agent_control/pairing.rs");
+
+    // The only struct allowed to carry the secret field is the one-time
+    // creation response.
+    let summary = pairing
+        .split_once("pub struct PairingSummary")
+        .and_then(|(_, r)| r.split_once('}'))
+        .map(|(b, _)| b)
+        .unwrap_or("");
+    for banned in ["secret", "verifier"] {
+        assert!(
+            !summary.contains(banned),
+            "PairingSummary must not expose `{banned}`"
+        );
+    }
+
+    // The verifier is stored, never serialized: it must not be a field of any
+    // `Serialize` type. `AuthedClient` is not Serialize and may hold scope, not
+    // the secret.
+    let authed = pairing
+        .split_once("pub struct AuthedClient")
+        .and_then(|(_, r)| r.split_once('}'))
+        .map(|(b, _)| b)
+        .unwrap_or("");
+    assert!(
+        !authed.contains("secret") && !authed.contains("verifier"),
+        "AuthedClient must not carry the secret or verifier"
+    );
+}
+
+#[test]
+fn agent_approvals_asset_is_fully_registered() {
+    let embeds = read_src("webserver/embeds.rs");
+    assert!(
+        embeds.contains("CORE_AGENT_APPROVALS")
+            && embeds.contains("scripts/core/agent_approvals.js"),
+        "agent_approvals.js needs an include_str! const in embeds.rs"
+    );
+    let serving = read_src("webserver/routes/asset_serving/handlers.rs");
+    assert!(
+        serving.contains(r#""agent_approvals.js" => Some(embeds::CORE_AGENT_APPROVALS)"#),
+        "agent_approvals.js needs a match arm in asset_serving handlers"
+    );
+    let base = read_src("webserver/templates/base.html");
+    assert!(
+        base.contains("/scripts/core/agent_approvals.js"),
+        "agent_approvals.js needs a <script> tag in base.html"
+    );
+}
+
+#[test]
+fn approval_binding_is_unique_and_race_safe() {
+    let store = read_src("agent_control/store.rs");
+    assert!(
+        store.contains("CREATE UNIQUE INDEX IF NOT EXISTS idx_approvals_binding"),
+        "the (client_id, tool, args_digest) binding must be a UNIQUE index — a plain \
+         index lets a SELECT-then-INSERT race create duplicate approval rows"
+    );
+    let approvals = read_src("agent_control/approvals.rs");
+    assert!(
+        approvals.contains("ON CONFLICT(client_id, tool, args_digest) DO NOTHING"),
+        "create_or_reuse must insert with ON CONFLICT DO NOTHING and read the row back, \
+         not branch on a prior SELECT"
+    );
+    // Every terminal state is reused; there is no "open a fresh row on failed/expired" path.
+    assert!(
+        !approvals.contains("Only `expired` and `failed` let a retry open a fresh request"),
+        "stale doc: failed/expired approvals are terminal and reused, never replayed"
+    );
+}

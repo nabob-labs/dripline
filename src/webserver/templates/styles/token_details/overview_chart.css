@@ -1,0 +1,524 @@
+/* =============================================================================
+   OVERVIEW TAB - SPLIT LAYOUT
+   ============================================================================= */
+
+.overview-split-layout {
+  display: grid;
+  grid-template-columns: minmax(400px, 38%) 1fr;
+  gap: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.overview-left {
+  overflow-y: auto;
+  border-right: 1px solid var(--border-color);
+  height: 100%;
+  background: var(--bg-secondary);
+  container-type: inline-size;
+}
+
+.overview-right {
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+}
+
+/* Token banner (DexScreener header image, 1500x500). Optional: most tokens have
+   none, and the slot then renders nothing at all rather than a placeholder. */
+.token-banner {
+  overflow: hidden;
+  background: var(--bg-primary);
+  line-height: 0;
+  cursor: zoom-in;
+}
+
+.overview-banner-slot:empty {
+  display: none;
+}
+
+.token-banner-img {
+  display: block;
+  width: 100%;
+
+  /* Matches the source 3:1 ratio, so the space is reserved before the image
+     decodes and the stats below never shift once it lands. */
+  aspect-ratio: 3 / 1;
+  object-fit: cover;
+  transition:
+    filter 160ms ease,
+    transform 160ms ease;
+}
+
+.token-banner:hover .token-banner-img,
+.token-banner:focus-visible .token-banner-img {
+  filter: brightness(1.08);
+  transform: scale(1.015);
+}
+
+.token-banner:active .token-banner-img {
+  transform: scale(0.985);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .token-banner-img {
+    transition: none;
+  }
+}
+
+/* Continuous left-side information sheet. The banner, metric strip and sections
+   share one surface instead of nesting separate rounded cards. */
+.overview-sheet {
+  background: var(--bg-secondary);
+}
+
+.overview-headline {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  background: var(--bg-card-hover);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.overview-headline-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  min-width: 0;
+  min-height: 36px;
+  padding: 7px 12px;
+}
+
+.overview-headline-item:nth-child(even) {
+  border-left: 1px solid var(--border-color);
+}
+
+.overview-headline-item:nth-child(n + 3) {
+  border-top: 1px solid var(--border-color);
+}
+
+.overview-headline-label,
+.overview-section-title,
+.overview-fact-label,
+.overview-inline-label,
+.overview-pulse-label,
+.overview-flow-stat-label {
+  color: var(--text-muted);
+  font-size: 0.6rem;
+  font-weight: 650;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.overview-headline-label {
+  flex: 0 0 auto;
+}
+
+.overview-headline-readout {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 5px;
+  min-width: 0;
+}
+
+.overview-headline-value,
+.overview-headline-change {
+  font-family: var(--font-data);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+  white-space: nowrap;
+}
+
+.overview-headline-value {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 0.77rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+}
+
+.overview-headline-change {
+  flex: 0 0 auto;
+  font-size: 0.62rem;
+  font-weight: 650;
+}
+
+.overview-headline-change.positive,
+.overview-pulse-value.positive,
+.overview-flow-stat.positive .overview-flow-stat-value,
+.overview-flow-stat.buys .overview-flow-stat-value {
+  color: var(--success-color);
+}
+
+.overview-headline-change.negative,
+.overview-pulse-value.negative,
+.overview-flow-stat.negative .overview-flow-stat-value,
+.overview-flow-stat.sells .overview-flow-stat-value {
+  color: var(--danger);
+}
+
+.overview-sections {
+  display: flex;
+  flex-direction: column;
+}
+
+.overview-section {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.overview-section:last-child {
+  border-bottom: 0;
+}
+
+.overview-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  min-height: 20px;
+  margin-bottom: 7px;
+}
+
+.overview-section-title {
+  color: var(--text-secondary);
+  font-size: 0.64rem;
+  font-weight: 700;
+}
+
+.overview-section-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.overview-verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--success-color);
+  font-size: 0.62rem;
+  font-weight: 650;
+}
+
+.overview-verified i {
+  font-size: 0.7rem;
+}
+
+.overview-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px 12px;
+}
+
+.overview-market-facts {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.overview-fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.overview-fact-wide {
+  grid-column: 1 / -1;
+}
+
+.overview-fact-value,
+.overview-copy-value,
+.overview-pool-link {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-family: var(--font-data);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+  font-size: 0.76rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overview-fact-emphasis .overview-fact-value {
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.overview-copy-value {
+  width: fit-content;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--link-color);
+  cursor: pointer;
+  text-align: left;
+}
+
+.overview-copy-value:hover,
+.overview-pool-link:hover {
+  text-decoration: underline;
+}
+
+.overview-filter-status {
+  color: var(--danger);
+}
+
+.overview-tags-row,
+.overview-pool-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+  min-width: 0;
+  margin-top: 8px;
+}
+
+.overview-inline-label {
+  flex: 0 0 auto;
+}
+
+.overview-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+.overview-tag {
+  padding: 2px 5px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card-hover);
+  color: var(--text-secondary);
+  font-size: 0.61rem;
+  line-height: 1.25;
+}
+
+.overview-tags-empty {
+  color: var(--text-muted);
+  font-size: 0.66rem;
+}
+
+.overview-description {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.overview-pool-row {
+  justify-content: space-between;
+}
+
+.overview-pool-link {
+  color: var(--link-color);
+}
+
+/* Price change and volume share one time-aligned matrix so the relationship is
+   readable without two repeated card headers and bodies. */
+.overview-pulse-matrix {
+  display: grid;
+  grid-template-columns: 44px repeat(4, minmax(0, 1fr));
+  align-items: baseline;
+  gap: 5px 8px;
+}
+
+.overview-pulse-time {
+  color: var(--text-muted);
+  font-family: var(--font-data);
+  font-size: 0.6rem;
+  font-weight: 650;
+  text-align: right;
+}
+
+.overview-pulse-value,
+.overview-pulse-volume {
+  overflow: hidden;
+  font-family: var(--font-data);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overview-pulse-value {
+  color: var(--text-primary);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.overview-pulse-volume {
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.overview-ratio {
+  color: var(--text-secondary);
+  font-family: var(--font-data);
+  font-size: 0.61rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.overview-ratio.bullish {
+  color: var(--success-color);
+}
+
+.overview-ratio.bearish {
+  color: var(--danger);
+}
+
+.overview-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.overview-flow-row {
+  display: grid;
+  grid-template-columns: 38px minmax(72px, 1fr) minmax(108px, 132px);
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.overview-flow-time,
+.overview-flow-counts {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.overview-flow-time {
+  line-height: 1;
+}
+
+.overview-flow-period {
+  color: var(--text-secondary);
+  font-family: var(--font-data);
+  font-size: 0.68rem;
+  font-weight: 650;
+}
+
+.overview-flow-rate,
+.overview-flow-counts-sub {
+  color: var(--text-muted);
+  font-family: var(--font-data);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+  font-size: 0.57rem;
+}
+
+.overview-flow-bar {
+  display: flex;
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--bg-card-hover);
+}
+
+.overview-flow-bar.is-empty {
+  opacity: 0.55;
+}
+
+.overview-flow-bar-buy {
+  background: var(--success-color);
+}
+
+.overview-flow-bar-sell {
+  background: var(--danger);
+}
+
+.overview-flow-counts {
+  align-items: flex-end;
+}
+
+.overview-flow-counts-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 8px minmax(0, 1fr);
+  align-items: baseline;
+  width: 100%;
+  font-family: var(--font-data);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+  font-size: 0.68rem;
+}
+
+.overview-flow-buy-count {
+  color: var(--success-color);
+  text-align: right;
+}
+
+.overview-flow-sell-count {
+  color: var(--danger);
+  text-align: right;
+}
+
+.overview-flow-separator {
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.overview-flow-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px 12px;
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px solid var(--border-color);
+}
+
+.overview-flow-stat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+
+.overview-flow-stat-label {
+  overflow: hidden;
+  font-size: 0.56rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overview-flow-stat-value {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-family: var(--font-data);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+  font-size: 0.7rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@container (width <= 460px) {
+  .overview-market-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (width <= 400px) {
+  .overview-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .overview-flow-summary {
+    gap: 6px 10px;
+  }
+}

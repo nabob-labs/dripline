@@ -1,0 +1,32 @@
+//! Structured error types used throughout VeloxBot.
+//!
+//! Public surface:
+//! - `crate::Error` / `crate::errors::Error`
+//! - `crate::Result<T>` / `crate::errors::Result<T>`
+
+mod account;
+
+mod configuration;
+mod data;
+mod database;
+mod error;
+mod internal;
+mod io;
+mod network;
+mod rpc_provider;
+mod service;
+mod startup;
+mod traits;
+
+pub use account::*;
+pub use configuration::*;
+pub use data::*;
+pub use database::*;
+pub use error::{Error, Result};
+pub use internal::*;
+pub use io::*;
+pub use network::*;
+pub use rpc_provider::*;
+pub use service::*;
+pub use startup::{StartupError, StartupErrorCode, StartupRecovery};
+pub use traits::{ErrorClass, Severity};

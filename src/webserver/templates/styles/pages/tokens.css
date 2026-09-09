@@ -1,0 +1,592 @@
+/* Tokens page-specific styles */
+
+/* Page container - ensure proper height for scrolling */
+.tokens-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* DataTable container */
+#tokens-root {
+  flex: 1;
+  min-height: 0; /* Critical for flex scrolling */
+  overflow: hidden;
+}
+
+/* Token name cell with logo */
+.token-cell {
+  --token-cell-actions-width: 68px;
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding-left: 4px;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.token-cell--actions-3 {
+  --token-cell-actions-width: 102px;
+}
+
+.token-cell__identity {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding-right: 0;
+  transition: padding-right 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.token-cell .token-logo {
+  width: var(--token-table-logo-size);
+  height: var(--token-table-logo-size);
+  min-width: var(--token-table-logo-size);
+  min-height: var(--token-table-logo-size);
+  border-radius: var(--token-logo-radius, 3px);
+  object-fit: cover;
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+  display: inline-block;
+  font-size: 9px;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: var(--token-table-logo-size);
+  font-weight: 600;
+}
+
+/* Token text container - constrain overflow */
+.token-cell__meta {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Ticker line: the ticker itself shrinks and ellipses, anything beside it (the
+   boost mark) never does. Without the flex row the mark rides inside the
+   truncated ticker and a long symbol clips it away entirely. */
+.token-cell__symbol-line {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.token-cell .token-symbol {
+  min-width: 0;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.token-cell .token-name {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.token-cell__actions {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  display: inline-flex;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(3px, -50%);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.token-cell__actions .btn {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0;
+}
+
+.data-table tbody tr:hover .token-cell__identity,
+.data-table tbody tr:focus-within .token-cell__identity {
+  padding-right: var(--token-cell-actions-width);
+}
+
+.data-table tbody tr:hover .token-cell__actions,
+.data-table tbody tr:focus-within .token-cell__actions,
+.token-cell__actions:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(0, -50%);
+}
+
+@media (hover: none), (pointer: coarse) {
+  .token-cell__identity {
+    padding-right: var(--token-cell-actions-width);
+  }
+
+  .token-cell__actions {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(0, -50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .token-cell__identity,
+  .token-cell__actions {
+    transition: none;
+  }
+}
+
+.value-positive {
+  color: var(--badge-online);
+  font-weight: 600;
+}
+
+.value-negative {
+  color: var(--badge-error);
+  font-weight: 600;
+}
+
+.hint-muted {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.price-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.price-change--up {
+  color: var(--badge-online);
+}
+
+.price-change--down {
+  color: var(--badge-error);
+}
+
+.price-change--neutral {
+  color: inherit;
+}
+
+.price-change-arrow {
+  font-size: 0.75rem;
+  line-height: 1;
+  width: 1.1em;
+  display: inline-flex;
+  justify-content: center;
+}
+
+.price-change-arrow--placeholder {
+  visibility: hidden;
+}
+
+.price-change-value {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-data);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+}
+
+.price-change-diff {
+  font-weight: 700;
+}
+
+.value-positive,
+.value-negative {
+  font-family: var(--font-data);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+}
+
+.tokens-page td[data-column-id="price_sol"],
+.tokens-page td[data-column-id="liquidity_usd"],
+.tokens-page td[data-column-id="volume_24h"],
+.tokens-page td[data-column-id="fdv"],
+.tokens-page td[data-column-id="market_cap"],
+.tokens-page td[data-column-id="price_change_h1"],
+.tokens-page td[data-column-id="price_change_h24"],
+.tokens-page td[data-column-id="txns_5m"],
+.tokens-page td[data-column-id="txns_1h"],
+.tokens-page td[data-column-id="txns_6h"],
+.tokens-page td[data-column-id="txns_24h"],
+.tokens-page td[data-column-id="risk_score"],
+.tokens-page td[data-column-id="updated_at"],
+.tokens-page td[data-column-id="token_birth_at"],
+.tokens-page td[data-column-id="first_seen_at"] {
+  font-family: var(--font-data);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+}
+
+/* Row actions buttons */
+.row-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.row-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  min-width: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+/* Buy button - green accent */
+.row-actions .btn.row-action[data-action="buy"] {
+  background: rgb(16, 185, 129, 0.15);
+  color: #34d399;
+  border-color: rgb(16, 185, 129, 0.3);
+}
+
+.row-actions .btn.row-action[data-action="buy"]:hover {
+  background: rgb(16, 185, 129, 0.25);
+  border-color: rgb(16, 185, 129, 0.5);
+  color: #6ee7b7;
+}
+
+/* Add button - blue accent */
+.row-actions .btn.row-action[data-action="add"] {
+  background: rgb(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border-color: rgb(59, 130, 246, 0.3);
+}
+
+.row-actions .btn.row-action[data-action="add"]:hover {
+  background: rgb(59, 130, 246, 0.25);
+  border-color: rgb(59, 130, 246, 0.5);
+  color: #93c5fd;
+}
+
+/* Sell button - red accent */
+.row-actions .btn.row-action[data-action="sell"] {
+  background: rgb(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgb(239, 68, 68, 0.3);
+}
+
+.row-actions .btn.row-action[data-action="sell"]:hover {
+  background: rgb(239, 68, 68, 0.25);
+  border-color: rgb(239, 68, 68, 0.5);
+  color: #fca5a5;
+}
+
+/* Disabled state */
+.row-actions .btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Icon in button */
+.row-actions .btn i {
+  font-size: 0.85em;
+}
+
+.token-cell__actions .btn,
+.token-cell__actions .btn:hover,
+.token-cell__actions .btn:active,
+.token-cell__actions .btn.active {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   OHLCV TAB STYLES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* OHLCV table container */
+#ohlcv-table-container {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Mint cell in OHLCV table */
+.mint-cell {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-data);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+}
+
+.ohlcv-token-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  padding-right: 0;
+  transition: padding-right 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ohlcv-token-actions {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(3px, -50%);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.data-table tbody tr:hover .ohlcv-token-cell,
+.data-table tbody tr:focus-within .ohlcv-token-cell {
+  padding-right: 34px;
+}
+
+.data-table tbody tr:hover .ohlcv-token-actions,
+.data-table tbody tr:focus-within .ohlcv-token-actions,
+.ohlcv-token-actions:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(0, -50%);
+}
+
+@media (hover: none), (pointer: coarse) {
+  .ohlcv-token-cell {
+    padding-right: 34px;
+  }
+
+  .ohlcv-token-actions {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(0, -50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ohlcv-token-cell,
+  .ohlcv-token-actions {
+    transition: none;
+  }
+}
+
+/* Status badge */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.status-badge i {
+  font-size: 0.9em;
+}
+
+.status-active {
+  background: rgb(16, 185, 129, 0.15);
+  color: var(--badge-online);
+  border: 1px solid rgb(16, 185, 129, 0.3);
+}
+
+.status-inactive {
+  background: rgb(156, 163, 175, 0.15);
+  color: var(--text-muted);
+  border: 1px solid rgb(156, 163, 175, 0.3);
+}
+
+/* Priority badge */
+.priority-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.priority-critical {
+  background: rgb(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.priority-high {
+  background: rgb(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+.priority-medium {
+  background: rgb(59, 130, 246, 0.2);
+  color: #60a5fa;
+}
+
+.priority-low {
+  background: rgb(156, 163, 175, 0.15);
+  color: var(--text-muted);
+}
+
+/* Backfill progress cell */
+.backfill-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 100px;
+}
+
+.backfill-bar {
+  height: 4px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-xs);
+  position: relative;
+  overflow: hidden;
+}
+
+.backfill-bar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: var(--progress, 0%);
+  border-radius: var(--radius-xs);
+  transition: width var(--transition-normal);
+}
+
+.backfill-bar.progress-complete::after {
+  background: var(--badge-online);
+}
+
+.backfill-bar.progress-partial::after {
+  background: var(--badge-warning);
+}
+
+.backfill-bar.progress-low::after {
+  background: var(--badge-error);
+}
+
+.backfill-text {
+  font-size: 0.7rem;
+  font-family: var(--font-data);
+  color: var(--text-secondary);
+}
+
+/* Timeframe indicators */
+.tf-indicators {
+  display: flex;
+  gap: 2px;
+}
+
+.tf-indicator {
+  font-size: 0.6rem;
+  font-weight: 700;
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xs);
+  text-transform: uppercase;
+}
+
+.tf-done {
+  background: rgb(16, 185, 129, 0.2);
+  color: var(--badge-online);
+}
+
+.tf-pending {
+  background: rgb(156, 163, 175, 0.1);
+  color: var(--text-muted);
+}
+
+/* Warning value for gaps */
+.value-warning {
+  color: var(--badge-warning);
+  font-weight: 600;
+  font-family: var(--font-data);
+}
+
+/* Delete button in OHLCV table */
+.ohlcv-delete-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--badge-error);
+  font-size: 0.75rem;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.ohlcv-delete-btn:hover {
+  color: var(--text-primary);
+  background: transparent;
+  border-color: transparent;
+}
+
+/* =============================================================================
+   Favorites Table Styles
+   ============================================================================= */
+
+.favorites-table-container {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Mint code styling */
+.mint-code {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  padding: 2px 6px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+}
+
+/* Favorites empty state */
+#favorites-empty-state {
+  margin-top: var(--spacing-xl);
+}
+
+#favorites-empty-state kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+}
+
+/* Text muted helper */
+.text-muted {
+  color: var(--text-muted);
+}

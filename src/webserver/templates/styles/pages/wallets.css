@@ -1,0 +1,188 @@
+/* Wallets Page - Modern Full-Width Layout with Subtabs */
+
+/* =============================================================================
+   Page Layout
+   ============================================================================= */
+
+.wallets-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+/* Global icon centering for this page */
+.wallets-page i[class^="icon-"],
+.wallets-page i[class*=" icon-"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  vertical-align: middle;
+}
+
+/* =============================================================================
+   Main Content Area — no padding, panels own their spacing
+   ============================================================================= */
+
+.wallets-main {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* =============================================================================
+   Tab Panels
+   ============================================================================= */
+
+.wallets-tab-panels {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Main wallet panel: DataTable fills available height, no outer padding */
+.wallet-tab-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.wallet-tab-panel.hidden {
+  display: none;
+}
+
+/* =============================================================================
+   Main Wallet Section - Enhanced Design
+   ============================================================================= */
+
+/* Extracted to wallets/main_wallet.css */
+
+/* =============================================================================
+   Wallets Table (Secondaries & Archive) — DataTable cell classes
+   ============================================================================= */
+
+.wallet-name-cell {
+  font-weight: 600;
+}
+
+.wallet-balance-cell {
+  font-family: var(--font-mono);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+}
+
+/* =============================================================================
+   Wallet Badges
+   ============================================================================= */
+
+.wallet-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.wallet-badge.generated {
+  background: var(--success-alpha-10);
+  color: var(--success-color);
+}
+
+.wallet-badge.imported {
+  background: var(--info-alpha-10);
+  color: var(--info-color);
+}
+
+.wallet-badge.migrated {
+  background: var(--primary-alpha-10);
+  color: var(--primary-color);
+}
+
+/* =============================================================================
+   Copy Buttons
+   ============================================================================= */
+
+.copy-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.copy-btn:hover {
+  background: var(--primary-alpha-10);
+  color: var(--primary-color);
+}
+
+.copy-btn-mini {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: 0.75rem;
+}
+
+.copy-btn-mini:hover {
+  background: var(--primary-alpha-10);
+  color: var(--primary-color);
+}
+
+/* =============================================================================
+   Modal Styles
+   ============================================================================= */
+
+/* Extracted to wallets/modals.css */
+
+/* =============================================================================
+   Utility Classes
+   ============================================================================= */
+
+.hidden {
+  display: none !important;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+/* =============================================================================
+   Responsive Design
+   ============================================================================= */
+
+@media (width <= 600px) {
+  .wallets-main {
+    padding: var(--spacing-md);
+  }
+}
+
+/* =============================================================================
+   Bulk Import/Export Modal Styles
+   ============================================================================= */
+
+/* Extracted to wallets/import_export.css */

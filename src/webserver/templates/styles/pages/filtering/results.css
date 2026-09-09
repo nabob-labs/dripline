@@ -1,0 +1,289 @@
+/* Source tag on a rejected-token row (Explorer table).
+   A tinted text chip, never a left accent bar — those are banned on rows and
+   cards alike, and the same source colours are already spoken as tints by
+   `.rej-source-tag` in base.css. */
+.source-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.source-badge.dexscreener {
+  background: var(--primary-alpha-15);
+  color: var(--link-color);
+}
+
+.source-badge.geckoterminal {
+  background: var(--success-alpha-15);
+  color: var(--success-color);
+}
+
+.source-badge.rugcheck {
+  background: var(--danger-alpha-15);
+  color: var(--error-color);
+}
+
+/* ============================================
+   Analytics Tab - Advanced Filtering Analysis
+   The view's own layout, padding and scrolling belong to
+   pages/filtering/base.css (`.analytics-scroll-area` scrolls, the view does
+   not); this file owns the cards and charts inside it.
+   ============================================ */
+
+/* KPI Grid */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.kpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-card:hover {
+  border-color: var(--primary-alpha-30);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.kpi-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  z-index: 1;
+}
+
+.kpi-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.kpi-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: var(--font-data);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+  line-height: 1.1;
+}
+
+.kpi-subtext {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.kpi-icon {
+  font-size: 1.5rem;
+  color: var(--text-muted);
+  opacity: 0.1;
+  position: absolute;
+  inset-inline-end: var(--spacing-lg);
+  top: var(--spacing-lg);
+  transition: all var(--transition-base);
+}
+
+.kpi-card:hover .kpi-icon {
+  opacity: 0.2;
+  transform: scale(1.1) rotate(5deg);
+  color: var(--link-color);
+}
+
+/* Charts Grid */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.chart-header {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chart-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.chart-body {
+  padding: var(--spacing-lg);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+/* Bar Chart Styles */
+.bar-chart-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  width: 100%;
+}
+
+.bar-label-col {
+  width: 130px;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.bar-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.bar-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bar-track-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bar-track {
+  height: 6px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  width: 100%;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: var(--radius-sm);
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bar-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* Top Reasons Table - .reasons-table defined later with compact styles */
+.reasons-table-container {
+  overflow-x: auto;
+}
+
+.reason-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-xl);
+  font-size: 0.7rem;
+  font-weight: 500;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.reason-bar-cell {
+  width: 120px;
+  padding-inline-end: var(--spacing-lg) !important;
+}
+
+.mini-bar {
+  height: 4px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  width: 100%;
+}
+
+.mini-bar-fill {
+  height: 100%;
+  background: var(--error-color);
+  border-radius: var(--radius-xs);
+}
+
+/* The pass-rate bar sits along the bottom edge of its KPI card. The track was
+   never declared, so the segment's `height: 100%` resolved against an auto-height
+   static box and the bar was invisible at every pass rate. */
+.pass-rate-visual {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--bg-tertiary);
+}
+
+.pass-rate-segment {
+  height: 100%;
+  transition: width 0.5s ease;
+}
+
+.pass-rate-segment.passed {
+  background: var(--success-color);
+}
+
+/* Analytics loading uses the centralized .loading-spinner (components.css) */
+
+/* Analytics empty state */
+.analytics-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl) var(--spacing-md);
+  text-align: center;
+  color: var(--text-secondary);
+}

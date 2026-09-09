@@ -1,0 +1,405 @@
+//! Position verification queue — tracks pending transaction verifications with retry logic.
+
+use super::types::{GiveUpReason, VerificationKind};
+use chrono::{DateTime, Duration as ChronoDuration, Utc};
+use std::collections::VecDeque;
+use std::sync::LazyLock;
+use tokio::sync::{Notify, RwLock};
+
+/// Maximum verification attempts before giving up. Sized to span ~24h together
+/// with the long-tail backoff table below.
+const MAX_VERIFICATION_ATTEMPTS: u8 = 40;
+
+/// Maximum age for a verification item before giving up. A swap can be confirmed
+/// on-chain within seconds, but on a flaky/proxied network confirmation may be
+/// delayed; we keep verifying (across restarts) for a full day rather than
+/// abandoning a position whose exit already landed.
+const MAX_VERIFICATION_AGE_HOURS: i64 = 24;
+
+/// Backoff intervals in seconds for verification retries (dynamic, widening).
+/// Front-loaded for sub-minute confirmation in the common case, then ramping up
+/// to hourly so a position is still re-checked many times across 24h without
+/// hammering RPC: 5s..1m fast, then minutes, then hours up to 12h.
+const BACKOFF_INTERVALS_SECS: [i64; 16] = [
+    5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200, 14400, 28800, 43200, 86400,
+];
+
+/// Maximum backoff interval in seconds (used when attempts exceed table size): 12h.
+const BACKOFF_MAX_SECS: i64 = 43200;
+
+/// Jitter fraction for backoff randomization (±10%)
+const BACKOFF_JITTER_FRACTION: f64 = 0.1;
+
+#[derive(Debug, Clone)]
+pub struct VerificationItem {
+    pub signature: String,
+    pub mint: String,
+    pub position_id: Option<i64>,
+    pub kind: VerificationKind,
+    pub created_at: DateTime<Utc>,
+    pub last_attempt_at: Option<DateTime<Utc>>,
+    pub next_retry_at: Option<DateTime<Utc>>, // backoff scheduling
+    pub attempts: u8,
+    pub expiry_height: Option<u64>,
+    // Partial exit support
+    pub is_partial_exit: bool,
+    pub expected_exit_amount: Option<u64>,
+    pub requested_exit_percentage: Option<f64>,
+    // DCA support
+    pub is_dca: bool,
+}
+
+impl VerificationItem {
+    pub fn new(
+        signature: String,
+        mint: String,
+        position_id: Option<i64>,
+        kind: VerificationKind,
+        expiry_height: Option<u64>,
+    ) -> Self {
+        Self {
+            signature,
+            mint,
+            position_id,
+            kind,
+            created_at: Utc::now(),
+            last_attempt_at: None,
+            next_retry_at: None,
+            attempts: 0,
+            expiry_height,
+            is_partial_exit: false,
+            expected_exit_amount: None,
+            requested_exit_percentage: None,
+            is_dca: false,
+        }
+    }
+
+    /// Create verification item for partial exit
+    pub fn new_partial_exit(
+        signature: String,
+        mint: String,
+        position_id: Option<i64>,
+        expected_exit_amount: u64,
+        exit_percentage: f64,
+        expiry_height: Option<u64>,
+    ) -> Self {
+        Self {
+            signature,
+            mint,
+            position_id,
+            kind: VerificationKind::Exit,
+            created_at: Utc::now(),
+            last_attempt_at: None,
+            next_retry_at: None,
+            attempts: 0,
+            expiry_height,
+            is_partial_exit: true,
+            expected_exit_amount: Some(expected_exit_amount),
+            requested_exit_percentage: Some(exit_percentage),
+            is_dca: false,
+        }
+    }
+
+    /// Create verification item for DCA entries
+    pub fn new_dca(
+        signature: String,
+        mint: String,
+        position_id: Option<i64>,
+        expiry_height: Option<u64>,
+    ) -> Self {
+        let mut item = Self::new(
+            signature,
+            mint,
+            position_id,
+            VerificationKind::Entry,
+            expiry_height,
+        );
+        item.is_dca = true;
+        item
+    }
+
+    /// Check if verification should be abandoned due to excessive retries or age
+    /// Returns Some(reason) if should give up, None otherwise
+    pub fn should_give_up(&self) -> Option<GiveUpReason> {
+        // Check attempt limit first
+        if self.attempts >= MAX_VERIFICATION_ATTEMPTS {
+            return Some(GiveUpReason::MaxAttemptsReached {
+                attempts: self.attempts,
+                max: MAX_VERIFICATION_ATTEMPTS,
+            });
+        }
+
+        // Check age limit
+        let age_hours = (Utc::now() - self.created_at).num_hours();
+        if age_hours >= MAX_VERIFICATION_AGE_HOURS {
+            return Some(GiveUpReason::MaxAgeReached {
+                age_hours,
+                max: MAX_VERIFICATION_AGE_HOURS,
+            });
+        }
+
+        None
+    }
+
+    pub fn with_retry(&self) -> Self {
+        // Compute exponential backoff (bounded) based on attempts (after increment)
+        let next_attempts = self.attempts.saturating_add(1);
+
+        // Use tiered backoff from constants table, fallback to max for high attempt counts
+        let backoff_secs = if next_attempts == 0 {
+            0
+        } else {
+            let idx = (next_attempts as usize).saturating_sub(1);
+            BACKOFF_INTERVALS_SECS
+                .get(idx)
+                .copied()
+                .unwrap_or(BACKOFF_MAX_SECS)
+        };
+
+        // Add small jitter to avoid thundering herd
+        let jitter = {
+            // Simple deterministic jitter based on signature hash and attempt number
+            use std::hash::{Hash, Hasher};
+            let mut hasher = std::collections::hash_map::DefaultHasher::new();
+            self.signature.hash(&mut hasher);
+            next_attempts.hash(&mut hasher);
+            let h = hasher.finish();
+            let sign = if (h & 1) == 0 { 1.0 } else { -1.0 };
+            let frac = (((h >> 1) as f64) / ((u64::MAX >> 1) as f64)) * BACKOFF_JITTER_FRACTION;
+            ((backoff_secs as f64) * frac * sign) as i64
+        };
+        let backoff_with_jitter = 1_i64.max(backoff_secs + jitter);
+
+        Self {
+            signature: self.signature.clone(),
+            mint: self.mint.clone(),
+            position_id: self.position_id,
+            kind: self.kind.clone(),
+            created_at: self.created_at,
+            last_attempt_at: Some(Utc::now()),
+            next_retry_at: Some(Utc::now() + ChronoDuration::seconds(backoff_with_jitter)),
+            attempts: next_attempts,
+            expiry_height: self.expiry_height,
+            is_partial_exit: self.is_partial_exit,
+            expected_exit_amount: self.expected_exit_amount,
+            requested_exit_percentage: self.requested_exit_percentage,
+            is_dca: self.is_dca,
+        }
+    }
+
+    pub fn is_expired(&self, current_height: Option<u64>) -> bool {
+        if let (Some(expiry), Some(current)) = (self.expiry_height, current_height) {
+            current > expiry
+        } else {
+            // Time-based fallback by kind. Exits whose swap may already be on-chain
+            // must NOT be dropped after a few minutes (slow/flaky network) — that
+            // strands the position in pending_verification forever. Keep exits alive
+            // for the full retry window so the verifier can confirm and finalize
+            // with real proceeds. Entry orphan detection stays short (10m).
+            let fallback_secs = match self.kind {
+                VerificationKind::Entry => 600,
+                VerificationKind::Exit => MAX_VERIFICATION_AGE_HOURS * 3600,
+            };
+            Utc::now()
+                .signed_duration_since(self.created_at)
+                .num_seconds()
+                > fallback_secs
+        }
+    }
+
+    pub fn age_seconds(&self) -> i64 {
+        Utc::now()
+            .signed_duration_since(self.created_at)
+            .num_seconds()
+    }
+
+    pub fn is_due(&self) -> bool {
+        match self.next_retry_at {
+            None => true,
+            Some(when) => Utc::now() >= when,
+        }
+    }
+}
+
+/// Verification queue
+pub struct VerificationQueue {
+    items: VecDeque<VerificationItem>,
+}
+
+impl VerificationQueue {
+    pub fn new() -> Self {
+        Self {
+            items: VecDeque::new(),
+        }
+    }
+
+    pub fn enqueue(&mut self, item: VerificationItem) {
+        // Check if already exists
+        if !self.items.iter().any(|i| i.signature == item.signature) {
+            self.items.push_back(item);
+        }
+    }
+
+    pub fn poll_batch(&mut self, limit: usize) -> Vec<VerificationItem> {
+        let mut batch = Vec::new();
+
+        // Sort by priority: due items first, then recent (within 60s), then by age
+        self.items.make_contiguous().sort_by(|a, b| {
+            let a_due = a.is_due();
+            let b_due = b.is_due();
+            if a_due && !b_due {
+                return std::cmp::Ordering::Less;
+            }
+            if !a_due && b_due {
+                return std::cmp::Ordering::Greater;
+            }
+
+            let a_recent = a.age_seconds() <= 60;
+            let b_recent = b.age_seconds() <= 60;
+
+            match (a_recent, b_recent) {
+                (true, false) => std::cmp::Ordering::Less,
+                (false, true) => std::cmp::Ordering::Greater,
+                _ => a.age_seconds().cmp(&b.age_seconds()),
+            }
+        });
+
+        // Drain up to limit DUE items and keep the rest
+        let mut remaining: VecDeque<VerificationItem> = VecDeque::with_capacity(self.items.len());
+        while let Some(item) = self.items.pop_front() {
+            if batch.len() < limit && item.is_due() {
+                batch.push(item);
+            } else {
+                remaining.push_back(item);
+            }
+        }
+        self.items = remaining;
+
+        batch
+    }
+
+    pub fn requeue(&mut self, item: VerificationItem) {
+        // Allow more retries but with backoff; hard cap attempts to avoid infinite loops
+        if item.attempts < 12 {
+            self.items.push_back(item.with_retry());
+        }
+    }
+
+    pub fn remove(&mut self, signature: &str) -> Option<VerificationItem> {
+        if let Some(pos) = self.items.iter().position(|i| i.signature == signature) {
+            self.items.remove(pos)
+        } else {
+            None
+        }
+    }
+
+    pub fn gc_expired(&mut self, current_height: Option<u64>) -> Vec<VerificationItem> {
+        let mut expired = Vec::new();
+        let mut i = 0;
+
+        while i < self.items.len() {
+            if self.items[i].is_expired(current_height) {
+                if let Some(item) = self.items.remove(i) {
+                    expired.push(item);
+                }
+            } else {
+                i += 1;
+            }
+        }
+
+        expired
+    }
+
+    pub fn len(&self) -> usize {
+        self.items.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.items.is_empty()
+    }
+
+    pub fn has_items_with_expiry(&self) -> bool {
+        self.items.iter().any(|item| item.expiry_height.is_some())
+    }
+}
+
+/// Global verification queue
+static VERIFICATION_QUEUE: LazyLock<RwLock<VerificationQueue>> =
+    LazyLock::new(|| RwLock::new(VerificationQueue::new()));
+
+/// Wakes the verification worker the moment NEW work arrives.
+///
+/// The worker runs on an adaptive nap (5s while the queue is empty), and it computes that nap
+/// BEFORE it looks at the queue — so a swap enqueued a moment after it dozed off sat there for
+/// the rest of the nap before anyone even tried to verify it. That is dead time bolted onto the
+/// front of every trade: the swap is already CONFIRMED on chain when it is enqueued (the
+/// executors enqueue only after `sign_send_and_confirm_transaction` returns), and a fresh item
+/// is immediately due (`next_retry_at: None`), so there is nothing to wait for. It is why a DCA
+/// whose notification already said "done" took another 10-15s to show up on the position: the
+/// tokens and SOL only land on the position when the verification applies `DcaVerified`.
+///
+/// Only `enqueue_verification` signals — a `requeue_verification` after a failed attempt carries
+/// a backoff and must NOT drag the worker back out of bed to look at an item that is not due.
+/// `notify_one` stores a permit, so a signal fired while the worker is mid-cycle is not lost.
+static QUEUE_SIGNAL: LazyLock<Notify> = LazyLock::new(Notify::new);
+
+/// Enqueue verification item
+pub async fn enqueue_verification(item: VerificationItem) {
+    {
+        let mut queue = VERIFICATION_QUEUE.write().await;
+        queue.enqueue(item);
+    }
+    QUEUE_SIGNAL.notify_one();
+}
+
+/// Resolves as soon as new work is enqueued (see [`QUEUE_SIGNAL`]).
+pub async fn wait_for_new_work() {
+    QUEUE_SIGNAL.notified().await;
+}
+
+/// Poll batch of verification items
+pub async fn poll_verification_batch(limit: usize) -> Vec<VerificationItem> {
+    let mut queue = VERIFICATION_QUEUE.write().await;
+    queue.poll_batch(limit)
+}
+
+/// Requeue verification item
+pub async fn requeue_verification(item: VerificationItem) {
+    let mut queue = VERIFICATION_QUEUE.write().await;
+    queue.requeue(item);
+}
+
+/// Remove verification item
+pub async fn remove_verification(signature: &str) -> Option<VerificationItem> {
+    let mut queue = VERIFICATION_QUEUE.write().await;
+    queue.remove(signature)
+}
+
+/// Clean up expired items
+pub async fn gc_expired_verifications(current_height: Option<u64>) -> Vec<VerificationItem> {
+    let mut queue = VERIFICATION_QUEUE.write().await;
+    queue.gc_expired(current_height)
+}
+
+/// Get queue status
+pub async fn get_queue_status() -> (usize, Vec<String>) {
+    let queue = VERIFICATION_QUEUE.read().await;
+    let size = queue.len();
+    let signatures: Vec<String> = queue.items.iter().map(|i| i.signature.clone()).collect();
+    (size, signatures)
+}
+
+/// Get queue status synchronously (for metrics access)
+/// Returns None if queue is currently locked
+pub fn get_queue_status_sync() -> Option<(usize, Vec<String>)> {
+    let queue = VERIFICATION_QUEUE.try_read().ok()?;
+    let size = queue.len();
+    let signatures: Vec<String> = queue.items.iter().map(|i| i.signature.clone()).collect();
+    Some((size, signatures))
+}
+
+/// Check if queue has items with expiry height
+pub async fn queue_has_items_with_expiry() -> bool {
+    let queue = VERIFICATION_QUEUE.read().await;
+    queue.has_items_with_expiry()
+}

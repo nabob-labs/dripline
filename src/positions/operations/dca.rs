@@ -1,0 +1,275 @@
+//! DCA (Dollar Cost Averaging) operations — add to an existing position.
+
+use crate::chains::adapter;
+use crate::chains::solana::rpc::{get_rpc_client, RpcClientMethods};
+use crate::config::with_config;
+use crate::logger::{self, LogTag};
+use crate::positions::price_resolution::get_price_with_api_fallback;
+use crate::positions::queue::{enqueue_verification, VerificationItem};
+use crate::positions::state::{
+    acquire_position_lock, clear_pending_dca_swap, register_pending_dca_swap,
+};
+use crate::positions::types::{PendingDcaSwap, TradeOrigin};
+use crate::positions::{Error, Result};
+use crate::swaps::{
+    execute_swap_with_fallback, get_best_quote_for_opening, QuoteRequest, SwapMode,
+};
+use crate::utils::get_wallet_address;
+use chrono::Utc;
+
+/// Add to an existing position (Dollar Cost Averaging)
+/// CRITICAL: This does NOT consume a new semaphore permit - same position
+pub async fn add_to_position(
+    token_mint: &str,
+    dca_amount_sol: f64,
+    slippage_pct: Option<f64>,
+    origin: TradeOrigin,
+) -> Result<String> {
+    // Serialize per-mint DCA operations
+    let _lock = acquire_position_lock(token_mint).await;
+    // Get position
+    let position = crate::positions::state::get_position_by_mint(token_mint)
+        .await
+        .ok_or_else(|| Error::NotFound {
+            mint: token_mint.to_owned(),
+        })?;
+
+    let position_id = position.id.ok_or_else(|| Error::TransitionFailed {
+        transition: "dca",
+        mint: token_mint.to_owned(),
+        detail: "position has no id".to_owned(),
+    })?;
+
+    // The DCA config governs what the AUTO-TRADER may do on its own — it is not a
+    // capability switch for the user. A manual "Add to Position" from the dashboard is
+    // the user overriding the bot, so `dca_enabled`, `dca_max_count` and the cooldown
+    // do not apply to it. Gating manual adds on them meant anyone who simply did not
+    // want automatic DCA got "DCA is disabled in configuration" when clicking Add, and
+    // a user who did want to average down was told to wait out the BOT's cooldown.
+    if origin == TradeOrigin::Auto {
+        let dca_enabled = with_config(|cfg| cfg.trader.dca_enabled);
+        if !dca_enabled {
+            return Err(Error::DcaDisabled);
+        }
+
+        let max_dca_count = with_config(|cfg| cfg.trader.dca_max_count);
+        if position.dca_count >= max_dca_count as u32 {
+            return Err(Error::TransitionFailed {
+                transition: "dca",
+                mint: token_mint.to_owned(),
+                detail: format!(
+                    "maximum DCA count reached: {} (max: {})",
+                    position.dca_count, max_dca_count
+                ),
+            });
+        }
+
+        // Check DCA cooldown
+        if let Some(last_dca) = position.last_dca_time {
+            let cooldown_minutes = with_config(|cfg| cfg.trader.dca_cooldown_minutes);
+            let elapsed = Utc::now().signed_duration_since(last_dca).num_minutes();
+            if elapsed < cooldown_minutes {
+                return Err(Error::TransitionFailed {
+                    transition: "dca",
+                    mint: token_mint.to_owned(),
+                    detail: format!(
+                        "DCA cooldown active: {} minutes remaining",
+                        cooldown_minutes - elapsed
+                    ),
+                });
+            }
+        }
+    }
+
+    logger::info(
+        LogTag::Positions,
+        &format!(
+            "DCA entry initiated: {} | {} SOL | DCA #{} ",
+            position.symbol,
+            dca_amount_sol,
+            position.dca_count + 1
+        ),
+    );
+
+    // Record DCA initiation
+    crate::events::record_position_event(
+        &position_id.to_string(),
+        token_mint,
+        "dca_initiated",
+        position.entry_transaction_signature.as_deref(),
+        None,
+        dca_amount_sol,
+        0,
+        None,
+        None,
+    )
+    .await;
+
+    // Get API token for swap
+    let api_token = crate::tokens::get_full_token_async(token_mint)
+        .await
+        .map_err(|_| Error::TokenNotFound {
+            mint: token_mint.to_owned(),
+        })?
+        .ok_or_else(|| Error::TokenNotFound {
+            mint: token_mint.to_owned(),
+        })?;
+
+    // Get quote for DCA entry
+    let wallet_address = get_wallet_address().map_err(|e| Error::WalletUnavailable {
+        detail: e.to_string(),
+    })?;
+    // Manual override when the user set one in the trade dialog; config default otherwise.
+    let slippage = super::slippage::entry_slippage(slippage_pct);
+    let quote_request = QuoteRequest {
+        chain: crate::chains::active_chain(),
+        input_mint: adapter().native_asset_address().to_string(),
+        output_mint: token_mint.to_string(),
+        input_amount: adapter().native_to_raw(dca_amount_sol),
+        wallet_address: wallet_address.clone(),
+        slippage_pct: slippage,
+        swap_mode: SwapMode::ExactIn,
+        exclude_dexes: None,
+    };
+    let quote = get_best_quote_for_opening(quote_request, &api_token.symbol)
+        .await
+        .map_err(|e| Error::QuoteFailed {
+            mint: token_mint.to_owned(),
+            detail: e.to_string(),
+        })?;
+
+    // Only scale into a UI amount when the decimals are actually known; printing raw
+    // units against an assumed 9 decimals misreports the quote by orders of magnitude.
+    let quoted_tokens = match api_token.decimals {
+        Some(decimals) => format!(
+            "{}",
+            quote.output_amount as f64 / 10_f64.powi(decimals as i32)
+        ),
+        None => format!("{} raw", quote.output_amount),
+    };
+    logger::info(
+        LogTag::Positions,
+        &format!("DCA quote: {dca_amount_sol} SOL → {quoted_tokens} tokens"),
+    );
+
+    // Execute swap. A swap that REACHED THE CHAIN is never discarded as a trade
+    // that never happened: `unconfirmed_swap_signature` hands back the signature
+    // of a confirmation that timed out or of a confirmed swap whose receipt could
+    // not be measured, and both must be registered for verification exactly like a
+    // clean fill. Returning `SwapFailed` here would leave the wallet holding
+    // tokens the position never counted -- the same recovery `open.rs` performs on
+    // an entry.
+    let transaction_signature = match execute_swap_with_fallback(&api_token, quote).await {
+        Ok(result) => result.transaction_signature,
+        Err(error) => match crate::swaps::unconfirmed_swap_signature(&error) {
+            Some(signature) => {
+                logger::warning(
+                    LogTag::Positions,
+                    &format!(
+                        "DCA swap {signature} for position {position_id} reached the chain but                          could not be confirmed here; registering it for verification instead of                          failing the DCA"
+                    ),
+                );
+                signature
+            }
+            None => {
+                return Err(Error::SwapFailed {
+                    mint: token_mint.to_owned(),
+                    detail: format!("DCA swap failed: {error}"),
+                })
+            }
+        },
+    };
+
+    // Pre-compute expiry height for verification + persistence
+    let expiry_height = get_rpc_client()
+        .get_block_height()
+        .await
+        .ok()
+        .map(|h| h + super::SOLANA_BLOCKHASH_VALIDITY_SLOTS);
+
+    // Persist pending DCA metadata before queuing verification to survive restarts
+    let pending_dca = PendingDcaSwap {
+        signature: transaction_signature.clone(),
+        mint: token_mint.to_string(),
+        position_id,
+        expiry_height,
+        created_at: Utc::now(),
+        size_sol: dca_amount_sol,
+    };
+
+    register_pending_dca_swap(pending_dca.clone())
+        .await
+        .map_err(|e| {
+            logger::error(
+                LogTag::Positions,
+                &format!(
+                    "Failed to persist pending DCA metadata for position {} (mint {}): {}",
+                    position_id, token_mint, e
+                ),
+            );
+            e
+        })?;
+
+    // Get price with fallback to API for DCA transition
+    let (price_info, _price_source) =
+        get_price_with_api_fallback(token_mint)
+            .await
+            .ok_or_else(|| Error::InvalidPrice {
+                mint: token_mint.to_owned(),
+                price: 0.0,
+            })?;
+
+    let transition = crate::positions::transitions::PositionTransition::DcaSubmitted {
+        position_id,
+        dca_signature: transaction_signature.clone(),
+        dca_amount_sol,
+        market_price: price_info.price_sol,
+    };
+
+    // Apply transition
+    if let Err(e) = crate::positions::apply::apply_transition(transition).await {
+        clear_pending_dca_swap(&pending_dca.signature)
+            .await
+            .map_err(|err| {
+                logger::error(
+                    LogTag::Positions,
+                    &format!(
+                        "Failed to rollback pending DCA {} after transition error: {}",
+                        pending_dca.signature, err
+                    ),
+                );
+                err
+            })
+            .ok();
+        return Err(Error::TransitionFailed {
+            transition: "dca",
+            mint: token_mint.to_owned(),
+            detail: e.to_string(),
+        });
+    }
+
+    // Enqueue for verification
+    let verification_item = VerificationItem::new_dca(
+        transaction_signature.clone(),
+        token_mint.to_string(),
+        Some(position_id),
+        expiry_height,
+    );
+
+    enqueue_verification(verification_item).await;
+
+    logger::info(
+        LogTag::Positions,
+        &format!(
+            "DCA entry submitted: {} | {} SOL | TX: {} | DCA #{}",
+            api_token.symbol,
+            dca_amount_sol,
+            transaction_signature,
+            position.dca_count + 1
+        ),
+    );
+
+    // CRITICAL: Do NOT consume a new semaphore permit - same position!
+
+    Ok(transaction_signature)
+}

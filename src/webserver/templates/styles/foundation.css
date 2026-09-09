@@ -1,0 +1,865 @@
+/* Foundations -------------------------------------------------- */
+
+/* =============================================================================
+   @font-face - Trading Terminal Fonts (embedded at compile time)
+   ============================================================================= */
+
+/* Inter - Human-readable interface text. Both faces are compiled into the
+   binary, so typography never depends on an installed font or the network. */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/assets/fonts/Inter-Variable.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/assets/fonts/Inter-VariableItalic.woff2") format("woff2");
+}
+
+/* JetBrains Mono - Monospace font with tabular figures for trading data */
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/fonts/JetBrainsMono-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/assets/fonts/JetBrainsMono-Medium.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/assets/fonts/JetBrainsMono-Bold.woff2") format("woff2");
+}
+
+/* Orbitron - Futuristic display font for branding */
+@font-face {
+  font-family: Orbitron;
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url("/assets/fonts/Orbitron-Variable.woff2") format("woff2");
+}
+
+/* =============================================================================
+   CSS Custom Properties
+   ============================================================================= */
+
+:root {
+  /* Light mode (default) - Professional Navy/Steel Blue */
+  --bg-primary: #f8f9fb;
+  --bg-secondary: #fff;
+  --bg-card: #fff;
+  --bg-card-hover: #f0f2f6;
+
+  /* Generic hover surface. Defined as an alias so the ~18 `var(--bg-hover)`
+     usages (row hover, action buttons, dropdowns, sticky pinned cells) resolve
+     to a real OPAQUE color. Without this the variable was undefined and every
+     `background: var(--bg-hover)` (no fallback) collapsed to `transparent`,
+     which made hovered pinned/floating cells see-through during scroll. */
+  --bg-hover: var(--bg-card-hover);
+
+  /* Recessed surface for chips, tags and tracks sitting ON a card. Same story
+     as --bg-hover above: ~20 `var(--bg-tertiary)` usages had no definition at
+     all, so every one of them was invalid at computed-value time and painted
+     nothing. In light mode it is the card-hover grey; the dark value is the one
+     the few fallback-carrying usages already hardcoded. */
+  --bg-tertiary: var(--bg-card-hover);
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  --border-color: #d1d5db;
+
+  /* Hover tooltip surface — inverted (dark) in light mode so clamped values
+     read clearly; light mode --text-primary is dark and would vanish on it. */
+  --bg-tooltip: #1f2937;
+  --text-tooltip: #f9fafb;
+  --border-tooltip: #374151;
+  --header-bg: linear-gradient(135deg, #0f4c81 0%, #1565c0 100%);
+  --header-text: #fff;
+  --link-color: #7ba8d1;
+  --link-hover: #0f4c81;
+  --badge-online: #10b981;
+  --badge-error: #d32f2f;
+  --badge-loading: #f59e0b;
+  --shadow-sm: rgb(0, 0, 0, 0.05);
+  --shadow-md: rgb(0, 0, 0, 0.1);
+  --shadow-lg: rgb(0, 0, 0, 0.2);
+  --table-header-bg: #f0f2f6;
+  --table-header-text: #374151;
+  --service-item-bg: #f0f2f6;
+
+  /* Primary Color System */
+  --primary-color: #1565c0;
+  --primary-color-light: #e3f2fd;
+  --primary-color-dark: #0d47a1;
+  --primary-hover: #1e88e5;
+
+  /* Brand Identity Colors */
+  --brand-navy: #0d3b66;
+  --brand-cyan: #06b6d4;
+  --brand-blue: #3b82f6;
+  --brand-cyan-light: #e0f7ff;
+
+  /* Success Color System */
+  --success-color: #10b981;
+  --success-color-light: #d1fae5;
+  --success-color-dark: #059669;
+
+  /* Warning Color System */
+  --warning-color: #f59e0b;
+  --warning-color-light: #fef3c7;
+  --warning-color-dark: #d97706;
+
+  /* Error Color System */
+  --error-color: #ef4444;
+  --error-color-light: #fee2e2;
+  --error-color-dark: #dc2626;
+
+  /* High-contrast semantic foregrounds for small status text on light surfaces. */
+  --semantic-success-text: #047857;
+  --semantic-warning-text: #92400e;
+  --semantic-error-text: #b91c1c;
+  --semantic-info-text: #1d4ed8;
+
+  /* Semantic Aliases */
+  --surface-color: var(--bg-card);
+  --background-color: var(--bg-primary);
+  --background-secondary: var(--bg-secondary);
+  --background-tertiary: var(--bg-card-hover);
+  --hover-color: var(--bg-card-hover);
+  --text-color: var(--text-primary);
+  --text-tertiary: var(--text-muted);
+  --input-bg: var(--bg-card);
+  --active-bg: #e0e7ff;
+  --hover-bg: var(--bg-card-hover);
+  --card-bg: var(--bg-card);
+
+  /* Short aliases for trader compatibility */
+  --primary: var(--primary-color);
+  --success: var(--success-color);
+  --warning: var(--warning-color);
+  --danger: var(--error-color);
+  --success-hover: #059669;
+  --danger-hover: #dc2626;
+
+  /* Alpha color variants for layering */
+  --primary-alpha-5: rgb(21, 101, 192, 0.05);
+  --primary-alpha-10: rgb(21, 101, 192, 0.1);
+  --primary-alpha-20: rgb(21, 101, 192, 0.2);
+  --primary-alpha-30: rgb(21, 101, 192, 0.3);
+  --success-alpha-10: rgb(16, 185, 129, 0.1);
+  --success-alpha-20: rgb(16, 185, 129, 0.2);
+  --success-alpha-30: rgb(16, 185, 129, 0.3);
+  --warning-alpha-10: rgb(245, 158, 11, 0.1);
+  --warning-alpha-20: rgb(245, 158, 11, 0.2);
+  --warning-alpha-30: rgb(245, 158, 11, 0.3);
+  --danger-alpha-10: rgb(239, 68, 68, 0.1);
+  --danger-alpha-20: rgb(239, 68, 68, 0.2);
+  --danger-alpha-30: rgb(239, 68, 68, 0.3);
+  --primary-alpha-15: rgb(21, 101, 192, 0.15);
+  --primary-alpha-40: rgb(21, 101, 192, 0.4);
+  --success-alpha-15: rgb(16, 185, 129, 0.15);
+  --success-alpha-40: rgb(16, 185, 129, 0.4);
+  --warning-alpha-15: rgb(245, 158, 11, 0.15);
+  --danger-alpha-15: rgb(239, 68, 68, 0.15);
+  --danger-alpha-40: rgb(239, 68, 68, 0.4);
+  --info-color: #3b82f6;
+  --info-alpha-10: rgb(59, 130, 246, 0.1);
+  --info-alpha-15: rgb(59, 130, 246, 0.15);
+
+  /* Solana Brand Colors */
+  --solana-purple: #9945ff;
+  --solana-green: #14f195;
+  --solana-alpha-20: rgb(153, 69, 255, 0.2);
+  --solana-green-alpha-20: rgb(20, 241, 149, 0.2);
+
+  /* Spacing Scale (8px base) */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+
+  /* Border Radius Scale */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-full: 9999px;
+  --token-logo-radius: var(--radius-full);
+  --token-logo-fit: cover;
+  --token-table-logo-size: 30.8px;
+  --token-table-logo-size-compact: 24.2px;
+
+  /* Transition Timing */
+  --transition-fast: 150ms ease;
+  --transition-base: 200ms ease;
+  --transition-normal: 300ms ease;
+  --transition-slow: 500ms ease;
+
+  /* Z-Index Scale - Layering hierarchy
+     Full z-index system is defined in base/floating.css
+     These are aliases for backward compatibility */
+  --z-header: 1000;
+  --z-dropdown: 1000;
+  --z-select: 1000;
+  --z-tooltip: 1500;
+  --z-popover: 2000;
+  --z-notification-panel: 9000;
+  --z-dialog: 10000;
+  --z-dialog-overlay: 9999;
+  --z-trade-dialog: 10001;
+  --z-hint-popover: 10001;
+  --z-confirmation: 10002;
+  --z-confirmation-dialog: 10003;
+  --z-search-dialog: 10004;
+  --z-context-menu-overlay: 10005;
+  --z-context-menu: 10006;
+  --z-pool-selector-overlay: 10005;
+  --z-pool-selector: 10005;
+  --z-toast: 10010;
+  --z-status-bar: 10100;
+  --z-exit-dialog: 10100;
+  --z-setup: 50000;
+  --z-onboarding: 50000;
+  --z-splash: 99000;
+  --z-lockscreen: 100000; /* Highest - security lockscreen above everything */
+  --z-select-portal: 10008;
+
+  /* Typography System */
+  --font-sans: "Inter", -apple-system, blinkmacsystemfont, "Segoe UI", roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", monaco, "Cascadia Code", "Roboto Mono", monospace;
+  --font-data: "JetBrains Mono", "SF Mono", monaco, monospace;
+
+  /* Font Families */
+  --font-brand: "Orbitron", -apple-system, sans-serif;
+  --font-size-xs: 0.75rem; /* 12px */
+  --font-size-sm: 0.875rem; /* 14px */
+  --font-size-base: 1rem; /* 16px */
+  --font-size-lg: 1.125rem; /* 18px */
+  --font-size-xl: 1.25rem; /* 20px */
+  --font-size-2xl: 1.5rem; /* 24px */
+
+  /* Additional Semantic Aliases */
+  --color-primary: var(--primary-color);
+  --color-success: var(--success-color);
+  --color-warning: var(--warning-color);
+  --color-danger: var(--error-color);
+  --color-error: var(--error-color);
+  --color-info: var(--link-color);
+}
+
+[data-theme="dark"] {
+  /* Dark mode - Modern Graphite with Cyan accents.
+     Theme blocks are palette-only. Typography, spacing, sizing, radii and
+     motion live in :root so switching theme cannot change layout metrics. */
+  --bg-primary: #0d1117;
+  --bg-secondary: #161b22;
+  --bg-card: #161b22;
+  --bg-card-hover: #1c2128;
+  --bg-hover: var(--bg-card-hover);
+  --bg-tertiary: #21262d;
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #6e7681;
+  --border-color: #30363d;
+
+  /* Hover tooltip surface — slightly elevated above the dark page so it reads
+     as a distinct floating layer. */
+  --bg-tooltip: #2d333b;
+  --text-tooltip: #e6edf3;
+  --border-tooltip: #444c56;
+  --header-bg: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #1c2128 100%);
+  --header-border: #30363d;
+  --header-text: #e6edf3;
+  --link-color: #58a6ff;
+  --link-hover: #79c0ff;
+  --badge-online: #3fb950;
+  --badge-error: #f85149;
+  --badge-loading: #d29922;
+  --shadow-sm: rgb(0, 0, 0, 0.3);
+  --shadow-md: rgb(0, 0, 0, 0.4);
+  --shadow-lg: rgb(0, 0, 0, 0.6);
+  --table-header-bg: #1c2128;
+  --table-header-text: #c9d1d9;
+  --service-item-bg: #1c2128;
+
+  /* Primary Color System - Cyan accent */
+  --primary-color: #58a6ff;
+  --primary-color-light: #388bfd15;
+  --primary-color-dark: #1f6feb;
+  --primary-hover: #79c0ff;
+
+  /* Success Color System - Vibrant green */
+  --success-color: #3fb950;
+  --success-color-light: #23863515;
+  --success-color-dark: #238636;
+
+  /* Warning Color System - Golden amber */
+  --warning-color: #d29922;
+  --warning-color-light: #9e6a0315;
+  --warning-color-dark: #9e6a03;
+
+  /* Error Color System - Clear red */
+  --error-color: #f85149;
+  --error-color-light: #da363315;
+  --error-color-dark: #da3633;
+
+  /* Bright status foregrounds remain readable on dark surfaces. */
+  --semantic-success-text: #3fb950;
+  --semantic-warning-text: #e3b341;
+  --semantic-error-text: #f85149;
+  --semantic-info-text: #58a6ff;
+
+  /* Semantic Aliases */
+  --surface-color: var(--bg-card);
+  --background-color: var(--bg-primary);
+  --background-secondary: var(--bg-secondary);
+  --background-tertiary: var(--bg-card-hover);
+  --hover-color: var(--bg-card-hover);
+  --text-color: var(--text-primary);
+  --text-tertiary: var(--text-muted);
+  --input-bg: var(--bg-secondary);
+  --active-bg: #388bfd30;
+  --hover-bg: var(--bg-card-hover);
+  --card-bg: var(--bg-card);
+
+  /* Short aliases for trader compatibility */
+  --primary: var(--primary-color);
+  --success: var(--success-color);
+  --warning: var(--warning-color);
+  --danger: var(--error-color);
+  --success-hover: #2ea043;
+  --danger-hover: #da3633;
+
+  /* Alpha color variants for layering */
+  --primary-alpha-5: rgb(88, 166, 255, 0.05);
+  --primary-alpha-10: rgb(88, 166, 255, 0.1);
+  --primary-alpha-20: rgb(88, 166, 255, 0.2);
+  --primary-alpha-30: rgb(88, 166, 255, 0.3);
+  --success-alpha-10: rgb(63, 185, 80, 0.1);
+  --success-alpha-15: rgb(63, 185, 80, 0.15);
+  --success-alpha-20: rgb(63, 185, 80, 0.2);
+  --success-alpha-30: rgb(63, 185, 80, 0.3);
+  --warning-alpha-10: rgb(210, 153, 34, 0.1);
+  --warning-alpha-20: rgb(210, 153, 34, 0.2);
+  --warning-alpha-30: rgb(210, 153, 34, 0.3);
+  --danger-alpha-10: rgb(248, 81, 73, 0.1);
+  --danger-alpha-15: rgb(248, 81, 73, 0.15);
+  --danger-alpha-20: rgb(248, 81, 73, 0.2);
+  --danger-alpha-30: rgb(248, 81, 73, 0.3);
+
+  /* Custom selection (text highlight) - fully owned by us */
+  --selection-bg: rgba(6, 182, 212, 0.35);
+  --selection-text: #e6edf3;
+
+  /* Default custom input focus ring (soft glow) */
+  --input-focus-ring-color: var(--primary-alpha-10);
+
+  /* Form Control Overrides */
+  --select-arrow: var(--select-arrow-dark);
+
+  /* Additional Semantic Aliases */
+  --color-primary: var(--primary-color);
+  --color-success: var(--success-color);
+  --color-warning: var(--warning-color);
+  --color-danger: var(--error-color);
+  --color-error: var(--error-color);
+  --color-info: var(--link-color);
+}
+
+:root[data-token-logo-shape="rounded-square"] {
+  --token-logo-radius: 3px;
+  --token-logo-fit: contain;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease;
+}
+
+/* Form controls do not inherit type. The UA gives every button, input, select
+   and textarea its own `-webkit-small-control` font, so a control that never
+   names a family renders in the OS font next to our Inter copy - which is why
+   two dozen components had each written `font-family: inherit` for themselves.
+   Only the family is inherited: size and line-height stay with the component,
+   so restoring the family cannot change a single control's height. */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* =============================================================================
+   Global Focus - Completely customized and owned by us.
+   We never rely on browser default outlines for our UI.
+   ============================================================================= */
+
+/* Kill all native focus outlines. We provide our own effects. */
+*:focus {
+  outline: none !important;
+}
+
+*:focus-visible {
+  outline: none !important;
+}
+
+/* Mouse/touch interaction: suppress focus effects on non-text controls
+   (native desktop-app behaviour - no lingering highlight after click).
+   Keyboard navigation (Tab/arrows) re-enables custom effects via data-input.
+   Text inputs/textareas always receive our custom focus effect when focused. */
+html[data-input="mouse"]
+  :focus-visible:not(input):not(textarea):not(select):not([contenteditable="true"]) {
+  box-shadow: none;
+}
+
+html[data-input="mouse"] button:focus-visible,
+html[data-input="mouse"] a:focus-visible,
+html[data-input="mouse"] [role="button"]:focus-visible,
+html[data-input="mouse"] [role="tab"]:focus-visible,
+html[data-input="mouse"] .btn:focus-visible,
+html[data-input="mouse"] .btn-icon:focus-visible,
+html[data-input="mouse"] .tab:focus-visible,
+html[data-input="mouse"] .sub-tab:focus-visible {
+  box-shadow: none;
+}
+
+html {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* CLEAN FOUNDATION - Single viewport scroll model */
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  /* Prevent entire window from being draggable - only titlebar should be draggable */
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+/* =============================================================================
+   Text Selection Control - App-like behavior
+   ============================================================================= */
+
+/* Disable text selection globally - dashboard is an app, not a document */
+*,
+*::before,
+*::after {
+  user-select: none;
+}
+
+/* Re-enable selection ONLY for specific value elements */
+
+/* Generic selectable class - use for any copyable content */
+.selectable,
+[data-selectable="true"] {
+  user-select: text;
+  cursor: text;
+}
+
+/* Numeric values that users may want to copy */
+.data-numeric,
+.data-price,
+.data-percent,
+.font-data,
+.pnl-positive,
+.pnl-negative,
+.pnl-neutral,
+.value-positive,
+.value-negative {
+  user-select: text;
+  cursor: text;
+}
+
+/* Addresses, signatures, hashes - always copyable */
+.font-mono,
+.mint-code,
+.mint-cell,
+.pool-address,
+.address-value,
+.holder-address,
+.tx-pair-signature,
+.link-signature,
+.ta-authority-address,
+.tw-mint,
+.wallet-address,
+.token-address,
+.signature,
+[class*="-mint"],
+[class*="-address"],
+[class*="-signature"] {
+  user-select: text;
+  cursor: text;
+}
+
+/* Log and error content - users need to copy for debugging */
+.log-message,
+.log-content,
+.error-message,
+.error-content,
+.events-dialog-message,
+.setup-error-messages,
+pre,
+code {
+  user-select: text;
+  cursor: text;
+}
+
+/* Form inputs must always be selectable */
+input,
+textarea,
+select,
+[contenteditable="true"] {
+  user-select: text;
+}
+
+/* =============================================================================
+   Custom Text Selection (fully controlled by us)
+   =============================================================================
+   No browser defaults. We own the selection appearance in inputs and selectable areas.
+*/
+
+::selection {
+  background: var(--selection-bg, rgba(6, 182, 212, 0.35));
+  color: var(--selection-text, #e6edf3);
+}
+
+::-moz-selection {
+  background: var(--selection-bg, rgba(6, 182, 212, 0.35));
+  color: var(--selection-text, #e6edf3);
+}
+
+[data-theme="light"] {
+  --selection-bg: rgba(59, 130, 246, 0.25);
+  --selection-text: #1f2937;
+
+  /* Use a more visible but still custom focus ring color in light mode */
+  --input-focus-ring-color: rgba(59, 130, 246, 0.15);
+}
+
+/* =============================================================================
+   Trading Terminal Typography Utilities
+   ============================================================================= */
+
+/* Numeric data display - tabular figures for perfect column alignment */
+.data-numeric,
+.font-data {
+  font-family: var(--font-data);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+  letter-spacing: -0.01em;
+}
+
+/* Price display - slightly larger, emphasized */
+.data-price {
+  font-family: var(--font-data);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+  font-weight: 500;
+}
+
+/* Percentage display with proper alignment */
+.data-percent {
+  font-family: var(--font-data);
+  font-feature-settings: "tnum" 1;
+  font-weight: 500;
+}
+
+/* Positive/negative value styling */
+.data-positive {
+  color: var(--success-color);
+}
+
+.data-negative {
+  color: var(--error-color);
+}
+
+/* PnL (Profit & Loss) classes - used by formatPnL() and formatPercent() in utils.js */
+.pnl-positive {
+  font-family: var(--font-data);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+  color: var(--success-color);
+  font-weight: 600;
+}
+
+.pnl-negative {
+  font-family: var(--font-data);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+  color: var(--error-color);
+  font-weight: 600;
+}
+
+.pnl-neutral {
+  font-family: var(--font-data);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Value classes for positive/negative styling in tables */
+.value-positive {
+  font-family: var(--font-data);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+  color: var(--success-color);
+}
+
+.value-negative {
+  font-family: var(--font-data);
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+  color: var(--error-color);
+}
+
+/* Brand text using Orbitron */
+.font-brand {
+  font-family: var(--font-brand);
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Exact product-name treatment inside otherwise unrelated interface copy. */
+.brand-name {
+  font-family: var(--font-brand) !important;
+  font-style: normal;
+  font-weight: 700;
+  line-height: inherit;
+  letter-spacing: 0.02em;
+}
+
+/* Monospace for addresses, hashes, signatures */
+.font-mono {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+/* =============================================================================
+   Animation Utilities
+   ============================================================================= */
+
+/* Spin animation for loaders */
+.spin,
+.icon-loader.spin,
+[class*="icon-"].spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Pulse animation for attention */
+.pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Shimmer animation for loading states */
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgb(255, 255, 255, 0.08), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  100% {
+    left: 100%;
+  }
+}
+
+/* Fade in animation */
+.fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scale in animation for modals/dialogs */
+.scale-in {
+  animation: scaleIn 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* =============================================================================
+   Search Input Wrapper
+   ============================================================================= */
+
+.search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-wrapper .search-icon {
+  position: absolute;
+  left: 12px;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.search-wrapper input:not([type="checkbox"], [type="radio"]) {
+  width: 100%;
+  padding-left: 36px;
+}
+
+.search-wrapper .search-clear {
+  position: absolute;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    color 0.15s,
+    background 0.15s;
+}
+
+.search-wrapper input:not(:placeholder-shown) ~ .search-clear,
+.search-wrapper .search-clear.visible {
+  opacity: 1;
+}
+
+.search-wrapper .search-clear:hover {
+  color: var(--text-primary);
+  background: var(--hover-color);
+}
+
+/* ==========================================
+   Layout Utility Classes
+   ========================================== */
+
+.flex-center {
+  display: flex;
+  align-items: center;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.truncate {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

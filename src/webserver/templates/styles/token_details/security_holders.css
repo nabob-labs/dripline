@@ -1,0 +1,298 @@
+/* =============================================================================
+   SECURITY TAB — HOLDER HEALTH & TOP HOLDERS
+   ============================================================================= */
+
+.security-holder-health-body {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+}
+
+.security-holder-gauge {
+  position: relative;
+  width: 82px;
+  height: 82px;
+  flex: 0 0 auto;
+}
+
+.security-holder-gauge svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.security-holder-gauge-track,
+.security-holder-gauge-ring {
+  fill: none;
+  stroke-width: 6;
+}
+
+.security-holder-gauge-track {
+  stroke: var(--bg-card-hover);
+}
+
+.security-holder-gauge-ring {
+  stroke: var(--text-muted);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.security-holder-gauge.is-good .security-holder-gauge-ring {
+  stroke: var(--success-color);
+}
+
+.security-holder-gauge.is-moderate .security-holder-gauge-ring {
+  stroke: var(--primary-color);
+}
+
+.security-holder-gauge.is-warning .security-holder-gauge-ring {
+  stroke: var(--warning-color);
+}
+
+.security-holder-gauge.is-critical .security-holder-gauge-ring {
+  stroke: var(--danger);
+}
+
+.security-holder-gauge.is-empty {
+  border: 6px solid var(--bg-card-hover);
+  border-radius: var(--radius-full);
+}
+
+.security-holder-gauge-value,
+.security-holder-gauge-label {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.security-holder-gauge-value {
+  top: 27px;
+  color: var(--text-primary);
+  font-family: var(--font-data);
+  font-size: 0.9rem;
+  font-weight: 800;
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+}
+
+.security-holder-gauge-label {
+  top: 47px;
+  color: var(--text-muted);
+  font-size: 0.52rem;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.security-holder-gauge.is-empty .security-holder-gauge-value {
+  top: 23px;
+}
+
+.security-holder-gauge.is-empty .security-holder-gauge-label {
+  top: 43px;
+}
+
+.security-holder-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-width: 0;
+}
+
+.security-holder-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 5px 12px;
+}
+
+.security-holder-metric + .security-holder-metric {
+  border-left: 1px solid var(--border-subtle, var(--border-color));
+}
+
+.security-holder-metric .security-detail-value {
+  overflow: hidden;
+  font-size: 0.88rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.security-holder-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.security-holder-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 6px 12px;
+  transition: background var(--transition-fast);
+}
+
+.security-holder-row + .security-holder-row {
+  border-top: 1px solid var(--border-subtle, var(--border-color));
+}
+
+.security-holder-row:hover {
+  background: var(--bg-card-hover);
+}
+
+.security-holder-row.is-insider {
+  background: var(--warning-alpha-10);
+}
+
+.security-holder-row.is-insider:hover {
+  background: var(--warning-alpha-20);
+}
+
+.security-holder-rank {
+  color: var(--text-muted);
+  font-family: var(--font-data);
+  font-size: 0.62rem;
+  font-weight: 650;
+  font-feature-settings: "tnum" 1;
+}
+
+.security-holder-rank.is-leading {
+  color: var(--link-color);
+  font-weight: 800;
+}
+
+.security-holder-identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.security-holder-identity > .addr-chip {
+  flex: 0 0 auto;
+  width: calc(44ch + 24px);
+}
+
+.security-holder-identity > .addr-chip .addr-chip-link {
+  width: 44ch;
+  white-space: nowrap;
+}
+
+.security-holder-tag.is-insider {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: 0 0 auto;
+  color: var(--warning-color);
+  font-weight: 750;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.security-holder-tag.is-insider i {
+  font-size: 0.66rem;
+}
+
+.security-holder-share {
+  display: grid;
+  grid-template-columns: 52px 6.5ch;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.security-holder-share-track {
+  overflow: hidden;
+  width: 52px;
+  height: 3px;
+  background: var(--bg-card-hover);
+  border-radius: var(--radius-full);
+}
+
+.security-holder-share-fill {
+  display: block;
+  height: 100%;
+  background: var(--link-color);
+  border-radius: inherit;
+}
+
+.security-holder-share-value {
+  color: var(--text-primary);
+  font-family: var(--font-data);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+  text-align: right;
+  white-space: nowrap;
+}
+
+@container (width <= 520px) {
+  .security-holder-identity > .addr-chip {
+    width: min(100%, calc(44ch + 24px));
+  }
+
+  .security-holder-identity > .addr-chip .addr-chip-link {
+    width: min(44ch, calc(100% - 24px));
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .security-holder-share {
+    grid-template-columns: 6.5ch;
+  }
+
+  .security-holder-share-track {
+    display: none;
+  }
+}
+
+@container (width <= 400px) {
+  .security-holder-health-body {
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 8px;
+    padding-inline: 10px;
+  }
+
+  .security-holder-gauge {
+    width: 72px;
+    height: 72px;
+  }
+
+  .security-holder-gauge-value {
+    top: 22px;
+  }
+
+  .security-holder-gauge-label {
+    top: 42px;
+  }
+
+  .security-holder-gauge.is-empty .security-holder-gauge-value {
+    top: 18px;
+  }
+
+  .security-holder-gauge.is-empty .security-holder-gauge-label {
+    top: 38px;
+  }
+
+  .security-holder-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .security-holder-metric + .security-holder-metric {
+    border-top: 1px solid var(--border-subtle, var(--border-color));
+    border-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .security-holder-gauge-ring {
+    transition: none;
+  }
+}

@@ -1,0 +1,530 @@
+/* Global dashboard header: shell, brand, metrics, and actions. */
+
+/* Electron title-bar drag layer. It must stay transparent: the header paints the
+   macOS title-bar and header as one surface so no theme seam can appear. */
+.electron-titlebar-bg {
+  display: none;
+  position: fixed;
+  inset: 0 0 auto;
+  height: 28px;
+  z-index: var(--z-titlebar-drag);
+  background: transparent;
+  user-select: none;
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+.electron-macos .electron-titlebar-bg {
+  display: block;
+}
+
+.modern-header {
+  --header-inline-padding: 32px;
+
+  position: sticky;
+  top: 0;
+  width: 100%;
+  z-index: var(--z-header);
+  flex-shrink: 0;
+  background: var(--header-solid-bg, var(--bg-primary));
+  border-bottom: 1px solid var(--header-border, var(--border-color));
+  box-shadow: var(--header-shadow, 0 4px 20px var(--shadow-md));
+  font-family: var(--font-sans);
+  transition:
+    background-color var(--transition-normal),
+    box-shadow var(--transition-normal);
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.electron-macos .modern-header {
+  padding-top: 28px;
+}
+
+/* Main row */
+.header-row-1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 60px;
+  padding: 0 var(--header-inline-padding);
+  background: transparent;
+}
+
+.electron-window-controls .header-row-1 {
+  padding-right: 160px;
+}
+
+.electron-macos .header-row-1 {
+  padding-right: var(--header-inline-padding);
+}
+
+/* Explore Mode is a persistent application state. Its setup action belongs beside
+   the global controls instead of creating another header above them. */
+.explore-setup-control {
+  display: flex;
+  align-items: center;
+  flex: 0 1 286px;
+  min-width: 190px;
+  max-width: 286px;
+  height: 44px;
+  gap: 9px;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--warning-alpha-10);
+  color: var(--semantic-warning-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.explore-setup-control[hidden] {
+  display: none;
+}
+
+.explore-setup-control:hover {
+  background: var(--warning-alpha-20);
+  color: var(--text-primary);
+}
+
+.explore-setup-icon,
+.explore-setup-arrow {
+  flex-shrink: 0;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.explore-setup-copy {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+  line-height: 1;
+}
+
+.explore-setup-title {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.explore-setup-detail {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.explore-setup-action {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.explore-setup-arrow {
+  font-size: 13px;
+}
+
+/* Preserve the current heavy theme-tinted logo and wordmark treatment. */
+.header-brand {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 10px;
+  margin: 0;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.brand-logo {
+  width: 31px;
+  height: 31px;
+  flex-shrink: 0;
+  background-color: var(--brand-navy);
+  mask: url("/assets/logo.svg") no-repeat center / contain;
+  transition:
+    filter var(--transition-base),
+    transform var(--transition-base);
+}
+
+.brand-text {
+  color: var(--brand-navy);
+  font-family: var(--font-brand);
+  font-size: clamp(17px, 1.5vw, 22px);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-stroke-width: 0.6px;
+  -webkit-text-stroke-color: var(--brand-navy);
+  paint-order: stroke fill;
+  transition:
+    color var(--transition-base),
+    -webkit-text-stroke-color var(--transition-base);
+}
+
+.header-brand:hover .brand-logo {
+  filter: brightness(1.15) saturate(1.1);
+  transform: scale(1.03);
+}
+
+[data-theme="dark"] .brand-logo {
+  background-color: var(--brand-cyan-light);
+}
+
+[data-theme="dark"] .brand-text {
+  color: var(--brand-cyan-light);
+  -webkit-text-stroke-color: rgb(200, 240, 255, 0.9);
+  text-shadow: 0 0 8px rgb(6, 182, 212, 0.4);
+}
+
+[data-theme="light"] .brand-logo {
+  background-color: var(--brand-navy);
+}
+
+[data-theme="light"] .brand-text {
+  color: var(--brand-navy);
+  -webkit-text-stroke-color: var(--brand-navy);
+  text-shadow: 0 1px 3px rgb(13, 59, 102, 0.25);
+}
+
+[data-theme="light"] .header-brand:hover .brand-text {
+  color: #0a2f52;
+  -webkit-text-stroke-color: #0a2f52;
+}
+
+[data-theme="dark"] .header-brand:hover .brand-text {
+  color: #fff;
+  text-shadow: 0 0 12px rgb(6, 182, 212, 0.6);
+}
+
+/* Truthful two-line metric summaries */
+.modern-header .header-cards {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 12px;
+  overflow: auto hidden;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+
+.modern-header .header-cards::-webkit-scrollbar {
+  display: none;
+}
+
+.modern-header .header-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-height: 44px;
+  margin: 0;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  line-height: 1.15;
+  text-align: left;
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition:
+    background-color var(--transition-fast),
+    opacity var(--transition-fast),
+    filter var(--transition-fast);
+}
+
+.modern-header .header-card:hover:not(:disabled) {
+  background: var(--primary-alpha-5);
+}
+
+.modern-header .header-card:active:not(:disabled) {
+  opacity: 0.75;
+}
+
+.modern-header .header-card:disabled {
+  cursor: progress;
+  opacity: 0.65;
+}
+
+.modern-header .card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.modern-header .card-top,
+.modern-header .card-bottom {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 16px;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.modern-header .card-icon {
+  flex-shrink: 0;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.modern-header .card-status {
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.065em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.modern-header .card-label,
+.modern-header .card-sub {
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.modern-header .card-value,
+.modern-header .card-sub-value,
+.modern-header .card-change {
+  color: var(--text-primary);
+  font-family: var(--font-data);
+  font-feature-settings: "tnum" 1, "zero" 1;
+  white-space: nowrap;
+}
+
+.modern-header .card-value {
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.modern-header .card-sub-value,
+.modern-header .card-change {
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.modern-header .card-change {
+  padding: 2px 5px;
+  border-radius: var(--radius-sm);
+}
+
+.modern-header .positive,
+.modern-header .ticker-value.positive {
+  color: var(--semantic-success-text);
+}
+
+.modern-header .negative,
+.modern-header .ticker-value.negative {
+  color: var(--semantic-error-text);
+}
+
+.modern-header .neutral,
+.modern-header .ticker-value.neutral {
+  color: var(--text-secondary);
+}
+
+.modern-header .card-change.positive {
+  background: var(--success-alpha-10);
+}
+
+.modern-header .card-change.negative {
+  background: var(--danger-alpha-10);
+}
+
+.modern-header .card-change.neutral {
+  background: var(--bg-card-hover);
+}
+
+.modern-header .sol-price-card .card-value {
+  letter-spacing: -0.01em;
+}
+
+/* Auto Trader is vertical on desktop: state above, Today P&L below. */
+.modern-header .bot-card {
+  min-width: 138px;
+  margin-inline: 2px;
+}
+
+.modern-header .bot-card .card-top,
+.modern-header .bot-card .card-bottom {
+  gap: 5px;
+}
+
+.modern-header .bot-card .card-value {
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.modern-header .bot-card .pnl-unit {
+  margin-left: 2px;
+  font-size: 0.9em;
+  font-weight: 500;
+  opacity: 0.82;
+}
+
+.modern-header .bot-card[data-status="running"] .card-icon,
+.modern-header .bot-card[data-status="running"] .card-status {
+  color: var(--semantic-success-text);
+}
+
+.modern-header .bot-card[data-status="running"] .card-icon {
+  animation: header-status-pulse 2.4s ease-in-out infinite;
+}
+
+.modern-header .bot-card[data-status="force_stopped"] .card-icon,
+.modern-header .bot-card[data-status="force_stopped"] .card-status {
+  color: var(--semantic-error-text);
+}
+
+.modern-header .bot-card[data-status="waiting"] .card-icon,
+.modern-header .bot-card[data-status="waiting"] .card-status,
+.modern-header .bot-card[data-status="idle"] .card-icon,
+.modern-header .bot-card[data-status="idle"] .card-status,
+.modern-header .bot-card[data-status="entry_paused"] .card-icon,
+.modern-header .bot-card[data-status="entry_paused"] .card-status,
+.modern-header .bot-card[data-status="loading"] .card-icon,
+.modern-header .bot-card[data-status="loading"] .card-status {
+  color: var(--semantic-warning-text);
+}
+
+.modern-header .bot-card[data-status="explore"] .card-icon,
+.modern-header .bot-card[data-status="explore"] .card-status {
+  color: var(--semantic-info-text);
+}
+
+.modern-header .bot-card[data-status="stopped"] .card-icon,
+.modern-header .bot-card[data-status="stopped"] .card-status {
+  color: var(--text-secondary);
+}
+
+@keyframes header-status-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.58;
+  }
+}
+
+/* Compact icon actions leave room for the right-side financial summaries. */
+.modern-header .header-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: 4px;
+  padding-left: 8px;
+}
+
+.modern-header .header-actions-items {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modern-header .header-actions-toggle {
+  display: none;
+}
+
+.modern-header .header-action-btn,
+.modern-header .header-actions-toggle {
+  position: relative;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.modern-header .header-action-btn:hover,
+.modern-header .header-actions-toggle:hover {
+  border-color: var(--primary-alpha-40);
+  background: var(--primary-alpha-10);
+  color: var(--text-primary);
+}
+
+.modern-header .action-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.modern-header .action-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-full);
+  background: var(--error-color);
+  box-shadow: 0 2px 6px var(--shadow-md);
+  color: var(--header-text);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  animation: none;
+}
+
+.modern-header .action-badge[hidden] {
+  display: none;
+}
+
+html[data-input="keyboard"] .modern-header button:focus-visible,
+html[data-input="keyboard"] .modern-header a:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--header-solid-bg, var(--bg-primary)),
+    0 0 0 4px var(--primary-color);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modern-header,
+  .modern-header .brand-logo,
+  .modern-header .brand-text,
+  .modern-header .header-card,
+  .modern-header .header-action-btn,
+  .modern-header .header-actions-toggle,
+  .explore-setup-control {
+    transition: none;
+  }
+
+  .modern-header .bot-card[data-status="running"] .card-icon {
+    animation: none;
+  }
+}

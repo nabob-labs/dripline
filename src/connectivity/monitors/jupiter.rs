@@ -1,0 +1,85 @@
+//! Jupiter API health monitor — checks swap endpoint availability.
+
+use crate::config::get_config_clone;
+use crate::connectivity::monitor::EndpointMonitor;
+use crate::connectivity::types::{EndpointCriticality, FallbackStrategy, HealthCheckResult};
+use async_trait::async_trait;
+use std::time::Instant;
+use tokio::time::Duration;
+
+/// Jupiter API monitor
+pub struct JupiterMonitor;
+
+impl JupiterMonitor {
+    /// Create a new monitor instance
+    pub fn new() -> Self {
+        Self
+    }
+
+    const BASE_URL: &'static str = "https://lite-api.jup.ag";
+}
+
+#[async_trait]
+impl EndpointMonitor for JupiterMonitor {
+    fn name(&self) -> &'static str {
+        "jupiter"
+    }
+
+    fn criticality(&self) -> EndpointCriticality {
+        EndpointCriticality::Important
+    }
+
+    fn fallback_strategy(&self) -> Option<FallbackStrategy> {
+        // No monitored alternative swap endpoint: the only other router
+        // (Raydium direct) talks to the RPC, which has its own monitor.
+        None
+    }
+
+    fn is_enabled(&self) -> bool {
+        let cfg = get_config_clone();
+        cfg.connectivity.enabled && cfg.connectivity.endpoints.jupiter.enabled
+    }
+
+    async fn check_health(&self) -> HealthCheckResult {
+        let cfg = get_config_clone();
+        let timeout_secs = cfg.connectivity.endpoints.jupiter.timeout_secs.max(1);
+
+        let client = match crate::net::client_builder()
+            .timeout(Duration::from_secs(timeout_secs))
+            .build()
+        {
+            Ok(c) => c,
+            Err(e) => return HealthCheckResult::failure(format!("Failed to create client: {e}")),
+        };
+
+        // Use token search endpoint for health check (lightweight, no auth required)
+        let url = format!("{}/tokens/v2/search?query=SOL", Self::BASE_URL);
+        let start = Instant::now();
+
+        // Defer to in-flight swaps so health pings don't compete for the rate budget.
+        crate::apis::jupiter::throttle::acquire_background().await;
+
+        match client.get(&url).send().await {
+            Ok(response) => {
+                let latency = start.elapsed().as_millis() as u64;
+
+                if response.status().is_success() {
+                    HealthCheckResult::success(latency)
+                } else {
+                    HealthCheckResult::failure(format!("HTTP {}", response.status()))
+                }
+            }
+            Err(e) => {
+                if e.is_timeout() {
+                    HealthCheckResult::failure(format!("Timeout after {timeout_secs}s"))
+                } else {
+                    HealthCheckResult::failure(format!("Request failed: {e}"))
+                }
+            }
+        }
+    }
+
+    fn description(&self) -> &'static str {
+        "Jupiter Aggregator API"
+    }
+}

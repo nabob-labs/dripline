@@ -1,0 +1,478 @@
+/* Settings Dialog Styles - Modal Dialog Style */
+
+/* =============================================================================
+   BASE DIALOG STRUCTURE - Modal Dialog Style
+   Centered modal with backdrop
+   ============================================================================= */
+
+.settings-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--transition-base);
+  pointer-events: none;
+  padding: 20px;
+}
+
+.settings-dialog.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Backdrop */
+.settings-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  cursor: default;
+  z-index: 1;
+}
+
+.settings-container {
+  position: relative;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-2xl);
+  box-shadow:
+    0 20px 40px rgb(0, 0, 0, 0.4),
+    0 0 0 1px var(--border-color);
+  width: 90vw;
+  max-width: 1100px;
+  height: 85vh;
+  max-height: 800px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: settings-dialog-scale-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 2;
+}
+
+@keyframes settings-dialog-scale-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Custom Scrollbar for Settings */
+
+/* Note: Uses global scrollbar-sidebar and scrollbar-dialog patterns from scrollbar.css */
+
+/* =============================================================================
+   HEADER - Desktop App Style with Streamlined Actions
+   ============================================================================= */
+
+.settings-header {
+  flex-shrink: 0;
+}
+
+.settings-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.settings-save-btn[hidden] {
+  display: none;
+}
+
+/* =============================================================================
+   BODY LAYOUT - Full Height Split
+   ============================================================================= */
+
+.settings-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+/* =============================================================================
+   NAVIGATION SIDEBAR - Desktop App Style
+   ============================================================================= */
+
+.settings-nav {
+  width: 240px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.settings-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-lg);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  text-align: left;
+  position: relative;
+}
+
+.settings-nav-item i {
+  font-size: 1rem;
+  width: 18px;
+  text-align: center;
+  opacity: 0.7;
+  transition: opacity var(--transition-fast);
+}
+
+.settings-nav-item:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.settings-nav-item:hover i {
+  opacity: 1;
+}
+
+.settings-nav-item.active {
+  background: var(--primary-alpha-10);
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.settings-nav-item.active i {
+  opacity: 1;
+}
+
+/* Active indicator - subtle background glow instead of border */
+.settings-nav-item.active::before {
+  display: none;
+}
+
+.settings-nav-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 8px 12px;
+  opacity: 0.6;
+}
+
+.settings-nav-link {
+  text-decoration: none;
+}
+
+.settings-nav-external {
+  margin-left: auto;
+  font-size: 0.7rem;
+  opacity: 0.4;
+}
+
+.settings-nav-link:hover .settings-nav-external {
+  opacity: 0.8;
+}
+
+/* =============================================================================
+   CONTENT AREA - Full Height with Smooth Transitions
+   ============================================================================= */
+
+.settings-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px 40px;
+  background: var(--bg-primary);
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.settings-tab {
+  display: none;
+  max-width: 900px;
+}
+
+.settings-tab.active {
+  display: block;
+  animation: settings-tab-slide-in 0.2s ease-out;
+}
+
+@keyframes settings-tab-slide-in {
+  0% {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.settings-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.settings-error {
+  padding: 12px 14px;
+  border: 1px solid var(--danger-alpha-30);
+  border-radius: var(--radius-lg);
+  background: var(--danger-alpha-10);
+  color: var(--semantic-error-text);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+/* =============================================================================
+   SECTIONS & FIELDS - Enhanced Card Style
+   ============================================================================= */
+
+.settings-section {
+  margin-bottom: 24px;
+}
+
+.settings-section:last-child {
+  margin-bottom: 0;
+}
+
+.settings-section-title {
+  margin: 0 0 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-section-title i {
+  font-size: 1rem;
+  color: var(--primary-color);
+  opacity: 0.9;
+}
+
+.settings-section-description {
+  margin: -8px 0 16px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.settings-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 20px;
+  background: var(--bg-secondary);
+  transition: background var(--transition-base);
+}
+
+.settings-field:not(:last-child) {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.settings-field:hover {
+  background: var(--bg-card-hover);
+}
+
+.settings-field--disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.settings-field--disabled:hover {
+  background: var(--bg-secondary);
+}
+
+.settings-field-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-field-info
+  label:not(.checkbox-label, :has(> input[type="checkbox"]), :has(> input[type="radio"])),
+.settings-field-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.settings-field-hint {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.settings-field-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background: var(--warning-alpha-10);
+  border-radius: var(--radius-sm);
+  color: var(--warning-color);
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-top: 4px;
+  width: fit-content;
+}
+
+.settings-field-control {
+  flex-shrink: 0;
+}
+
+.settings-field--logo-shape {
+  align-items: flex-start;
+}
+
+.logo-shape-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(118px, 1fr));
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.logo-shape-option {
+  /* Centred row: the preview tile sets the height. */
+  --control-line-offset: 0px;
+
+  display: grid;
+  grid-template-columns: auto 34px 1fr;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.logo-shape-option:hover {
+  color: var(--text-primary);
+}
+
+.logo-shape-option:has(input:checked) {
+  color: var(--primary-color);
+}
+
+.logo-shape-option__preview {
+  display: block;
+  width: 34px;
+  height: 34px;
+  object-fit: cover;
+}
+
+.logo-shape-option__preview--circle {
+  border-radius: var(--radius-full);
+}
+
+.logo-shape-option__preview--rounded-square {
+  border-radius: 3px;
+}
+
+/* =============================================================================
+   FORM CONTROLS - Modern & Refined
+   ============================================================================= */
+
+/* Select */
+.settings-select {
+  min-width: 160px;
+  padding: 7px 32px 7px 10px;
+
+  /* background-color (not the `background` shorthand) so the global select arrow survives. */
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+
+  /* Arrow inherited from global `select {}` (form_controls.css). */
+  transition: all var(--transition-fast);
+}
+
+.settings-select:hover {
+  border-color: var(--text-secondary);
+  background-color: var(--bg-card-hover);
+}
+
+/* Toggle Switch - Now uses centralized .toggle from form_controls.css */
+
+/* Migrated: Use <label class="toggle"><input type="checkbox"><span class="toggle-track"></span></label> */
+
+/* =============================================================================
+   HINTS TAB - Contextual hint management rows
+   ============================================================================= */
+
+/* Dim a hint's text while it's turned off (hidden), so the toggle state reads
+   at a glance without a loud badge. */
+.hint-manage-row--hidden .settings-field-info {
+  opacity: 0.55;
+}
+
+/* Settings > Account: a labelled checkbox with a consequence under it.
+ * The hint is not decoration — a toggle that changes where transactions are
+ * broadcast has to say what it does and does not move. */
+.settings-toggle-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  cursor: pointer;
+}
+
+.settings-toggle-row input {
+  flex: 0 0 auto;
+}
+
+.settings-toggle-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.settings-toggle-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.settings-toggle-hint {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
