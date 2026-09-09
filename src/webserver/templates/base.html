@@ -44,7 +44,7 @@
           const originalXHRSend = XMLHttpRequest.prototype.send;
 
           XMLHttpRequest.prototype.open = function() {
-            this._screenerBotUrl = arguments[1];
+            this._veloxBotUrl = arguments[1];
             return originalXHROpen.apply(this, arguments);
           };
 

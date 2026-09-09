@@ -248,7 +248,7 @@ config_struct! {
             impact: "high",
             category: "Sources",
         })]
-        veloxbot_server: OhlcvScreenerbotConfig = OhlcvScreenerbotConfig::default(),
+        veloxbot_server: OhlcvVeloxbotConfig = OhlcvVeloxbotConfig::default(),
     }
 }
 
@@ -256,7 +256,7 @@ config_struct! {
     /// Self-hosted VeloxBot OHLCV server — the preferred first-hop source. It
     /// serves cached candles fast and warms itself; on a miss the fetcher falls
     /// back to GeckoTerminal/SolanaTracker as before.
-    pub struct OhlcvScreenerbotConfig {
+    pub struct OhlcvVeloxbotConfig {
         /// Whether to try the VeloxBot server first
         #[metadata(field_metadata! {
             label: "Enabled",

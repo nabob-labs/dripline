@@ -232,8 +232,8 @@ config_struct! {
             impact: "high",
             category: "Sources",
         })]
-        veloxbot_server: ScreenerbotServerSourceConfig =
-            ScreenerbotServerSourceConfig::default(),
+        veloxbot_server: VeloxbotServerSourceConfig =
+            VeloxbotServerSourceConfig::default(),
     }
 }
 
@@ -242,7 +242,7 @@ config_struct! {
     /// for token security (Rugcheck) reports and boosted-token market identity. It
     /// serves a shared cache fast; every consumer retains a direct-provider fallback,
     /// so this is an accelerator rather than a hard dependency.
-    pub struct ScreenerbotServerSourceConfig {
+    pub struct VeloxbotServerSourceConfig {
         /// Whether to try the VeloxBot server as the shared first-hop cache
         #[metadata(field_metadata! {
             label: "Enabled",
