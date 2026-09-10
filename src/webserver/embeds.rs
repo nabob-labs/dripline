@@ -369,6 +369,7 @@ pub const TOKEN_DETAILS_STATE_HANDLING_UI: &str =
     include_str!("templates/scripts/ui/token_details/state_handling.js");
 pub const TOKEN_DETAILS_POSITIONS_TAB_UI: &str =
     include_str!("templates/scripts/ui/token_details/positions_tab.js");
+pub const TRANSACTION_TYPE_UI: &str = include_str!("templates/scripts/ui/transaction_type.js");
 pub const TRANSACTION_DETAILS_DIALOG_UI: &str =
     include_str!("templates/scripts/ui/transaction_details_dialog.js");
 pub const POSITION_DETAILS_DIALOG_UI: &str =
@@ -463,6 +464,10 @@ pub const TRADER_CONFIG_CARDS_JS: &str =
 pub const TRADER_FEATURES_JS: &str = include_str!("templates/scripts/pages/trader/features.js");
 pub const TRADER_WALLET_COPY_JS: &str =
     include_str!("templates/scripts/pages/trader/wallet_copy.js");
+pub const TRADER_WALLET_COPY_VIEW_JS: &str =
+    include_str!("templates/scripts/pages/trader/wallet_copy_view.js");
+pub const TRADER_WALLET_COPY_SETTINGS_JS: &str =
+    include_str!("templates/scripts/pages/trader/wallet_copy_settings.js");
 pub const WALLETS_PAGE_SCRIPT: &str = include_str!("templates/scripts/pages/wallets.js");
 pub const WALLETS_BULK_OPERATIONS_JS: &str =
     include_str!("templates/scripts/pages/wallets/bulk_operations.js");

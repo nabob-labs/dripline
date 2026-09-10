@@ -32,6 +32,7 @@ mod poller;
 mod recorder;
 pub mod runtime;
 mod service;
+mod service_state;
 mod service_targets;
 mod source_registry;
 mod types;
@@ -250,14 +251,27 @@ pub async fn get_status(id: i64) -> Result<WatchStatus, Error> {
     let last_signature = db.get_cursor(&target.address).await?;
     let last_activity_at = db.get_cursor_updated_at(&target.address).await?;
     let subscribed = runtime::try_get_runtime().is_some_and(|runtime| runtime.is_connected());
+    let last_error = service_state::saturation_reason(&target.address);
 
     Ok(WatchStatus {
         target,
         subscribed,
         last_activity_at,
         last_signature,
-        last_error: None,
+        last_error,
     })
+}
+
+/// Whether `address` is persisted as an enabled watch target carrying this copy
+/// task as a source. Persisted state, not the loop's runtime set, so a reload in
+/// flight is never mistaken for a missing target.
+pub async fn copy_source_active(task_id: i64, address: &str) -> Result<bool, Error> {
+    Ok(watch_db()?
+        .get_target_by_address(address)
+        .await?
+        .is_some_and(|target| {
+            target.enabled && target.sources.contains(&WatchSource::Copy { task_id })
+        }))
 }
 
 #[cfg(test)]

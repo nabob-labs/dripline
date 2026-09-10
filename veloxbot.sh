@@ -274,8 +274,8 @@ print_banner() {
     
     # Cyan + Bold + Italic
     echo -e "${CYAN}${BOLD}${ITALIC}"
-    # ANSI Shadow font (Robotic/Cyberpunk style) - 93 chars wide
 
+    # ANSI Shadow font (Robotic/Cyberpunk style) - 93 chars wide
     printf "   %s\n" "██╗   ██╗███████╗██╗      ██████╗ ██╗  ██╗██████╗  ██████╗ ████████╗"
     printf "   %s\n" "██║   ██║██╔════╝██║     ██╔═══██╗╚██╗██╔╝██╔══██╗██╔═══██╗╚══██╔══╝"
     printf "   %s\n" "██║   ██║█████╗  ██║     ██║   ██║ ╚███╔╝ ██████╔╝██║   ██║   ██║   "

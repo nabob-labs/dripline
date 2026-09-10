@@ -11,11 +11,11 @@
 use chrono::{Duration, Utc};
 
 use crate::chains::active_chain;
+use crate::trader::copy::control::{CopyTaskSummary, CopyTradingOverview, CopyTradingStatus};
 use crate::trader::copy::{
-    ArrivalDistanceStats, CopyActivityRow, CopyMode, CopyOutcome, CopySkip, CopyTask,
+    ArrivalDistanceStats, CopyActivityRow, CopyBook, CopyMode, CopyOutcome, CopySkip, CopyTask,
     CopyTaskStats, CopyTelemetry, ExitMode, PaperDecision, PaperFill, SizingMode,
 };
-use crate::webserver::routes::copy_trading::{OverviewResponse, StatusResponse, TaskSummary};
 
 use super::data::PROMO_OPEN_TOKENS;
 
@@ -91,6 +91,7 @@ fn telemetry(age_secs: i64, arrival_ms: i64, price_sol: f64) -> CopyTelemetry {
         confirmed_at: Some(decided_at + Duration::milliseconds(640)),
         target_price_sol: Some(price_sol),
         fill_price_sol: Some(price_sol * 1.004),
+        backfill: false,
     }
 }
 
@@ -149,6 +150,12 @@ fn stats(entry: &PromoTask) -> CopyTaskStats {
         closed_positions: closed,
         realized_pnl_sol: spent * 0.09,
         unrealized_pnl_sol: spent * 0.04,
+        book: if live {
+            CopyBook::Live
+        } else {
+            CopyBook::Paper
+        },
+        unpriced_positions: 0,
         arrival_distance: ArrivalDistanceStats {
             samples: filled_buys,
             minimum_ms: Some(310),
@@ -235,14 +242,14 @@ fn activity() -> Vec<CopyActivityRow> {
 }
 
 /// Generate the Copy Trading overview: status header, task summaries, decision feed.
-pub fn get_promo_copy_trading_overview() -> OverviewResponse {
+pub fn get_promo_copy_trading_overview() -> CopyTradingOverview {
     let tasks: Vec<CopyTask> = PROMO_TASKS.iter().map(task).collect();
     let live_tasks = tasks
         .iter()
         .filter(|task| task.mode == CopyMode::Live)
         .count();
 
-    let status = StatusResponse {
+    let status = CopyTradingStatus {
         enabled: true,
         live_available: true,
         blocked_reason: None,
@@ -260,7 +267,7 @@ pub fn get_promo_copy_trading_overview() -> OverviewResponse {
         .zip(tasks)
         .map(|(entry, task)| {
             let spent = spent_sol(entry);
-            TaskSummary {
+            CopyTaskSummary {
                 stats: stats(entry),
                 spent_sol: spent,
                 remaining_budget_sol: (task.total_budget_sol - spent).max(0.0),
@@ -274,7 +281,7 @@ pub fn get_promo_copy_trading_overview() -> OverviewResponse {
         })
         .collect();
 
-    OverviewResponse {
+    CopyTradingOverview {
         status,
         tasks: summaries,
         activity: activity(),

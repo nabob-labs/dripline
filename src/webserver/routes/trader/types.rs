@@ -8,19 +8,10 @@ use serde::{Deserialize, Serialize};
 // =============================================================================
 
 #[derive(Debug, Serialize)]
-pub struct TraderStatusResponse {
-    pub enabled: bool,
-    pub running: bool,
-    pub available: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub unavailable_reason: Option<&'static str>,
-}
-
-#[derive(Debug, Serialize)]
 pub struct TraderControlResponse {
     pub success: bool,
     pub message: String,
-    pub status: TraderStatusResponse,
+    pub status: crate::trader::TraderStatus,
 }
 
 #[derive(Debug, Deserialize)]
@@ -86,26 +77,13 @@ pub struct ManualTradeSuccess {
     pub timestamp: String,
 }
 
-#[derive(Debug, Serialize)]
-pub struct TraderStatsResponse {
-    pub open_positions_count: usize,
-    pub locked_sol: f64,
-    pub win_rate_pct: f64,
-    pub total_trades: usize,
-    pub avg_hold_time_hours: f64,
-    pub best_trade_pct: f64,
-    pub best_trade_token: Option<String>,
-    pub worst_trade_pct: f64,
-    pub worst_trade_token: Option<String>,
-    pub total_pnl_sol: f64,
-    pub exit_breakdown: Vec<ExitBreakdown>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct ExitBreakdown {
-    pub exit_type: String,
-    pub count: usize,
-    pub avg_profit_pct: f64,
+/// Query for `GET /api/trader/stats`. The window is a request parameter, never a
+/// constant baked into the dashboard: the Stats tab offers 24h / 7d / 30d and the
+/// handler is the only place that decides what a window means.
+#[derive(Debug, Deserialize)]
+pub struct TraderStatsQuery {
+    #[serde(default)]
+    pub days: Option<u32>,
 }
 
 // =============================================================================
@@ -216,29 +194,7 @@ pub struct QuotePreviewResponse {
 
 #[derive(Debug, Serialize)]
 pub struct TemplateListResponse {
-    pub templates: Vec<Template>,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct Template {
-    pub id: String,
-    pub name: String,
-    pub description: String,
-    pub trading_style: String,
-    pub config: TemplateConfig,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct TemplateConfig {
-    pub trailing_stop_enabled: bool,
-    pub trailing_stop_activation_pct: f64,
-    pub trailing_stop_distance_pct: f64,
-    pub roi_exit_enabled: bool,
-    pub roi_target_pct: f64,
-    pub time_override_enabled: bool,
-    pub time_override_duration: f64,
-    pub time_override_unit: String,
-    pub time_override_loss_threshold_pct: f64,
+    pub templates: Vec<crate::trader::templates::Template>,
 }
 
 #[derive(Debug, Deserialize)]

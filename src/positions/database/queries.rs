@@ -301,7 +301,12 @@ impl PositionsDatabase {
             })?;
 
         let query = format!(
-      "SELECT {} FROM positions WHERE wallet_address = ?1 AND chain_id = ?2 AND archived = 0 AND transaction_exit_verified = 1 AND origin_kind != 'external' AND datetime(exit_time) >= datetime(?3) ORDER BY exit_time DESC",
+      // `exit_time` is compared as stored text, never wrapped in datetime(): every
+      // write goes through DateTime<Utc>::to_rfc3339(), so the column is a single
+      // fixed-offset format that orders lexicographically, and a bare comparison is
+      // the only form that can use idx_positions_exit_time. Wrapping the column in a
+      // function forced a full scan of `positions` on every stats poll.
+      "SELECT {} FROM positions WHERE wallet_address = ?1 AND chain_id = ?2 AND archived = 0 AND transaction_exit_verified = 1 AND origin_kind != 'external' AND exit_time >= ?3 ORDER BY exit_time DESC",
       POSITION_SELECT_COLUMNS
     );
 
@@ -469,6 +474,8 @@ impl PositionsDatabase {
                         net_pnl_sol: total_pnl,
                         drawdown_percent: max_dd,
                         win_rate,
+                        closed_positions: trade_count,
+                        wins: wins.unwrap_or_default(),
                     })
                 },
             )
@@ -504,6 +511,8 @@ impl PositionsDatabase {
                         net_pnl_sol: total_pnl,
                         drawdown_percent: max_dd,
                         win_rate,
+                        closed_positions: trade_count,
+                        wins: wins.unwrap_or_default(),
                     })
                 },
             )

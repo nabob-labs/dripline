@@ -48,7 +48,7 @@ use tokio::sync::{OnceCell, RwLock};
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 const UPDATE_SERVER_URL: &str = "https://veloxbot.io/api";
-const GITHUB_RELEASES_API_URL: &str = "https://api.github.com/repos/farfary/VeloxBot";
+const GITHUB_RELEASES_API_URL: &str = "https://api.github.com/repos/nabob-labs/veloxbot";
 const DOWNLOAD_TIMEOUT_SECS: u64 = 30 * 60;
 const MAX_UPDATE_BYTES: u64 = 2 * 1024 * 1024 * 1024;
 

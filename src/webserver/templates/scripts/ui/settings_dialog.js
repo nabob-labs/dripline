@@ -849,7 +849,7 @@ export class SettingsDialog {
         </div>
 
         <div class="settings-about-links">
-          <button class="settings-about-link" data-external-url="https://github.com/farfary/VeloxBot">
+          <button class="settings-about-link" data-external-url="https://github.com/nabob-labs/veloxbot">
             <i class="icon-github"></i>
             <span>GitHub</span>
           </button>
