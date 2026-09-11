@@ -45,7 +45,7 @@ async fn spawn_silent_server() -> String {
 #[tokio::test]
 async fn a_silent_server_times_out_instead_of_hanging_forever() {
     let addr = spawn_silent_server().await;
-    let client = veloxbot::net::client();
+    let client = dripline::net::client();
 
     let started = Instant::now();
     let result = tokio::time::timeout(
@@ -77,7 +77,7 @@ async fn a_silent_server_times_out_instead_of_hanging_forever() {
 #[tokio::test]
 async fn a_per_request_timeout_overrides_the_client_default() {
     let addr = spawn_silent_server().await;
-    let client = veloxbot::net::client();
+    let client = dripline::net::client();
 
     let started = Instant::now();
     let result = client
@@ -106,7 +106,7 @@ async fn a_per_request_timeout_overrides_the_client_default() {
 /// a signature that does not exist on chain can never settle.
 #[test]
 fn a_wrapped_unconfirmed_swap_error_yields_the_real_signature_only() {
-    use veloxbot::swaps::unconfirmed_swap_signature_from_message;
+    use dripline::swaps::unconfirmed_swap_signature_from_message;
 
     const SIGNATURE: &str =
         "5VERv8NMvzbJMEkV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUW";
@@ -142,10 +142,10 @@ fn a_wrapped_unconfirmed_swap_error_yields_the_real_signature_only() {
 /// for the life of an install, and every trade adds rows to both.
 #[tokio::test(flavor = "multi_thread")]
 async fn completed_actions_are_deleted_together_with_their_steps() {
-    use veloxbot::actions::{Action, ActionState, ActionType, ActionsDatabase};
+    use dripline::actions::{Action, ActionState, ActionType, ActionsDatabase};
 
     let _dir = common::isolated_env();
-    veloxbot::paths::ensure_all_directories().expect("create isolated data dirs");
+    dripline::paths::ensure_all_directories().expect("create isolated data dirs");
     common::configure_own_wallet();
 
     let db = ActionsDatabase::new().await.expect("actions db");
@@ -191,10 +191,10 @@ async fn completed_actions_are_deleted_together_with_their_steps() {
     );
 }
 
-fn uninitialized_quote_request() -> veloxbot::swaps::QuoteRequest {
-    use veloxbot::swaps::{QuoteRequest, SwapMode};
+fn uninitialized_quote_request() -> dripline::swaps::QuoteRequest {
+    use dripline::swaps::{QuoteRequest, SwapMode};
     QuoteRequest {
-        chain: veloxbot::chains::active_chain(),
+        chain: dripline::chains::active_chain(),
         input_mint: "So11111111111111111111111111111111111111112".to_owned(),
         output_mint: "TokenMint111111111111111111111111111111111".to_owned(),
         input_amount: 1_000_000,
@@ -205,9 +205,9 @@ fn uninitialized_quote_request() -> veloxbot::swaps::QuoteRequest {
     }
 }
 
-fn assert_registry_uninitialized(err: veloxbot::Error) {
+fn assert_registry_uninitialized(err: dripline::Error) {
     match err {
-        veloxbot::Error::Service(veloxbot::errors::ServiceError::Initialize {
+        dripline::Error::Service(dripline::errors::ServiceError::Initialize {
             service,
             ..
         }) => {
@@ -221,14 +221,14 @@ fn assert_registry_uninitialized(err: veloxbot::Error) {
 /// This binary never registers a factory; the accessor must not abort the process.
 #[test]
 fn uninitialized_registry_access_does_not_panic() {
-    let result = std::panic::catch_unwind(veloxbot::swaps::try_get_registry);
+    let result = std::panic::catch_unwind(dripline::swaps::try_get_registry);
     assert!(result.is_ok(), "try_get_registry must not panic");
     assert!(
         result.expect("catch_unwind").is_none(),
         "no factory is registered in this test binary"
     );
 
-    let result = std::panic::catch_unwind(veloxbot::swaps::get_registry);
+    let result = std::panic::catch_unwind(dripline::swaps::get_registry);
     assert!(result.is_ok(), "get_registry must not panic");
     match result.expect("catch_unwind") {
         Err(err) => assert_registry_uninitialized(err),
@@ -238,7 +238,7 @@ fn uninitialized_registry_access_does_not_panic() {
 
 #[tokio::test]
 async fn uninitialized_quote_returns_a_domain_error() {
-    let err = veloxbot::swaps::get_best_quote(uninitialized_quote_request())
+    let err = dripline::swaps::get_best_quote(uninitialized_quote_request())
         .await
         .expect_err("quote without a factory");
     assert_registry_uninitialized(err);
@@ -246,12 +246,12 @@ async fn uninitialized_quote_returns_a_domain_error() {
 
 #[tokio::test]
 async fn uninitialized_execution_returns_a_domain_error() {
-    use veloxbot::swaps::{
+    use dripline::swaps::{
         execute_swap_with_fallback, quote_and_execute_for_wallet, Quote, RouterChoice, SwapMode,
     };
 
     let quote = Quote {
-        chain: veloxbot::chains::active_chain(),
+        chain: dripline::chains::active_chain(),
         router_id: "jupiter".to_owned(),
         router_name: "Jupiter".to_owned(),
         input_mint: "So11111111111111111111111111111111111111112".to_owned(),
@@ -303,8 +303,8 @@ async fn uninitialized_execution_returns_a_domain_error() {
 /// was never created.
 #[test]
 fn a_confirmed_swap_reported_as_output_not_received_is_still_recoverable() {
-    use veloxbot::chains::solana::swaps::direct::DirectSwapError;
-    use veloxbot::swaps::unconfirmed_swap_signature;
+    use dripline::chains::solana::swaps::direct::DirectSwapError;
+    use dripline::swaps::unconfirmed_swap_signature;
 
     const SIGNATURE: &str =
         "5VERv8NMvzbJMEkV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUW";
@@ -325,7 +325,7 @@ fn a_confirmed_swap_reported_as_output_not_received_is_still_recoverable() {
     );
 
     assert_eq!(
-        unconfirmed_swap_signature(&veloxbot::Error::from(error)).as_deref(),
+        unconfirmed_swap_signature(&dripline::Error::from(error)).as_deref(),
         Some(SIGNATURE),
         "a confirmed swap the receipt could not measure must be handed to \
          reconciliation, not treated as a trade that never happened"
@@ -341,14 +341,14 @@ fn a_confirmed_swap_reported_as_output_not_received_is_still_recoverable() {
 /// should be handed back here.
 #[test]
 fn a_reverted_swap_is_not_mistaken_for_one_that_may_still_land() {
-    use veloxbot::chains::solana::swaps::direct::DirectSwapError;
-    use veloxbot::swaps::unconfirmed_swap_signature;
+    use dripline::chains::solana::swaps::direct::DirectSwapError;
+    use dripline::swaps::unconfirmed_swap_signature;
 
     const SIGNATURE: &str =
         "5VERv8NMvzbJMEkV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUW";
 
     assert_eq!(
-        unconfirmed_swap_signature(&veloxbot::Error::from(
+        unconfirmed_swap_signature(&dripline::Error::from(
             DirectSwapError::ConfirmationTimeout {
                 signature: SIGNATURE.to_owned(),
                 waited_ms: 60_000,
@@ -358,7 +358,7 @@ fn a_reverted_swap_is_not_mistaken_for_one_that_may_still_land() {
         Some(SIGNATURE)
     );
     assert_eq!(
-        unconfirmed_swap_signature(&veloxbot::Error::from(
+        unconfirmed_swap_signature(&dripline::Error::from(
             DirectSwapError::TransactionFailed {
                 signature: SIGNATURE.to_owned(),
                 detail: "custom program error: 0x1".to_owned(),
@@ -373,9 +373,9 @@ fn a_reverted_swap_is_not_mistaken_for_one_that_may_still_land() {
 /// recoverable trade is abandoned against a signature that does not exist.
 #[test]
 fn an_unsubmitted_direct_swap_failure_yields_no_signature() {
-    use veloxbot::chains::solana::solana_sdk::pubkey::Pubkey;
-    use veloxbot::chains::solana::swaps::direct::DirectSwapError;
-    use veloxbot::swaps::unconfirmed_swap_signature;
+    use dripline::chains::solana::solana_sdk::pubkey::Pubkey;
+    use dripline::chains::solana::swaps::direct::DirectSwapError;
+    use dripline::swaps::unconfirmed_swap_signature;
 
     for error in [
         DirectSwapError::SimulationRejected {
@@ -400,7 +400,7 @@ fn an_unsubmitted_direct_swap_failure_yields_no_signature() {
     ] {
         assert!(!error.submitted(), "sanity: these never reached the chain");
         assert_eq!(
-            unconfirmed_swap_signature(&veloxbot::Error::from(error)),
+            unconfirmed_swap_signature(&dripline::Error::from(error)),
             None,
             "an unsubmitted failure must stay retryable"
         );

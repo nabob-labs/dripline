@@ -20,7 +20,7 @@ pub async fn handle_update_command() -> String {
                 "⚠️ <b>Update check failed</b>\n\n{}",
                 state
                     .check_error
-                    .unwrap_or_else(|| "veloxbot.io could not be reached.".to_owned())
+                    .unwrap_or_else(|| "dripline.io could not be reached.".to_owned())
             ),
             _ => format!("✅ <b>Up to date</b>\n\nRunning v{current}."),
         };
@@ -30,7 +30,7 @@ pub async fn handle_update_command() -> String {
     match state.phase {
         UpdatePhase::ReadyToApply => match version::apply_now().await {
             Ok(()) => format!(
-                "🔄 <b>Installing v{}</b>\n\nVeloxBot is restarting onto the new version. \
+                "🔄 <b>Installing v{}</b>\n\nDripLine is restarting onto the new version. \
                  Trading resumes automatically.",
                 update.version
             ),

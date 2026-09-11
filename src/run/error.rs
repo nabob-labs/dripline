@@ -122,8 +122,8 @@ impl From<Error> for StartupError {
                         StartupErrorCode::PortInUse,
                         "Network port is busy",
                         format!("the dashboard port {address} is already in use"),
-                        "Another program is using the port VeloxBot needs. Close that program, or \
-                         change the webserver port in Settings, then start VeloxBot again.",
+                        "Another program is using the port DripLine needs. Close that program, or \
+                         change the webserver port in Settings, then start DripLine again.",
                     )
                 }
                 crate::Error::Config(crate::config::Error::ParseFailed { detail }) => {

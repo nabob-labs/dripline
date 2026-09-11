@@ -1,6 +1,6 @@
 //! Configuration module - organized config system with zero repetition
 //!
-//! This module provides a clean, type-safe configuration system for VeloxBot.
+//! This module provides a clean, type-safe configuration system for DripLine.
 //!
 //! # Architecture
 //!
@@ -12,10 +12,10 @@
 //!
 //! ## Loading configuration at startup:
 //! ```
-//! use veloxbot::config::load_config;
+//! use dripline::config::load_config;
 //!
 //! #[tokio::main]
-//! async fn main() -> veloxbot::config::Result<()> {
+//! async fn main() -> dripline::config::Result<()> {
 //!     load_config()?;
 //!     // Config is now available globally
 //!     Ok(())
@@ -24,7 +24,7 @@
 //!
 //! ## Accessing configuration (one-liner):
 //! ```
-//! use veloxbot::config::with_config;
+//! use dripline::config::with_config;
 //!
 //! // Read a single value
 //! let max_positions = with_config(|cfg| cfg.trader.max_open_positions);
@@ -38,7 +38,7 @@
 //!
 //! ## Hot-reloading configuration:
 //! ```
-//! use veloxbot::config::reload_config;
+//! use dripline::config::reload_config;
 //!
 //! // After modifying data/config.toml
 //! reload_config()?;

@@ -12,13 +12,13 @@ mod common;
 use common::{
     anchor_ts, bundle_with, candle, candle_series, condition, context_bare, context_with_candles,
 };
-use veloxbot::strategies::conditions::{
+use dripline::strategies::conditions::{
     CandleSizeCondition, ConditionEvaluator, ConsecutiveCandlesCondition, LiquidityLevelCondition,
     PositionHoldingTimeCondition, PriceBreakoutCondition, PriceChangePercentCondition,
     PriceToMaCondition, VolumeSpikeCondition,
 };
-use veloxbot::strategies::types::{Condition, EvaluationContext, MarketData, PositionData};
-use veloxbot::strategies::Error as StrategyError;
+use dripline::strategies::types::{Condition, EvaluationContext, MarketData, PositionData};
+use dripline::strategies::Error as StrategyError;
 use serde_json::json;
 
 const MINUTE: i64 = 60;
@@ -168,7 +168,7 @@ fn pcp(percentage: f64, direction: &str, minutes: f64) -> Condition {
 }
 
 /// 20 one-minute candles all closing at 100, ending at the anchor.
-fn flat_1m_series() -> Vec<veloxbot::ohlcvs::Candle> {
+fn flat_1m_series() -> Vec<dripline::ohlcvs::Candle> {
     candle_series(anchor_ts(), MINUTE, &[100.0; 20])
 }
 
@@ -415,7 +415,7 @@ fn streak(count: i64, direction: &str, minimum_change: f64) -> Condition {
 }
 
 /// Candles with explicit open/close pairs so the body sign is unambiguous.
-fn bodies(pairs: &[(f64, f64)]) -> Vec<veloxbot::ohlcvs::Candle> {
+fn bodies(pairs: &[(f64, f64)]) -> Vec<dripline::ohlcvs::Candle> {
     pairs
         .iter()
         .enumerate()
@@ -573,7 +573,7 @@ fn breakout(lookback: i64, direction: &str, confirmation: f64) -> Condition {
 }
 
 /// Five candles ranging 90..110, plus a final candle the evaluator excludes.
-fn breakout_series() -> Vec<veloxbot::ohlcvs::Candle> {
+fn breakout_series() -> Vec<dripline::ohlcvs::Candle> {
     (0..6)
         .map(|i| {
             let ts = anchor_ts() - (5 - i) * MINUTE;
@@ -654,7 +654,7 @@ fn spike(lookback: i64, multiplier: f64) -> Condition {
 }
 
 /// `lookback` candles of volume 100 followed by one candle of `current_volume`.
-fn volume_series(lookback: usize, current_volume: f64) -> Vec<veloxbot::ohlcvs::Candle> {
+fn volume_series(lookback: usize, current_volume: f64) -> Vec<dripline::ohlcvs::Candle> {
     let mut out: Vec<_> = (0..lookback)
         .map(|i| {
             let ts = anchor_ts() - ((lookback - i) as i64) * MINUTE;

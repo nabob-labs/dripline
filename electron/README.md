@@ -1,6 +1,6 @@
-# VeloxBot Electron Edition
+# DripLine Electron Edition
 
-Electron wrapper for VeloxBot that packages the Rust binary as a native desktop application.
+Electron wrapper for DripLine that packages the Rust binary as a native desktop application.
 
 ## Prerequisites
 
@@ -33,7 +33,7 @@ npm start
 This will:
 
 1. Start Electron
-2. Spawn the veloxbot binary from `target/release/`
+2. Spawn the dripline binary from `target/release/`
 3. Wait for the webserver to be ready
 4. Load the dashboard in the window
 
@@ -55,8 +55,8 @@ npm run make
 
 This creates:
 
-- `out/make/VeloxBot-x.x.x-arm64.dmg` - DMG installer
-- `out/make/zip/darwin/arm64/VeloxBot-darwin-arm64-x.x.x.zip` - ZIP archive
+- `out/make/DripLine-x.x.x-arm64.dmg` - DMG installer
+- `out/make/zip/darwin/arm64/DripLine-darwin-arm64-x.x.x.zip` - ZIP archive
 
 ## Project Structure
 
@@ -76,7 +76,7 @@ electron/
 
 ## How It Works
 
-1. **Startup**: Electron spawns the `veloxbot` binary from resources
+1. **Startup**: Electron spawns the `dripline` binary from resources
 2. **Health Check**: Polls `http://127.0.0.1:8080/api/status` until ready
 3. **Load App**: Once backend is ready, loads the dashboard URL
 4. **Shutdown**: On quit, sends SIGTERM to gracefully stop the backend
@@ -94,8 +94,8 @@ Edit `src/main.js` to change:
 
 ### Backend fails to start
 
-1. Check that the binary exists: `ls -la ../target/release/veloxbot`
-2. Ensure it's executable: `chmod +x ../target/release/veloxbot`
+1. Check that the binary exists: `ls -la ../target/release/dripline`
+2. Ensure it's executable: `chmod +x ../target/release/dripline`
 3. Try running it directly to check for errors
 
 ### Window shows loading forever

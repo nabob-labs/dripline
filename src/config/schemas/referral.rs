@@ -1,7 +1,7 @@
 //! Referral attribution — an OPT-IN way to credit whoever introduced you.
 //!
 //! ============================================================================
-//! THIS IS THE ONLY PART OF VELOXBOT THAT REPORTS ANYTHING ABOUT YOU, AND IT
+//! THIS IS THE ONLY PART OF DRIPLINE THAT REPORTS ANYTHING ABOUT YOU, AND IT
 //! IS OFF UNTIL YOU TYPE A CODE.
 //! ============================================================================
 //!
@@ -9,7 +9,7 @@
 //! heartbeat, no wallet address, no telemetry of any kind. The activation
 //! request is not made at all.
 //!
-//! With a code set, ONE request goes to veloxbot.io carrying exactly:
+//! With a code set, ONE request goes to dripline.io carrying exactly:
 //!
 //!     { referral_code, signed_wallet_proofs[], platform, version }
 //!
@@ -36,7 +36,7 @@ config_struct! {
         /// matters to a user typing it off a video.
         #[metadata(field_metadata! {
             label: "Referral code",
-            hint: "Optional. If someone introduced you to VeloxBot, their code credits them with a share of the fees you pay us — at no extra cost to you. Leave empty and nothing is ever sent from this machine.",
+            hint: "Optional. If someone introduced you to DripLine, their code credits them with a share of the fees you pay us — at no extra cost to you. Leave empty and nothing is ever sent from this machine.",
             placeholder: "e.g. FARHAD",
             category: "General"
         })]
@@ -49,7 +49,7 @@ config_struct! {
             hint: "Where the referral code is registered. Only change this if you are testing against a staging server.",
             category: "Debug"
         })]
-        endpoint: String = "https://veloxbot.io/api/referral/activate".to_string(),
+        endpoint: String = "https://dripline.io/api/referral/activate".to_string(),
 
         /// Re-announce this often (hours) so a wallet added after the first
         /// activation still gets attributed. 0 disables re-announcing.

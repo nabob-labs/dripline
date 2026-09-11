@@ -1,9 +1,9 @@
-//! Referral activation — the ONLY code in VeloxBot that reports anything.
+//! Referral activation — the ONLY code in DripLine that reports anything.
 //!
 //! ============================================================================
 //! READ THIS BEFORE CHANGING ANYTHING HERE.
 //! ============================================================================
-//! VeloxBot has no telemetry. This service is the single exception, it is
+//! DripLine has no telemetry. This service is the single exception, it is
 //! OPT-IN, and it stays silent until the user types a referral code into
 //! Settings. With `referral.code` empty, `is_enabled()` returns false, the
 //! service never starts, and no request is ever constructed.
@@ -63,8 +63,8 @@ struct ActivationProof {
 
 fn activation_message(wallet: &str, code: &str, issued_at: u64) -> String {
     format!(
-        "VeloxBot Referral Activation v1\n\
-         Domain: veloxbot.io\n\
+        "DripLine Referral Activation v1\n\
+         Domain: dripline.io\n\
          Wallet: {wallet}\n\
          Referral Code: {code}\n\
          Issued At: {issued_at}"
@@ -212,13 +212,13 @@ async fn announce_once() {
 
     match client.post(&referral.endpoint).json(&body).send().await {
         Ok(response) if response.status().is_success() => {
-            log::info!("Referral code registered with veloxbot.io");
+            log::info!("Referral code registered with dripline.io");
         }
         Ok(response) => {
             // A rejected code is worth telling the user about ONCE, at info, so
             // a typo does not silently cost their referrer every future fee.
             log::info!(
-                "Referral: veloxbot.io did not accept the code (HTTP {}). Check it in Settings.",
+                "Referral: dripline.io did not accept the code (HTTP {}). Check it in Settings.",
                 response.status()
             );
         }

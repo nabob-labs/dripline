@@ -8,7 +8,7 @@
 //!
 //! Several stores resolve their database file from `crate::paths::get_*_db_path()`,
 //! which memoises its base directory in a process-wide `LazyLock` fed by the
-//! `VELOXBOT_DATA_DIR` env var. Plain `cargo test` runs one binary's tests
+//! `DRIPLINE_DATA_DIR` env var. Plain `cargo test` runs one binary's tests
 //! concurrently on threads, so every case that needs that path resolution goes
 //! through `shared_data_dir()`, a `OnceLock` that runs `common::isolated_env()`
 //! exactly once no matter how many threads race it — every store after that shares
@@ -18,7 +18,7 @@
 mod common;
 
 use rusqlite::Connection;
-use veloxbot::chains::ChainId;
+use dripline::chains::ChainId;
 
 /// Run `common::isolated_env()` exactly once for the whole process, however many
 /// threads race to call this first. Every paths-module-dependent store test calls
@@ -27,14 +27,14 @@ fn shared_data_dir() -> &'static tempfile::TempDir {
     static DIR: std::sync::OnceLock<tempfile::TempDir> = std::sync::OnceLock::new();
     DIR.get_or_init(|| {
         let dir = common::isolated_env();
-        veloxbot::paths::ensure_all_directories().expect("create data directories");
+        dripline::paths::ensure_all_directories().expect("create data directories");
         dir
     })
 }
 
 mod pools_store {
     use super::*;
-    use veloxbot::pools::database::PoolsDatabase;
+    use dripline::pools::database::PoolsDatabase;
 
     /// A real blacklist row written through the public API must be the only one
     /// `list_blacklisted_pools` ever returns, even when a raw row for the SAME
@@ -51,7 +51,7 @@ mod pools_store {
             .expect("add real pool to blacklist");
 
         // Conceptually-foreign row: same pool_id, different chain.
-        let path = veloxbot::paths::get_pools_db_path();
+        let path = dripline::paths::get_pools_db_path();
         let conn = Connection::open(&path).expect("open pools db directly");
         conn.execute(
             "INSERT INTO blacklist_pools (chain_id, pool_id, reason, token_mint, error_count, first_failed_at, last_failed_at, added_at)
@@ -88,7 +88,7 @@ mod pools_store {
 
 mod tokens_store {
     use super::*;
-    use veloxbot::tokens::database::TokenDatabase;
+    use dripline::tokens::database::TokenDatabase;
 
     /// A real `tokens` row and a real `blacklist` row, each written through the
     /// public API, must be the only ones the reads return, even when raw rows for
@@ -160,7 +160,7 @@ mod tokens_store {
 
 mod positions_store {
     use super::*;
-    use veloxbot::positions::database::PositionsDatabase;
+    use dripline::positions::database::PositionsDatabase;
 
     /// A real position written through the public API must be the only one
     /// `get_open_positions` ever returns, even when a raw row for the SAME wallet
@@ -185,7 +185,7 @@ mod positions_store {
             .expect("insert real position");
 
         // Conceptually-foreign row: same wallet + mint, different chain.
-        let path = veloxbot::paths::get_positions_db_path();
+        let path = dripline::paths::get_positions_db_path();
         let conn = Connection::open(&path).expect("open positions db directly");
         conn.execute(
             "INSERT INTO positions (chain_id, wallet_address, mint, symbol, name, entry_price, entry_time, position_type, entry_size_sol, total_size_sol, price_highest, price_lowest)
@@ -221,7 +221,7 @@ mod positions_store {
 
 mod transactions_store {
     use super::*;
-    use veloxbot::transactions::{Subject, TransactionDatabase};
+    use dripline::transactions::{Subject, TransactionDatabase};
 
     /// A real known-signature row written through the public API must be the only
     /// one counted for the Solana subject, even when a raw row for the SAME
@@ -246,7 +246,7 @@ mod transactions_store {
             .expect("add real known signature");
 
         // Conceptually-foreign row: same wallet + signature, different chain.
-        let path = veloxbot::paths::get_transactions_db_path();
+        let path = dripline::paths::get_transactions_db_path();
         let conn = Connection::open(&path).expect("open transactions db directly");
         conn.execute(
             "INSERT INTO known_signatures (chain_id, signature, wallet_address) VALUES ('ethereum', 'sig-real', ?1)",
@@ -283,7 +283,7 @@ mod transactions_store {
 
 // SKIPPED: ohlcvs — `OhlcvDatabase` (and its only real write path,
 // `insert_candles_batch`) is never re-exported publicly; the truly public API
-// (`veloxbot::ohlcvs::service_api`) only writes candles via the monitor's
+// (`dripline::ohlcvs::service_api`) only writes candles via the monitor's
 // network-touching backfill/gap-fill path (`src/ohlcvs/monitor.rs`,
 // `src/ohlcvs/gaps.rs`), so there is no offline public write surface within budget.
 

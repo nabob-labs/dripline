@@ -381,7 +381,7 @@ pub fn msg_bot_started(
     };
 
     format!(
-        "🚀 <b>VeloxBot Started</b>\n\n\
+        "🚀 <b>DripLine Started</b>\n\n\
          <b>Version</b> — {}\n\
          <b>Mode</b> — {}{}{}
 \n\
@@ -419,7 +419,7 @@ pub fn msg_bot_stopped(
     };
 
     format!(
-        "🛑 <b>VeloxBot Stopped</b>\n\n\
+        "🛑 <b>DripLine Stopped</b>\n\n\
          <b>Reason</b> — {}{}{}
 \n\
          Goodbye! 👋",

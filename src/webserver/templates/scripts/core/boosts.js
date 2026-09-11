@@ -1,7 +1,7 @@
 /**
  * Boosts - which tokens their teams paid to promote, and how strongly.
  *
- * A boost is bought on veloxbot.io: a confirmed payment promotes a mint for a
+ * A boost is bought on dripline.io: a confirmed payment promotes a mint for a
  * fixed window, and enough active boosts unlock the GOLDEN tier. The website owns
  * the money and the thresholds; the app reads the standing from `/api/boosts`,
  * which is the backend's single cached view of that feed.
@@ -20,7 +20,7 @@ const FEED_URL = "/api/boosts";
 const TTL_MS = 60 * 1000;
 
 /** Fired on `window` whenever the boost map changes. Surfaces re-mark their rows. */
-export const BOOSTS_CHANGED_EVENT = "veloxbot:boosts-changed";
+export const BOOSTS_CHANGED_EVENT = "dripline:boosts-changed";
 
 /** mint -> { boosts, golden } */
 let boostMap = new Map();

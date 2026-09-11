@@ -1,4 +1,4 @@
-//! Build script for VeloxBot
+//! Build script for DripLine
 //!
 //! Generates build-time environment variables for cache busting.
 //! Watches all template files so the asset version timestamp changes

@@ -32,7 +32,7 @@ pub static CONFIG: OnceLock<RwLock<Config>> = OnceLock::new();
 ///
 /// # Example
 /// ```
-/// use veloxbot::config::load_config;
+/// use dripline::config::load_config;
 ///
 /// fn main() -> crate::config::Result<()> {
 /// load_config()?;
@@ -305,7 +305,7 @@ fn sibling_temp_path(dest: &std::path::Path, seq: u64) -> std::path::PathBuf {
 ///
 /// # Example
 /// ```
-/// use veloxbot::config::reload_config;
+/// use dripline::config::reload_config;
 ///
 /// // After modifying config.toml
 /// reload_config()?;
@@ -679,7 +679,7 @@ pub fn reload_config_from_path(path: &str) -> Result<()> {
 ///
 /// # Example
 /// ```
-/// use veloxbot::config::with_config;
+/// use dripline::config::with_config;
 ///
 /// let max_positions = with_config(|cfg| cfg.trader.max_open_positions);
 /// let trade_size = with_config(|cfg| cfg.trader.trade_size_sol);
@@ -709,7 +709,7 @@ where
 ///
 /// # Example
 /// ```
-/// use veloxbot::config::get_config_clone;
+/// use dripline::config::get_config_clone;
 ///
 /// async fn process() {
 /// let cfg = get_config_clone();
@@ -767,7 +767,7 @@ pub fn save_config(path: Option<&str>) -> Result<()> {
 ///
 /// # Example
 /// ```
-/// use veloxbot::config::{save_config_to_file, schemas::Config};
+/// use dripline::config::{save_config_to_file, schemas::Config};
 ///
 /// let config = Config {
 /// wallet_encrypted: "encrypted_base64".to_owned(),

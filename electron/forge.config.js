@@ -3,7 +3,7 @@ const path = require('path');
 // Platform-specific binary name
 const isWindows = process.platform === 'win32';
 const isMacOS = process.platform === 'darwin';
-const binaryName = isWindows ? 'veloxbot.exe' : 'veloxbot';
+const binaryName = isWindows ? 'dripline.exe' : 'dripline';
 
 // Detect target architecture for conditional makers
 // ELECTRON_FORGE_ARCH is set by electron-forge during make, fallback to process.arch
@@ -19,9 +19,9 @@ const skipRpm = isMacOS;
 module.exports = {
   packagerConfig: {
     asar: true,
-    name: 'VeloxBot',
-    executableName: 'VeloxBot',
-    appBundleId: 'io.veloxbot.app',
+    name: 'DripLine',
+    executableName: 'DripLine',
+    appBundleId: 'io.dripline.app',
     appCategoryType: 'public.app-category.finance',
     icon: path.join(__dirname, 'assets', 'icon'),
     extraResource: [
@@ -59,7 +59,7 @@ module.exports = {
       name: '@electron-forge/maker-dmg',
       platforms: ['darwin'],
       config: {
-        name: 'VeloxBot',
+        name: 'DripLine',
         icon: path.join(__dirname, 'assets', 'icon.icns'),
         // DMG background is optional - comment out if not present
         background: path.join(__dirname, 'assets', 'dmg-background.png'),
@@ -86,14 +86,14 @@ module.exports = {
       platforms: ['linux'],
       config: {
         options: {
-          name: 'veloxbot',
-          productName: 'VeloxBot',
+          name: 'dripline',
+          productName: 'DripLine',
           genericName: 'Solana Trading Bot',
           description: 'Automated Solana DeFi trading bot with wallet management',
           categories: ['Finance', 'Utility'],
           icon: path.join(__dirname, 'assets', 'icon.png'),
-          maintainer: 'VeloxBot <support@veloxbot.io>',
-          homepage: 'https://veloxbot.io'
+          maintainer: 'DripLine <support@dripline.io>',
+          homepage: 'https://dripline.io'
         }
       }
     },
@@ -104,14 +104,14 @@ module.exports = {
       platforms: ['linux'],
       config: {
         options: {
-          name: 'veloxbot',
-          productName: 'VeloxBot',
+          name: 'dripline',
+          productName: 'DripLine',
           genericName: 'Solana Trading Bot',
           description: 'Automated Solana DeFi trading bot with wallet management',
           categories: ['Finance', 'Utility'],
           icon: path.join(__dirname, 'assets', 'icon.png'),
           license: 'BUSL-1.1',
-          homepage: 'https://veloxbot.io',
+          homepage: 'https://dripline.io',
           vendor: 'unknown',
           platform: 'linux'
         }
@@ -129,8 +129,8 @@ module.exports = {
       name: '@electron-forge/maker-wix',
       platforms: ['win32'],
       config: {
-        name: 'VeloxBot',
-        manufacturer: 'VeloxBot',
+        name: 'DripLine',
+        manufacturer: 'DripLine',
         description: 'Automated Solana DeFi trading bot with wallet management',
         language: 1033, // English (United States)
         icon: path.join(__dirname, 'assets', 'icon.ico'),

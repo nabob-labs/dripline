@@ -9,11 +9,11 @@
 mod common;
 
 use common::{condition, context_bare, TEST_MINT};
-use veloxbot::strategies::engine::{EngineConfig, StrategyEngine};
-use veloxbot::strategies::types::{
+use dripline::strategies::engine::{EngineConfig, StrategyEngine};
+use dripline::strategies::types::{
     Condition, EvaluationContext, LogicalOperator, MarketData, RuleTree, Strategy, StrategyType,
 };
-use veloxbot::strategies::Error as StrategyError;
+use dripline::strategies::Error as StrategyError;
 use serde_json::json;
 
 /// A liquidity condition — deterministic, needs no OHLCV, and its truth is controlled

@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-/// A mint's live boost standing, exactly as `veloxbot.io/api/boost` reports it.
+/// A mint's live boost standing, exactly as `dripline.io/api/boost` reports it.
 ///
 /// A boost is a confirmed payment whose window has not expired; `boosts` is the SUM
 /// of those active payments, and `golden` is true once that sum reaches the

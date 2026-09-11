@@ -1,4 +1,4 @@
-//! Dashboard routes for the optional VeloxBot account.
+//! Dashboard routes for the optional DripLine account.
 //!
 //! ============================================================================
 //! WHERE THESE ROUTES LIVE, AND WHY IT MATTERS

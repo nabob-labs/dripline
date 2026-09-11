@@ -10,7 +10,7 @@
 //!
 //! Filtering WRITES (rejection status, priorities, rejection stats), so these tests never
 //! touch the live files. [`common::real_db_env`] clones the databases into a temp
-//! directory and repoints `VELOXBOT_DATA_DIR` at the clone; every write lands there
+//! directory and repoints `DRIPLINE_DATA_DIR` at the clone; every write lands there
 //! and the clone is deleted when the test ends. The bot may be running throughout.
 //!
 //! # Tier
@@ -23,10 +23,10 @@
 mod common;
 
 use common::{config_guard, filters_all_disabled, filters_default_dex_only, per_item_micros};
-use veloxbot::config::FilteringConfig;
-use veloxbot::filtering::sources::{FilterRejectionReason, FilterSource};
-use veloxbot::filtering::{evaluate_token, FilteringQuery, FilteringView};
-use veloxbot::tokens::types::{DataSource, Token};
+use dripline::config::FilteringConfig;
+use dripline::filtering::sources::{FilterRejectionReason, FilterSource};
+use dripline::filtering::{evaluate_token, FilteringQuery, FilteringView};
+use dripline::tokens::types::{DataSource, Token};
 use std::collections::HashMap;
 use std::time::Instant;
 
@@ -44,13 +44,13 @@ fn full_corpus_requested() -> bool {
 async fn load_candidates() -> Vec<Token> {
     let started = Instant::now();
     let tokens = if full_corpus_requested() {
-        veloxbot::tokens::get_all_tokens_for_filtering_async()
+        dripline::tokens::get_all_tokens_for_filtering_async()
             .await
             .expect("load tokens with market data")
     } else {
         // Same query, bounded. `require_market_data` is false here, so filter down to the
         // rows a snapshot would actually consider.
-        let page = veloxbot::tokens::get_all_tokens_optional_market_async(
+        let page = dripline::tokens::get_all_tokens_optional_market_async(
             DEFAULT_SAMPLE * 2,
             0,
             None,
@@ -424,7 +424,7 @@ async fn realdata_the_meta_stage_never_pays_for_a_decimals_lookup() {
     let all = load_candidates().await;
     let (known, unknown): (Vec<Token>, Vec<Token>) = all.into_iter().partition(|t| {
         t.decimals
-            .is_some_and(veloxbot::tokens::decimals_are_valid)
+            .is_some_and(dripline::tokens::decimals_are_valid)
     });
     eprintln!(
         "REALDATA candidates: {} with stored decimals, {} without ({:.2}% unresolved)",
@@ -450,7 +450,7 @@ async fn realdata_the_meta_stage_never_pays_for_a_decimals_lookup() {
          pass {second_us:.1} us/token ({ratio:.1}x)"
     );
 
-    let corpus = veloxbot::tokens::count_tokens_async().await.unwrap_or(0);
+    let corpus = dripline::tokens::count_tokens_async().await.unwrap_or(0);
     eprintln!(
         "REALDATA meta stage over {corpus} tokens at the first-pass rate: {:.2}s",
         first_us * corpus as f64 / 1_000_000.0
@@ -465,7 +465,7 @@ async fn realdata_the_meta_stage_never_pays_for_a_decimals_lookup() {
     );
 
     // And in absolute terms it must be cheap enough to disappear into the refresh interval.
-    let budget = veloxbot::filtering::background::refresh_interval_secs() as f64;
+    let budget = dripline::filtering::background::refresh_interval_secs() as f64;
     let projected = first_us * corpus as f64 / 1_000_000.0;
     assert!(
         projected < budget,
@@ -575,9 +575,9 @@ async fn realdata_evaluation_fits_the_refresh_interval() {
     outcome.report("timing run");
 
     let per_token_secs = outcome.elapsed.as_secs_f64() / outcome.total().max(1) as f64;
-    let corpus = veloxbot::tokens::count_tokens_async().await.unwrap_or(0);
+    let corpus = dripline::tokens::count_tokens_async().await.unwrap_or(0);
     let projected = per_token_secs * corpus as f64;
-    let budget = veloxbot::filtering::background::refresh_interval_secs() as f64;
+    let budget = dripline::filtering::background::refresh_interval_secs() as f64;
 
     eprintln!(
         "REALDATA projection: {corpus} tokens in the database, {:.2} us/token, \
@@ -609,7 +609,7 @@ async fn realdata_decimals_preload_survives_its_own_cache() {
     let db = common::init_real_token_db();
 
     let preloaded = db
-        .get_tokens_with_decimals_for_preload(veloxbot::tokens::decimals::PRELOAD_CAPACITY)
+        .get_tokens_with_decimals_for_preload(dripline::tokens::decimals::PRELOAD_CAPACITY)
         .expect("read stored decimals");
     let total = preloaded.len();
     assert!(total > 0, "the real database has no decimals recorded");
@@ -617,14 +617,14 @@ async fn realdata_decimals_preload_survives_its_own_cache() {
     let evicted = preloaded
         .iter()
         .filter(|(mint, _)| {
-            veloxbot::tokens::get_cached_decimals(veloxbot::chains::ChainId::Solana, mint)
+            dripline::tokens::get_cached_decimals(dripline::chains::ChainId::Solana, mint)
                 .is_none()
         })
         .count();
 
     eprintln!(
         "REALDATA decimals cache: {total} mints preloaded (cap {}), {evicted} evicted",
-        veloxbot::tokens::decimals::PRELOAD_CAPACITY
+        dripline::tokens::decimals::PRELOAD_CAPACITY
     );
 
     assert_eq!(
@@ -678,12 +678,12 @@ async fn realdata_snapshot_refresh_and_query_views() {
     });
 
     let started = Instant::now();
-    veloxbot::filtering::refresh()
+    dripline::filtering::refresh()
         .await
         .expect("snapshot refresh");
     eprintln!("REALDATA snapshot refresh took {:?}", started.elapsed());
 
-    let stats = veloxbot::filtering::fetch_stats()
+    let stats = dripline::filtering::fetch_stats()
         .await
         .expect("filtering stats");
     eprintln!(
@@ -717,7 +717,7 @@ async fn realdata_snapshot_refresh_and_query_views() {
         FilteringView::Recent,
     ] {
         let started = Instant::now();
-        let result = veloxbot::filtering::query_tokens(FilteringQuery {
+        let result = dripline::filtering::query_tokens(FilteringQuery {
             view,
             page: 1,
             page_size: 50,
@@ -762,14 +762,14 @@ async fn realdata_pagination_never_repeats_or_skips_a_token() {
     let _cfg = config_guard();
     common::set_config(|cfg| cfg.filtering.geckoterminal.enabled = false);
 
-    veloxbot::filtering::refresh()
+    dripline::filtering::refresh()
         .await
         .expect("snapshot refresh");
 
     let page_size = 50;
     let mut seen: Vec<String> = Vec::new();
     for page in 1..=5 {
-        let result = veloxbot::filtering::query_tokens(FilteringQuery {
+        let result = dripline::filtering::query_tokens(FilteringQuery {
             view: FilteringView::All,
             page,
             page_size,
@@ -806,14 +806,14 @@ async fn realdata_query_latency_is_interactive() {
     let _cfg = config_guard();
     common::set_config(|cfg| cfg.filtering.geckoterminal.enabled = false);
 
-    veloxbot::filtering::refresh()
+    dripline::filtering::refresh()
         .await
         .expect("snapshot refresh");
 
     let mut samples = Vec::new();
     for _ in 0..10 {
         let started = Instant::now();
-        let _ = veloxbot::filtering::query_tokens(FilteringQuery {
+        let _ = dripline::filtering::query_tokens(FilteringQuery {
             view: FilteringView::Pool,
             page: 1,
             page_size: 50,

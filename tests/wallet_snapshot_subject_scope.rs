@@ -15,11 +15,11 @@ mod common;
 use chrono::Utc;
 use rusqlite::{params, Connection};
 
-use veloxbot::wallet::{
+use dripline::wallet::{
     get_balance_at_time, get_recent_wallet_snapshots, get_wallet_monitor_stats,
     initialize_wallet_database,
 };
-use veloxbot::wallets::{create_wallet, CreateWalletRequest};
+use dripline::wallets::{create_wallet, CreateWalletRequest};
 
 /// Insert a synthetic `wallet_snapshots` row directly against the real
 /// wallet-monitor database file, bypassing the (RPC-backed) public
@@ -27,7 +27,7 @@ use veloxbot::wallets::{create_wallet, CreateWalletRequest};
 /// correctly even when a row for another subject exists on the same chain,
 /// not to exercise collection itself.
 fn seed_snapshot(wallet_address: &str, sol_balance: f64) {
-    let conn = Connection::open(veloxbot::paths::get_wallet_db_path())
+    let conn = Connection::open(dripline::paths::get_wallet_db_path())
         .expect("open wallet-monitor db file directly for seeding");
     conn.execute(
         "INSERT INTO wallet_snapshots (
@@ -47,11 +47,11 @@ fn seed_snapshot(wallet_address: &str, sol_balance: f64) {
 #[tokio::test]
 async fn wallet_monitor_reads_stay_scoped_to_the_active_subject_and_rebind_on_main_wallet_switch() {
     let dir = tempfile::tempdir().expect("temp dir");
-    std::env::set_var("VELOXBOT_DATA_DIR", dir.path());
+    std::env::set_var("DRIPLINE_DATA_DIR", dir.path());
     std::fs::create_dir_all(dir.path().join("data")).expect("create data dir");
     common::ensure_config();
 
-    veloxbot::wallets::initialize()
+    dripline::wallets::initialize()
         .await
         .expect("wallet manager initializes");
     let wallet_a = create_wallet(CreateWalletRequest {
@@ -65,7 +65,7 @@ async fn wallet_monitor_reads_stay_scoped_to_the_active_subject_and_rebind_on_ma
     initialize_wallet_database()
         .await
         .expect("wallet-monitor database initializes bound to A");
-    let db_path = veloxbot::paths::get_wallet_db_path();
+    let db_path = dripline::paths::get_wallet_db_path();
     assert!(db_path.exists(), "wallet-monitor database file must exist");
 
     // Two subjects on the same chain: A (the active one) and an unrelated
@@ -113,7 +113,7 @@ async fn wallet_monitor_reads_stay_scoped_to_the_active_subject_and_rebind_on_ma
     .await
     .expect("create wallet B as main");
     assert_eq!(
-        veloxbot::paths::get_wallet_db_path(),
+        dripline::paths::get_wallet_db_path(),
         db_path,
         "the wallet-monitor database path must never change on a main-wallet switch"
     );

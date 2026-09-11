@@ -2,10 +2,10 @@
  * External-agent approval prompts.
  *
  * When an MCP-paired agent calls a tool that resolves to "requires approval",
- * VeloxBot parks a durable request on the agent-control approval queue. This
+ * DripLine parks a durable request on the agent-control approval queue. This
  * module is the minimal integrated surface for acting on those: it polls the
  * pending queue and raises the shared confirmation dialog for each new request,
- * so a person approves or denies it inside VeloxBot. The external caller can
+ * so a person approves or denies it inside DripLine. The external caller can
  * never approve its own request — it has no route to the decision endpoint.
  *
  * This is deliberately small; the richer Agent Connections management UI is a
@@ -120,7 +120,7 @@ if (isBrowser()) {
               title: "Agent request",
               message:
                 `${item.client_label || "A paired agent"} wants to run "${item.tool}" ` +
-                `in VeloxBot.${summary} This request ${expiryText(item.expires_at)}.`,
+                `in DripLine.${summary} This request ${expiryText(item.expires_at)}.`,
               confirmLabel: "Approve",
               cancelLabel: "Deny",
               variant: "warning",

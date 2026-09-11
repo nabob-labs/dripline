@@ -530,12 +530,12 @@ export class SettingsDialog {
               <span>About</span>
             </button>
             <div class="settings-nav-divider"></div>
-            <button class="settings-nav-item settings-nav-link" data-external-url="https://veloxbot.io/privacy">
+            <button class="settings-nav-item settings-nav-link" data-external-url="https://dripline.io/privacy">
               <i class="icon-shield"></i>
               <span>Privacy Policy</span>
               <i class="icon-external-link settings-nav-external"></i>
             </button>
-            <button class="settings-nav-item settings-nav-link" data-external-url="https://veloxbot.io/terms">
+            <button class="settings-nav-item settings-nav-link" data-external-url="https://dripline.io/terms">
               <i class="icon-file-text"></i>
               <span>Terms of Service</span>
               <i class="icon-external-link settings-nav-external"></i>
@@ -840,28 +840,28 @@ export class SettingsDialog {
     return `
       <div class="settings-about">
         <div class="settings-about-logo">
-          <img src="/assets/logo.svg" alt="VeloxBot" />
+          <img src="/assets/logo.svg" alt="DripLine" />
         </div>
-        <h2 class="settings-about-name">VeloxBot</h2>
+        <h2 class="settings-about-name">DripLine</h2>
         <p class="settings-about-tagline">Native Solana Trading Engine</p>
         <div class="settings-about-version">
           <span>v${version}</span>
         </div>
 
         <div class="settings-about-links">
-          <button class="settings-about-link" data-external-url="https://github.com/nabob-labs/veloxbot">
+          <button class="settings-about-link" data-external-url="https://github.com/nabob-labs/dripline">
             <i class="icon-github"></i>
             <span>GitHub</span>
           </button>
-          <button class="settings-about-link" data-external-url="https://veloxbot.io/docs">
+          <button class="settings-about-link" data-external-url="https://dripline.io/docs">
             <i class="icon-book-open"></i>
             <span>Documentation</span>
           </button>
-          <button class="settings-about-link" data-external-url="https://t.me/veloxbotio">
+          <button class="settings-about-link" data-external-url="https://t.me/driplineio">
             <i class="icon-message-circle"></i>
             <span>Telegram</span>
           </button>
-          <button class="settings-about-link" data-external-url="https://veloxbot.io">
+          <button class="settings-about-link" data-external-url="https://dripline.io">
             <i class="icon-globe"></i>
             <span>Website</span>
           </button>
@@ -869,7 +869,7 @@ export class SettingsDialog {
 
         <div class="settings-about-credits">
           <p>Built for Solana traders</p>
-          <p class="settings-about-copyright">© ${new Date().getFullYear()} VeloxBot. All rights reserved.</p>
+          <p class="settings-about-copyright">© ${new Date().getFullYear()} DripLine. All rights reserved.</p>
         </div>
       </div>
     `;
@@ -963,7 +963,7 @@ if (window.electronAPI?.onCheckForUpdates) {
  */
 export async function checkAndShowUpdateDialog() {
   // Don't check in CLI mode (no auto-updates)
-  if (!window.__VELOXBOT_GUI_MODE) {
+  if (!window.__DRIPLINE_GUI_MODE) {
     return;
   }
 
@@ -1013,7 +1013,7 @@ export async function checkAndShowUpdateDialog() {
 // Auto-check for updates when dashboard is ready
 // Use dynamic import to avoid circular dependencies and ensure bootstrap is loaded
 (async function initUpdateCheck() {
-  if (typeof window === "undefined" || !window.__VELOXBOT_GUI_MODE) {
+  if (typeof window === "undefined" || !window.__DRIPLINE_GUI_MODE) {
     return;
   }
 

@@ -226,7 +226,7 @@ function releaseForState(state) {
 }
 
 /**
- * Read the published release history from veloxbot.io, through the backend.
+ * Read the published release history from dripline.io, through the backend.
  *
  * Loaded the first time the panel is opened rather than with the dialog: a
  * reader who never opens Release Notes never pays for the request. The backend
@@ -456,7 +456,7 @@ function attachActions(root, state, refresh, session) {
     const confirmation = await ConfirmationDialog.show({
       title: `Install v${state.available_update?.version}`,
       message:
-        "VeloxBot restarts onto the new version. Trading stops for a few seconds and resumes automatically; open positions are untouched.",
+        "DripLine restarts onto the new version. Trading stops for a few seconds and resumes automatically; open positions are untouched.",
       confirmLabel: "Restart to update",
       cancelLabel: "Cancel",
       variant: "warning",
@@ -477,7 +477,7 @@ function attachActions(root, state, refresh, session) {
     const confirmation = await ConfirmationDialog.show({
       title: "Run the installer",
       message:
-        "The verified installer opens and VeloxBot quits cleanly. Complete the installer, then reopen VeloxBot.",
+        "The verified installer opens and DripLine quits cleanly. Complete the installer, then reopen DripLine.",
       confirmLabel: "Open installer",
       cancelLabel: "Cancel",
       variant: "warning",
@@ -499,7 +499,7 @@ function attachActions(root, state, refresh, session) {
       key: "updates:installer-opened",
       type: "success",
       title: "Installer opened",
-      message: "VeloxBot will quit cleanly now.",
+      message: "DripLine will quit cleanly now.",
     });
     setTimeout(() => window.electronAPI?.quitForUpdate?.(), 1000);
   });

@@ -216,10 +216,10 @@ class SetupDialog {
       }
 
       this.walletInput.value = "";
-      this.setStatus("success", "Setup saved — restarting VeloxBot in full mode…");
+      this.setStatus("success", "Setup saved — restarting DripLine in full mode…");
       this.submitBtn.textContent = "Restarting…";
 
-      const waitForRestart = window.waitForVeloxBotRestart;
+      const waitForRestart = window.waitForDripLineRestart;
       if (typeof waitForRestart !== "function") {
         throw new Error("Automatic restart helper is unavailable. Reload the dashboard shortly.");
       }

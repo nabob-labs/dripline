@@ -211,7 +211,7 @@
     });
   }
 
-  async function waitForVeloxBotRestart(previousInstanceId, options = {}) {
+  async function waitForDripLineRestart(previousInstanceId, options = {}) {
     const target = options.target || "/home";
     const timeoutMs = options.timeoutMs || 120000;
     const startedAt = Date.now();
@@ -240,7 +240,7 @@
       await delay(500, options.signal);
     }
 
-    throw new Error("Setup is saved, but VeloxBot has not reconnected yet.");
+    throw new Error("Setup is saved, but DripLine has not reconnected yet.");
   }
 
   window.SetupRuntime = {
@@ -249,7 +249,7 @@
     summarizeValidation,
     validateRpcValue,
     validateWalletValue,
-    waitForVeloxBotRestart,
+    waitForDripLineRestart,
   };
-  window.waitForVeloxBotRestart = waitForVeloxBotRestart;
+  window.waitForDripLineRestart = waitForDripLineRestart;
 })();

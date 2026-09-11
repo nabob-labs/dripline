@@ -31,15 +31,15 @@ use std::time::{Duration, Instant};
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use rusqlite::Connection;
-use veloxbot::chains::ChainId;
-use veloxbot::global::{
+use dripline::chains::ChainId;
+use dripline::global::{
     CONNECTIVITY_SYSTEM_READY, INITIALIZATION_COMPLETE, POOL_SERVICE_READY, POSITIONS_SYSTEM_READY,
     TOKENS_SYSTEM_READY, TRANSACTIONS_SYSTEM_READY,
 };
-use veloxbot::tokens::schema::CREATE_TABLES;
-use veloxbot::tokens::TokenDatabase;
-use veloxbot::webserver::routes;
-use veloxbot::webserver::state::AppState;
+use dripline::tokens::schema::CREATE_TABLES;
+use dripline::tokens::TokenDatabase;
+use dripline::webserver::routes;
+use dripline::webserver::state::AppState;
 use serde_json::Value;
 use tower::ServiceExt;
 

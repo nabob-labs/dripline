@@ -196,7 +196,7 @@ export class Poller {
       }
 
       // Skip while the backend is unreachable — the connectivity watcher shows
-      // the global overlay and will fire `veloxbot:reconnected` on recovery;
+      // the global overlay and will fire `dripline:reconnected` on recovery;
       // there's no point firing doomed fetches that just log console errors.
       if (window.__SB_CONNECTIVITY__ && window.__SB_CONNECTIVITY__.isBackendOnline() === false) {
         return;

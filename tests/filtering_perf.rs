@@ -18,11 +18,11 @@
 mod common;
 
 use common::{config_guard, filter_token, filters_default_dex_only, holder, per_item_micros};
-use veloxbot::config::schemas::{DexScreenerFilters, OnChainFilters, RugCheckFilters};
-use veloxbot::config::FilteringConfig;
-use veloxbot::filtering::evaluate_token;
-use veloxbot::filtering::sources::{dexscreener, onchain, rugcheck};
-use veloxbot::tokens::types::Token;
+use dripline::config::schemas::{DexScreenerFilters, OnChainFilters, RugCheckFilters};
+use dripline::config::FilteringConfig;
+use dripline::filtering::evaluate_token;
+use dripline::filtering::sources::{dexscreener, onchain, rugcheck};
+use dripline::tokens::types::Token;
 use std::time::{Duration, Instant};
 
 /// Big enough to average out scheduler noise, small enough to stay well inside the
@@ -345,7 +345,7 @@ async fn perf_projects_a_full_snapshot_within_the_refresh_interval() {
 
     let per_token_secs = elapsed.as_secs_f64() / tokens.len() as f64;
     let projected = per_token_secs * 330_000.0; // the owner's live corpus with market data
-    let budget = veloxbot::filtering::background::refresh_interval_secs() as f64;
+    let budget = dripline::filtering::background::refresh_interval_secs() as f64;
     eprintln!(
         "PERF projected evaluation of 330k tokens: {projected:.1}s (debug build) against a \
          {budget:.0}s refresh interval"

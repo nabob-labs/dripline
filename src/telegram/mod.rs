@@ -1,4 +1,4 @@
-//! Telegram Module for VeloxBot
+//! Telegram Module for DripLine
 //!
 //! A comprehensive, standalone Telegram integration module providing:
 //! - Bot management and lifecycle

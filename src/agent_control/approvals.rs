@@ -3,7 +3,7 @@
 //! An MCP tool call that resolves to `RequireApproval` creates a durable,
 //! expiring request bound to the pairing/client, the exact tool, the canonical
 //! arguments (and their digest) and an audit correlation id. A human approves
-//! or denies it *inside VeloxBot*; the external caller can never approve its
+//! or denies it *inside DripLine*; the external caller can never approve its
 //! own request. Resolution is exactly-once, execution is at-most-once, and the
 //! stored canonical arguments are the only thing ever executed — a later call
 //! that changes the arguments produces a different digest and therefore a

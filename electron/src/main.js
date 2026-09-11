@@ -49,7 +49,7 @@ const SLOW_LAUNCH_HINT_MS = 15000;
 
 // Promo Studio: the owner-only capture driver sets this before launching the app. Nothing
 // about the capture bridge is loaded, listening or reachable without it.
-const PROMO_CONTROL = process.env.VELOXBOT_PROMO_CONTROL === '1';
+const PROMO_CONTROL = process.env.DRIPLINE_PROMO_CONTROL === '1';
 const promoBridge = PROMO_CONTROL ? require('./promo_bridge') : null;
 let promoBridgePort = null;
 
@@ -58,9 +58,9 @@ let backendProcess = null;
 let isQuitting = false;
 let tray = null;
 let isExitDialogOpen = false; // Guard flag to prevent multiple exit dialogs
-let backendReadyResolve = null; // Promise resolver for VELOXBOT_READY signal
+let backendReadyResolve = null; // Promise resolver for DRIPLINE_READY signal
 let backendReadySignal = false; // Latches readiness if stdout wins the waitForBackend race
-let startupError = null; // Structured fatal startup error (VELOXBOT_ERROR payload), if any
+let startupError = null; // Structured fatal startup error (DRIPLINE_ERROR payload), if any
 let bootErrorShown = false; // True once a boot-error screen has actually been rendered
 let isRecovering = false; // True while a one-click recovery (e.g. wallet reset) is in progress
 let dashboardLoaded = false; // True once the dashboard URL has been loaded successfully
@@ -161,12 +161,12 @@ const SHELL_REVISION = (() => {
   }
 })();
 
-const VELOXBOT_BASE_DIR = appPaths.resolveBaseDirectory();
-const CORE_DIR = appPaths.coreDirectory(VELOXBOT_BASE_DIR);
+const DRIPLINE_BASE_DIR = appPaths.resolveBaseDirectory();
+const CORE_DIR = appPaths.coreDirectory(DRIPLINE_BASE_DIR);
 
-function openVeloxBotLogs() {
-  const logsPath = appPaths.logsDirectory(VELOXBOT_BASE_DIR);
-  shell.openPath(fs.existsSync(logsPath) ? logsPath : VELOXBOT_BASE_DIR);
+function openDripLineLogs() {
+  const logsPath = appPaths.logsDirectory(DRIPLINE_BASE_DIR);
+  shell.openPath(fs.existsSync(logsPath) ? logsPath : DRIPLINE_BASE_DIR);
 }
 
 function isSafeExternalUrl(rawUrl) {
@@ -218,7 +218,7 @@ function isLoadingPageUrl(rawUrl) {
 }
 
 function getBackendExtraArgs() {
-  const raw = process.env.VELOXBOT_EXTRA_ARGS || '';
+  const raw = process.env.DRIPLINE_EXTRA_ARGS || '';
   return raw.split(/\s+/).map(arg => arg.trim()).filter(Boolean);
 }
 
@@ -283,11 +283,11 @@ function createTray() {
   }
   
   tray = new Tray(trayIcon);
-  tray.setToolTip('VeloxBot - Solana Trading Bot');
+  tray.setToolTip('DripLine - Solana Trading Bot');
   
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Show VeloxBot',
+      label: 'Show DripLine',
       click: () => {
         if (mainWindow) {
           mainWindow.show();
@@ -308,29 +308,29 @@ function createTray() {
     {
       label: 'Open Data Folder',
       click: () => {
-        shell.openPath(appPaths.dataDirectory(VELOXBOT_BASE_DIR));
+        shell.openPath(appPaths.dataDirectory(DRIPLINE_BASE_DIR));
       }
     },
     {
       label: 'Open Logs Folder',
-      click: openVeloxBotLogs
+      click: openDripLineLogs
     },
     { type: 'separator' },
     {
       label: 'Documentation',
       click: async () => {
-        await shell.openExternal('https://veloxbot.io/docs');
+        await shell.openExternal('https://dripline.io/docs');
       }
     },
     {
       label: 'Telegram Support',
       click: async () => {
-        await shell.openExternal('https://t.me/veloxbotio_support');
+        await shell.openExternal('https://t.me/driplineio_support');
       }
     },
     { type: 'separator' },
     {
-      label: 'Quit VeloxBot',
+      label: 'Quit DripLine',
       click: () => {
         isQuitting = true;
         app.quit();
@@ -368,9 +368,9 @@ async function showExitDialog() {
       buttons: ['Minimize to Tray', 'Quit Completely', 'Cancel'],
       defaultId: 0,
       cancelId: 2,
-      title: 'Close VeloxBot',
+      title: 'Close DripLine',
       message: 'What would you like to do?',
-      detail: 'VeloxBot can continue running in the background. The trading bot will keep monitoring and trading while minimized to the system tray.',
+      detail: 'DripLine can continue running in the background. The trading bot will keep monitoring and trading while minimized to the system tray.',
       icon: nativeImage.createFromPath(path.join(__dirname, '..', 'assets', 'icon.png'))
     });
     
@@ -430,7 +430,7 @@ function bundledCore(reason = '') {
  * version already in use, and saying "installing update" there would describe
  * work that finished days ago.
  */
-function describeCoreLaunch(core, fallbackMessage = 'Starting VeloxBot') {
+function describeCoreLaunch(core, fallbackMessage = 'Starting DripLine') {
   if (core.staged && core.firstRun) {
     return {
       message: `Updating to v${core.version}`,
@@ -451,10 +451,10 @@ async function recordCoreAdoption(core) {
 }
 
 /**
- * Get the path to the veloxbot binary shipped inside this application bundle
+ * Get the path to the dripline binary shipped inside this application bundle
  */
 function getBinaryPath() {
-  const binaryName = process.platform === 'win32' ? 'veloxbot.exe' : 'veloxbot';
+  const binaryName = process.platform === 'win32' ? 'dripline.exe' : 'dripline';
   
   if (app.isPackaged) {
     // In production, binary is in resources folder
@@ -513,7 +513,7 @@ function checkBackendHealth() {
 
 /**
  * Wait for the backend to be ready
- * First waits for VELOXBOT_READY signal (to get dynamic port), then health checks
+ * First waits for DRIPLINE_READY signal (to get dynamic port), then health checks
  */
 async function waitForBackend() {
   // A backend can legitimately take a long time (first run, a schema migration,
@@ -533,9 +533,9 @@ async function waitForBackend() {
 async function awaitBackendReady() {
   const startTime = Date.now();
 
-  console.log('[Electron] Waiting for backend to report ready (VELOXBOT_READY signal)...');
+  console.log('[Electron] Waiting for backend to report ready (DRIPLINE_READY signal)...');
   
-  // Phase 1: Wait for VELOXBOT_READY with port and token. The latch covers
+  // Phase 1: Wait for DRIPLINE_READY with port and token. The latch covers
   // fast restarts where stdout reports ready before this function installs its
   // resolver.
   let gotReadySignal = backendReadySignal;
@@ -553,7 +553,7 @@ async function awaitBackendReady() {
 
       timer = setTimeout(() => {
         if (backendReadyResolve === settle) {
-          console.error('[Electron] Timeout waiting for VELOXBOT_READY signal');
+          console.error('[Electron] Timeout waiting for DRIPLINE_READY signal');
           settle(false);
         }
       }, CONFIG.maxWaitTime);
@@ -561,11 +561,11 @@ async function awaitBackendReady() {
   }
   
   if (!gotReadySignal || !CONFIG.port) {
-    console.error('[Electron] Backend did not send VELOXBOT_READY signal or port is missing');
+    console.error('[Electron] Backend did not send DRIPLINE_READY signal or port is missing');
     return false;
   }
   
-  console.log(`[Electron] Got VELOXBOT_READY signal, port=${CONFIG.port}, elapsed=${Date.now() - startTime}ms`);
+  console.log(`[Electron] Got DRIPLINE_READY signal, port=${CONFIG.port}, elapsed=${Date.now() - startTime}ms`);
   
   // Phase 2: Health check loop to verify backend is fully operational
   let checkCount = 0;
@@ -595,7 +595,7 @@ async function awaitBackendReady() {
 }
 
 /**
- * Start the veloxbot backend process
+ * Start the dripline backend process
  */
 function startBackend(extraArgs = [], core = null) {
   // Supersede a waiter owned by the prior child before installing a new one.
@@ -630,8 +630,8 @@ function startBackend(extraArgs = [], core = null) {
         // The backend cannot discover these on its own: the shell revision is
         // what makes a core-only update decidable, and the staged flag tells the
         // dashboard it is running an update that was applied without an installer.
-        VELOXBOT_SHELL_REVISION: SHELL_REVISION,
-        VELOXBOT_CORE_STAGED: activeCore.staged ? '1' : '0'
+        DRIPLINE_SHELL_REVISION: SHELL_REVISION,
+        DRIPLINE_CORE_STAGED: activeCore.staged ? '1' : '0'
       }
     });
     backendProcess = child;
@@ -644,11 +644,11 @@ function startBackend(extraArgs = [], core = null) {
       const line = rawLine.trim();
       if (line) {
         console.log('[Backend]', line);
-        // Parse VELOXBOT_ERROR signal — a structured fatal startup failure.
-        // Symmetric with VELOXBOT_READY: base64-encoded JSON on one line.
-        if (line.startsWith('VELOXBOT_ERROR:')) {
+        // Parse DRIPLINE_ERROR signal — a structured fatal startup failure.
+        // Symmetric with DRIPLINE_READY: base64-encoded JSON on one line.
+        if (line.startsWith('DRIPLINE_ERROR:')) {
           try {
-            const encoded = line.slice('VELOXBOT_ERROR:'.length).trim();
+            const encoded = line.slice('DRIPLINE_ERROR:'.length).trim();
             const payload = JSON.parse(Buffer.from(encoded, 'base64').toString('utf8'));
             console.error('[Electron] Backend reported fatal startup error:', payload.code);
             startupError = payload;
@@ -657,11 +657,11 @@ function startBackend(extraArgs = [], core = null) {
               backendReadyResolve(false);
             }
           } catch (err) {
-            console.error('[Electron] Failed to parse VELOXBOT_ERROR payload:', err.message);
+            console.error('[Electron] Failed to parse DRIPLINE_ERROR payload:', err.message);
           }
           return;
         }
-        if (line === 'VELOXBOT_RESTART') {
+        if (line === 'DRIPLINE_RESTART') {
           backendRestartRequested = true;
           try {
             const currentRoute = currentDashboardRoute();
@@ -674,15 +674,15 @@ function startBackend(extraArgs = [], core = null) {
           console.log(`[Electron] Backend requested graceful restart; restore=${backendRestartTarget}`);
           return;
         }
-        // Parse VELOXBOT_READY message for port and token
-        if (line.startsWith('VELOXBOT_READY:')) {
+        // Parse DRIPLINE_READY message for port and token
+        if (line.startsWith('DRIPLINE_READY:')) {
           const parts = line.split(':');
           if (parts.length >= 3) {
             const port = parseInt(parts[1], 10);
             const token = parts[2];
             console.log(`[Electron] Backend ready on port ${port} with token ${token.substring(0, 8)}...`);
             CONFIG.port = port;
-            global.VELOXBOT_TOKEN = token;
+            global.DRIPLINE_TOKEN = token;
             backendReadySignal = true;
 
             // Resolve the waitForBackend() Promise
@@ -796,7 +796,7 @@ function stopBackend() {
  * quiet line under it. Both are kept here so a detail can be revised without
  * losing the headline it belongs to.
  */
-let loadingMessage = 'Starting VeloxBot';
+let loadingMessage = 'Starting DripLine';
 let loadingDetail = null;
 
 function pushLoadingStatus() {
@@ -934,7 +934,7 @@ async function checkAndInstallVCRedist() {
     type: 'warning',
     title: 'Missing Dependency',
     message: 'Visual C++ Redistributable is missing',
-    detail: 'VeloxBot requires Microsoft Visual C++ Redistributable to run. Would you like to install it now?',
+    detail: 'DripLine requires Microsoft Visual C++ Redistributable to run. Would you like to install it now?',
     buttons: ['Install & Fix', 'Exit'],
     defaultId: 0,
     cancelId: 1,
@@ -971,7 +971,7 @@ async function checkAndInstallVCRedist() {
   // /install /passive /norestart -> Installs with progress bar but no user interaction required
   updateLoadingStatus(
     'Installing system dependencies',
-    'VeloxBot needs the Microsoft Visual C++ Redistributable to run.'
+    'DripLine needs the Microsoft Visual C++ Redistributable to run.'
   );
   
   try {
@@ -994,7 +994,7 @@ async function checkAndInstallVCRedist() {
       type: 'info',
       title: 'Installation Complete',
       message: 'Dependencies installed successfully.',
-      detail: 'VeloxBot will now start.',
+      detail: 'DripLine will now start.',
       buttons: ['OK']
     });
     
@@ -1206,13 +1206,13 @@ function createApplicationMenu() {
       label: app.name,
       submenu: [
         {
-          label: 'About VeloxBot',
+          label: 'About DripLine',
           click: () => {
             dialog.showMessageBox(mainWindow, {
               type: 'info',
-              title: 'About VeloxBot',
-              message: 'VeloxBot',
-              detail: `Version ${app.getVersion()}\n\nAdvanced Solana wallet management and auto-trading bot.\n\nhttps://veloxbot.io\n\n© 2024-2026 VeloxBot`,
+              title: 'About DripLine',
+              message: 'DripLine',
+              detail: `Version ${app.getVersion()}\n\nAdvanced Solana wallet management and auto-trading bot.\n\nhttps://dripline.io\n\n© 2024-2026 DripLine`,
               buttons: ['OK']
             });
           }
@@ -1243,12 +1243,12 @@ function createApplicationMenu() {
           label: 'Open Data Folder',
           accelerator: isMac ? 'Cmd+Shift+D' : 'Ctrl+Shift+D',
           click: () => {
-            shell.openPath(appPaths.dataDirectory(VELOXBOT_BASE_DIR));
+            shell.openPath(appPaths.dataDirectory(DRIPLINE_BASE_DIR));
           }
         },
         {
           label: 'Open Logs Folder',
-          click: openVeloxBotLogs
+          click: openDripLineLogs
         },
         { type: 'separator' },
         isMac ? { role: 'close' } : { role: 'quit' }
@@ -1319,7 +1319,7 @@ function createApplicationMenu() {
           label: 'Documentation',
           accelerator: 'F1',
           click: async () => {
-            await shell.openExternal('https://veloxbot.io/docs');
+            await shell.openExternal('https://dripline.io/docs');
           }
         },
         {
@@ -1369,7 +1369,7 @@ Other:
             dialog.showMessageBox(mainWindow, {
               type: 'info',
               title: 'Keyboard Shortcuts',
-              message: 'VeloxBot Keyboard Shortcuts',
+              message: 'DripLine Keyboard Shortcuts',
               detail: shortcuts.trim(),
               buttons: ['OK']
             });
@@ -1379,32 +1379,32 @@ Other:
         {
           label: 'Telegram Channel',
           click: async () => {
-            await shell.openExternal('https://t.me/veloxbotio');
+            await shell.openExternal('https://t.me/driplineio');
           }
         },
         {
           label: 'Telegram Community',
           click: async () => {
-            await shell.openExternal('https://t.me/veloxbotio_talk');
+            await shell.openExternal('https://t.me/driplineio_talk');
           }
         },
         {
           label: 'Telegram Support',
           click: async () => {
-            await shell.openExternal('https://t.me/veloxbotio_support');
+            await shell.openExternal('https://t.me/driplineio_support');
           }
         },
         { type: 'separator' },
         {
           label: 'Follow on X (Twitter)',
           click: async () => {
-            await shell.openExternal('https://x.com/veloxbotio');
+            await shell.openExternal('https://x.com/driplineio');
           }
         },
         {
           label: 'Visit Website',
           click: async () => {
-            await shell.openExternal('https://veloxbot.io');
+            await shell.openExternal('https://dripline.io');
           }
         },
         { type: 'separator' },
@@ -1417,13 +1417,13 @@ Other:
         ...(!isMac ? [
           { type: 'separator' },
           {
-            label: 'About VeloxBot',
+            label: 'About DripLine',
             click: () => {
               dialog.showMessageBox(mainWindow, {
                 type: 'info',
-                title: 'About VeloxBot',
-                message: 'VeloxBot',
-                detail: `Version ${app.getVersion()}\n\nAdvanced Solana wallet management and auto-trading bot.\n\nhttps://veloxbot.io\n\n© 2024-2026 VeloxBot`,
+                title: 'About DripLine',
+                message: 'DripLine',
+                detail: `Version ${app.getVersion()}\n\nAdvanced Solana wallet management and auto-trading bot.\n\nhttps://dripline.io\n\n© 2024-2026 DripLine`,
                 buttons: ['OK']
               });
             }
@@ -1479,13 +1479,13 @@ async function restartBackendFromDashboard(targetRoute, statusOverride, coreOver
   }
 
   // Claim the screen before resolving the core, which can spend a moment hashing
-  // a staged binary. Otherwise the splash sits on its "Starting VeloxBot"
+  // a staged binary. Otherwise the splash sits on its "Starting DripLine"
   // default and then jumps, which reads as a stutter rather than a restart.
-  const opening = statusOverride || { message: 'Restarting VeloxBot', detail: null };
+  const opening = statusOverride || { message: 'Restarting DripLine', detail: null };
   updateLoadingStatus(opening.message, opening.detail);
 
   CONFIG.port = null;
-  global.VELOXBOT_TOKEN = null;
+  global.DRIPLINE_TOKEN = null;
   if (backendReadyResolve) backendReadyResolve(false);
 
   // Resolving the core here is what actually applies a staged update: the
@@ -1495,7 +1495,7 @@ async function restartBackendFromDashboard(targetRoute, statusOverride, coreOver
   // quarantine record or pointer removal from being persisted.
   const core = coreOverride || await resolveBackendBinary();
   if (!statusOverride) {
-    const launch = describeCoreLaunch(core, 'Restarting VeloxBot');
+    const launch = describeCoreLaunch(core, 'Restarting DripLine');
     updateLoadingStatus(launch.message, launch.detail);
   }
 
@@ -1531,16 +1531,16 @@ async function restartBackendFromDashboard(targetRoute, statusOverride, coreOver
 
 /**
  * Build a generic boot-error payload for unexplained early failures, mirroring
- * the structured VELOXBOT_ERROR shape so the renderer can treat both alike.
+ * the structured DRIPLINE_ERROR shape so the renderer can treat both alike.
  */
 function genericBootError(detail) {
-  const logsPath = path.join(appPaths.logsDirectory(VELOXBOT_BASE_DIR), 'latest.log');
+  const logsPath = path.join(appPaths.logsDirectory(DRIPLINE_BASE_DIR), 'latest.log');
   return {
     code: 'generic',
-    title: 'VeloxBot could not start',
+    title: 'DripLine could not start',
     detail: detail || 'The backend stopped unexpectedly before the dashboard was ready.',
     remedy: 'Open the logs folder to see what happened, then restart the app. If the problem '
-      + 'persists, contact support at t.me/veloxbotio_support.',
+      + 'persists, contact support at t.me/driplineio_support.',
     log_path: logsPath
   };
 }
@@ -1598,8 +1598,8 @@ async function initialize() {
   if (promoBridge) {
     try {
       promoBridgePort = await promoBridge.startPromoBridge(mainWindow, {
-        port: Number(process.env.VELOXBOT_PROMO_PORT || 0),
-        mediaDir: process.env.VELOXBOT_PROMO_MEDIA || null
+        port: Number(process.env.DRIPLINE_PROMO_PORT || 0),
+        mediaDir: process.env.DRIPLINE_PROMO_MEDIA || null
       });
       console.log('[Electron] Promo Studio bridge listening on port', promoBridgePort);
     } catch (err) {
@@ -1822,7 +1822,7 @@ ipcMain.handle('boot:reset-wallet-data', async () => {
 });
 
 ipcMain.handle('boot:open-logs', () => {
-  openVeloxBotLogs();
+  openDripLineLogs();
   return true;
 });
 

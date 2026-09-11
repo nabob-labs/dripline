@@ -1,4 +1,4 @@
-# VeloxBot Electron Assets
+# DripLine Electron Assets
 
 This directory contains assets for the Electron build:
 

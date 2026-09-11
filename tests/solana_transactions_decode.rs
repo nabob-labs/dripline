@@ -1,10 +1,10 @@
 //! Pure wallet-watch transaction classification contracts.
 
-use veloxbot::chains::solana::constants::USDC_MINT;
-use veloxbot::chains::solana::transactions::program_ids::JUPITER_V6_PROGRAM_ID;
-use veloxbot::chains::solana::wallets::classify::classify_transaction_activity;
-use veloxbot::transactions::Transaction;
-use veloxbot::wallets::watch::{ActivityKind, SwapSide, TransferDirection};
+use dripline::chains::solana::constants::USDC_MINT;
+use dripline::chains::solana::transactions::program_ids::JUPITER_V6_PROGRAM_ID;
+use dripline::chains::solana::wallets::classify::classify_transaction_activity;
+use dripline::transactions::Transaction;
+use dripline::wallets::watch::{ActivityKind, SwapSide, TransferDirection};
 use serde_json::{json, Value};
 
 const SUBJECT: &str = "11111111111111111111111111111111";

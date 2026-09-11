@@ -197,7 +197,7 @@ pub async fn get_referral_config() -> Response {
     success_response(data)
 }
 
-/// GET /api/config/account - Get VeloxBot account configuration
+/// GET /api/config/account - Get DripLine account configuration
 pub async fn get_account_config() -> Response {
     let data = config::with_config(|cfg| ConfigResponse {
         data: cfg.account.clone(),

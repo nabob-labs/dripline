@@ -35,7 +35,7 @@ const ADOPTED_FILE = 'adopted.json';
 const VERSION_RE = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
 
 function coreBinaryName(platform = process.platform) {
-  return platform === 'win32' ? 'veloxbot.exe' : 'veloxbot';
+  return platform === 'win32' ? 'dripline.exe' : 'dripline';
 }
 
 /** Numeric comparison of two release versions; pre-release suffixes are ignored. */

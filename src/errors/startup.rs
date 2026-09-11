@@ -9,7 +9,7 @@
 //!   professional block (no developer-only `cargo` instructions) to both the
 //!   terminal and the rotating log file.
 //! - **GUI / Electron:** the same call prints a single machine-readable line,
-//!   `VELOXBOT_ERROR:<base64-json>`, to stdout. The Electron shell parses it
+//!   `DRIPLINE_ERROR:<base64-json>`, to stdout. The Electron shell parses it
 //!   and renders a proper error screen with the title, detail, remedy, and — when
 //!   a safe automated fix exists — a one-click recovery button.
 //!
@@ -36,7 +36,7 @@ pub enum StartupErrorCode {
     WalletMismatch,
     /// The webserver port is already in use by another process.
     PortInUse,
-    /// Another VeloxBot instance is already running (process lock held).
+    /// Another DripLine instance is already running (process lock held).
     LockHeld,
     /// `config.toml` exists but could not be read or parsed.
     ConfigInvalid,
@@ -146,7 +146,7 @@ impl StartupError {
         let data_dir = crate::paths::get_data_directory();
         let remedy = format!(
             "Clear the previous wallet's local history to continue (your databases are backed \
-             up automatically first):\n\n  - In the app: choose \"Reset wallet data & restart\" below.\n  - From a terminal: run  veloxbot --clean-wallet-data\n\nNo on-chain funds are affected; only this computer's local trade/position history \
+             up automatically first):\n\n  - In the app: choose \"Reset wallet data & restart\" below.\n  - From a terminal: run  dripline --clean-wallet-data\n\nNo on-chain funds are affected; only this computer's local trade/position history \
              is reset. Backups are written under:\n  {}/backups/",
             data_dir.display()
         );
@@ -168,10 +168,10 @@ impl StartupError {
         let message = message.into();
         Self::new(
             StartupErrorCode::Generic,
-            "VeloxBot could not start",
+            "DripLine could not start",
             message,
             "Check the log file for details, then restart the app. If the problem persists, \
-             contact support at t.me/veloxbotio_support.",
+             contact support at t.me/driplineio_support.",
         )
     }
 
@@ -192,7 +192,7 @@ impl StartupError {
     }
 
     /// Surface the error on every channel: a boxed block to the terminal + log
-    /// file, and the `VELOXBOT_ERROR:<base64-json>` signal to stdout for the
+    /// file, and the `DRIPLINE_ERROR:<base64-json>` signal to stdout for the
     /// GUI. Call exactly once, at the process boundary, after all other logging.
     pub fn emit(&self) {
         // 1. Human-readable boxed block (terminal + rotating log file).
@@ -216,9 +216,9 @@ impl StartupError {
         logger::error(LogTag::System, &block);
 
         // 2. Machine-readable signal for the Electron shell (stdout, like
-        //    VELOXBOT_READY). Base64 keeps it on a single parseable line.
+        //    DRIPLINE_READY). Base64 keeps it on a single parseable line.
         let encoded = BASE64.encode(self.to_json().as_bytes());
-        println!("VELOXBOT_ERROR:{encoded}");
+        println!("DRIPLINE_ERROR:{encoded}");
         // Ensure the signal is flushed before the process exits.
         use std::io::Write;
         let _ = std::io::stdout().flush();

@@ -1,4 +1,4 @@
-//! VeloxBot account settings.
+//! DripLine account settings.
 //!
 //! ============================================================================
 //! WHAT IS DELIBERATELY *NOT* IN THIS FILE
@@ -22,10 +22,10 @@ use crate::config_struct;
 use crate::field_metadata;
 
 config_struct! {
-    /// VeloxBot account settings.
+    /// DripLine account settings.
     pub struct AccountConfig {
         /// Offer to sign in automatically when the main wallet already belongs
-        /// to a veloxbot.io account.
+        /// to a dripline.io account.
         ///
         /// OFF by default, and deliberately so. Signing a message with the
         /// trading key without being asked is exactly what a malicious fork of
@@ -35,20 +35,20 @@ config_struct! {
         /// sign-in — it just never signs on its own.
         #[metadata(field_metadata! {
             label: "Sign in automatically with my wallet",
-            hint: "When this wallet already has a VeloxBot account, sign in without asking at startup. Off by default: signing a message with your trading key is something you should choose, not something the bot decides.",
+            hint: "When this wallet already has a DripLine account, sign in without asking at startup. Off by default: signing a message with your trading key is something you should choose, not something the bot decides.",
             category: "General"
         })]
         auto_wallet_signin: bool = false,
 
-        /// Route swap SUBMISSION through veloxbot.io's RPC when signed in.
+        /// Route swap SUBMISSION through dripline.io's RPC when signed in.
         ///
         /// Submission only — the transaction is built and signed on this
         /// machine and the server merely broadcasts it. It cannot serve pool
         /// polling and is never asked to (see `src/rpc/provider`), so your own
         /// RPC is still required for the bot to work at all.
         #[metadata(field_metadata! {
-            label: "Use VeloxBot RPC for sending transactions",
-            hint: "Broadcast signed swap transactions through veloxbot.io instead of your own RPC. Signing always happens on this machine; the server cannot alter a signed transaction. Your own RPC is still required for price data.",
+            label: "Use DripLine RPC for sending transactions",
+            hint: "Broadcast signed swap transactions through dripline.io instead of your own RPC. Signing always happens on this machine; the server cannot alter a signed transaction. Your own RPC is still required for price data.",
             category: "General"
         })]
         use_gateway_rpc: bool = true,

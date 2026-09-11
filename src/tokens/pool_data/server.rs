@@ -1,4 +1,4 @@
-//! Token pools via the self-hosted VeloxBot data server.
+//! Token pools via the self-hosted DripLine data server.
 //!
 //! The server is the central pool registry: it resolves and caches every token's
 //! pools (preferring the wSOL pool) centrally. Consumed here as the PRIMARY pool

@@ -144,7 +144,7 @@ impl Default for IntegrationFeatures {
     }
 }
 
-/// All feature flags for VeloxBot.
+/// All feature flags for DripLine.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Features {
     pub tools: ToolFeatures,

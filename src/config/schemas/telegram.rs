@@ -155,7 +155,7 @@ config_struct! {
         /// Notify on startup
         #[metadata(field_metadata! {
             label: "Bot Startup",
-            hint: "Send notification when VeloxBot starts",
+            hint: "Send notification when DripLine starts",
             category: "Notifications",
         })]
         notify_on_startup: bool = true,
@@ -163,7 +163,7 @@ config_struct! {
         /// Notify on shutdown
         #[metadata(field_metadata! {
             label: "Bot Shutdown",
-            hint: "Send notification when VeloxBot stops",
+            hint: "Send notification when DripLine stops",
             category: "Notifications",
         })]
         notify_on_shutdown: bool = true,

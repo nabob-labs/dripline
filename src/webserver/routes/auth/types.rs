@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 // =============================================================================
 
 /// Cookie name for session token
-pub const SESSION_COOKIE_NAME: &str = "veloxbot_session";
+pub const SESSION_COOKIE_NAME: &str = "dripline_session";
 
 // =============================================================================
 // RESPONSE TYPES

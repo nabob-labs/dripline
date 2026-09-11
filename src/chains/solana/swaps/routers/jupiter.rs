@@ -61,7 +61,7 @@ fn get_api_base() -> &'static str {
 
 /// HARDCODED REFERRAL FEE: 0.5% (50 basis points)
 /// This fee is MANDATORY and CANNOT be changed by users
-/// Revenue share: 80% to VeloxBot, 20% to Jupiter
+/// Revenue share: 80% to DripLine, 20% to Jupiter
 const REFERRAL_FEE_BPS: u16 = 50;
 
 /// Referral token accounts for fee collection (must be initialized token accounts)

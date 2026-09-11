@@ -29,17 +29,17 @@ use common::{
     anchor_ts, bundle_with, candle, candle_series, condition, context_bare, context_with_candles,
     TEST_MINT,
 };
-use veloxbot::ohlcvs::{Candle, TimeframeBundle};
-use veloxbot::strategies::conditions::{
+use dripline::ohlcvs::{Candle, TimeframeBundle};
+use dripline::strategies::conditions::{
     ConditionEvaluator, ConsecutiveCandlesCondition, LiquidityLevelCondition,
     PriceBreakoutCondition, PriceChangePercentCondition, PriceToMaCondition, VolumeSpikeCondition,
 };
-use veloxbot::strategies::engine::{EngineConfig, StrategyEngine};
-use veloxbot::strategies::types::{
+use dripline::strategies::engine::{EngineConfig, StrategyEngine};
+use dripline::strategies::types::{
     Condition, EvaluationContext, LogicalOperator, MarketData, PositionData, RuleTree, Strategy,
     StrategyType,
 };
-use veloxbot::strategies::Error as StrategyError;
+use dripline::strategies::Error as StrategyError;
 use serde_json::json;
 
 const MINUTE: i64 = 60;
@@ -853,9 +853,9 @@ async fn a_strategy_reads_the_timeframe_it_was_saved_with_not_whatever_is_popula
 // tests drive the real global connectivity state, so they hold `config_guard()` both to
 // initialise config (the loss-limit check reads it) and to serialise with each other.
 
-use veloxbot::connectivity::state as connectivity_state;
-use veloxbot::connectivity::types::EndpointCriticality;
-use veloxbot::trader::admission::{check_entry_admission, EntryBlock};
+use dripline::connectivity::state as connectivity_state;
+use dripline::connectivity::types::EndpointCriticality;
+use dripline::trader::admission::{check_entry_admission, EntryBlock};
 
 const ENTRY_ENDPOINTS: [&str; 3] = ["rpc", "dexscreener", "rugcheck"];
 
@@ -880,11 +880,11 @@ async fn an_unknown_endpoint_is_not_healthy_but_is_also_not_confirmed_down() {
     // is false forever — never probed is not the same as measured and failing.
     assert!(!connectivity_state::is_endpoint_healthy("no_such_endpoint").await);
     assert_eq!(
-        veloxbot::connectivity::check_endpoints_healthy(&["no_such_endpoint"]).await,
+        dripline::connectivity::check_endpoints_healthy(&["no_such_endpoint"]).await,
         Some("no_such_endpoint".to_owned())
     );
     assert_eq!(
-        veloxbot::connectivity::check_endpoints_usable(&["no_such_endpoint"]).await,
+        dripline::connectivity::check_endpoints_usable(&["no_such_endpoint"]).await,
         None,
         "an endpoint with no reading is not evidence of an outage"
     );
@@ -906,7 +906,7 @@ async fn a_disabled_security_monitor_does_not_block_automated_entry() {
     // "rugcheck deliberately left unregistered" below is true regardless of
     // which order the config_guard-serialized tests actually ran in.
     connectivity_state::reset_all_for_tests().await;
-    veloxbot::global::set_force_stopped(false, None);
+    dripline::global::set_force_stopped(false, None);
 
     mark_healthy("rpc").await;
     mark_healthy("dexscreener").await;
@@ -926,7 +926,7 @@ async fn a_failing_security_endpoint_blocks_entries_and_names_itself() {
     // trading through a known outage.
     let _cfg = common::config_guard();
     connectivity_state::reset_all_for_tests().await;
-    veloxbot::global::set_force_stopped(false, None);
+    dripline::global::set_force_stopped(false, None);
 
     mark_healthy("rpc").await;
     mark_unhealthy("dexscreener").await;
@@ -950,10 +950,10 @@ async fn force_stop_is_answered_before_any_data_source_is_consulted() {
     let _cfg = common::config_guard();
     connectivity_state::reset_all_for_tests().await;
     mark_unhealthy("rpc").await;
-    veloxbot::global::set_force_stopped(true, Some("test"));
+    dripline::global::set_force_stopped(true, Some("test"));
 
     let block = check_entry_admission(TEST_MINT, &ENTRY_ENDPOINTS).await;
-    veloxbot::global::set_force_stopped(false, None);
+    dripline::global::set_force_stopped(false, None);
 
     assert_eq!(block, Err(EntryBlock::ForceStopped));
 }

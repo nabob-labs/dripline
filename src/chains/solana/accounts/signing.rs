@@ -91,7 +91,7 @@ pub async fn keypair_for_wallet(wallet_id: i64) -> Result<Keypair> {
 
 /// Sign an arbitrary text message with the main wallet. The one place the
 /// bot signs something that is not a transaction: proving wallet ownership
-/// to veloxbot.io during account sign-in.
+/// to dripline.io during account sign-in.
 pub async fn sign_message_with_main_wallet(message: &str) -> Result<String> {
     let keypair = main_keypair().await?;
     Ok(keypair.sign_message(message.as_bytes()).to_string())

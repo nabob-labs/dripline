@@ -14,9 +14,9 @@ mod common;
 
 use chrono::{Duration, Utc};
 use common::test_position;
-use veloxbot::positions::Position;
-use veloxbot::trader::evaluators::{DcaConfigSnapshot, DcaEvaluation};
-use veloxbot::trader::MIN_TRADE_SIZE_SOL;
+use dripline::positions::Position;
+use dripline::trader::evaluators::{DcaConfigSnapshot, DcaEvaluation};
+use dripline::trader::MIN_TRADE_SIZE_SOL;
 
 /// Config that permits a DCA whenever the position is more than 10% down.
 fn permissive_config() -> DcaConfigSnapshot {
@@ -322,9 +322,9 @@ fn the_calculations_snapshot_reports_what_was_measured() {
 #[test]
 fn every_non_auto_trader_management_refuses_auto_dca() {
     for management in [
-        veloxbot::positions::PositionManagement::UserOnly,
-        veloxbot::positions::PositionManagement::CopyTask,
-        veloxbot::positions::PositionManagement::Hybrid,
+        dripline::positions::PositionManagement::UserOnly,
+        dripline::positions::PositionManagement::CopyTask,
+        dripline::positions::PositionManagement::Hybrid,
     ] {
         let mut position = position_at(0.85);
         position.management = management;
@@ -347,6 +347,6 @@ fn every_non_auto_trader_management_refuses_auto_dca() {
 #[test]
 fn the_same_position_triggers_once_auto_managed() {
     let mut position = position_at(0.85);
-    position.management = veloxbot::positions::PositionManagement::AutoTrader;
+    position.management = dripline::positions::PositionManagement::AutoTrader;
     assert!(evaluate(&position, permissive_config()).should_trigger);
 }

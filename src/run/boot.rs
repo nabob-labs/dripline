@@ -19,7 +19,7 @@ pub async fn boot() {
     let args = crate::arguments::get_cmd_args();
     if crate::mcp::is_mcp_command(&args) {
         if let Err(error) = crate::mcp::dispatch(&args).await {
-            eprintln!("VeloxBot MCP failed: {error}");
+            eprintln!("DripLine MCP failed: {error}");
             std::process::exit(1);
         }
         return;
@@ -63,7 +63,7 @@ pub async fn boot() {
     // Set up panic hook for crash notifications (after config is loaded)
     crate::process::panic_hook::install();
 
-    logger::info(LogTag::System, "VeloxBot starting...");
+    logger::info(LogTag::System, "DripLine starting...");
 
     // Set up shutdown signal handler
     super::shutdown::spawn_initial_ctrl_c_listener();
@@ -71,7 +71,7 @@ pub async fn boot() {
     // Handle one-shot wallet-data reset (safe: backs up before clearing) then
     // continue into a normal boot, so a single relaunch fixes a wallet mismatch.
     // This is what the GUI's "Reset wallet data & restart" and the documented
-    // `veloxbot --clean-wallet-data` both trigger.
+    // `dripline --clean-wallet-data` both trigger.
     if crate::arguments::is_clean_wallet_data_enabled() {
         match crate::wallets::recovery::backup_and_clean_wallet_data() {
             Ok(backup_dir) => logger::info(
@@ -101,5 +101,5 @@ pub async fn boot() {
         crate::process::restart::restart_after_graceful_shutdown();
     }
 
-    logger::info(LogTag::System, "VeloxBot shutdown complete");
+    logger::info(LogTag::System, "DripLine shutdown complete");
 }

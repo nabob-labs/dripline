@@ -2,7 +2,7 @@
  * Featured Dialog - the full discovery view behind the featured row.
  *
  * BOOSTED comes first and is the only paid category: those teams bought
- * visibility on veloxbot.io, so their cards lead the view and carry the gold
+ * visibility on dripline.io, so their cards lead the view and carry the gold
  * treatment plus their active boost count. Everything below it is third-party
  * discovery (Jupiter, DexScreener) and is never gold.
  *
@@ -24,7 +24,7 @@ import {
 import { manualTrade } from "./manual_trade.js";
 import { boostTier, formatBoostCount } from "../core/boosts.js";
 import { getTokenAccent, fallbackAccent } from "../core/token_accent.js";
-// Side-effect import: registers the global "veloxbot:open-token-details"
+// Side-effect import: registers the global "dripline:open-token-details"
 // window listener so cards open the token details dialog even when the featured
 // dialog is opened from a page (e.g. Home) that doesn't otherwise load it.
 import "./token_details_dialog.js";
@@ -128,7 +128,7 @@ class FeaturedDialog {
             <p class="featured-subtitle">Boosted tokens first, then trending across Solana</p>
           </div>
           <div class="featured-actions">
-            <button type="button" class="featured-boost-btn" data-external-url="https://veloxbot.io/boost">
+            <button type="button" class="featured-boost-btn" data-external-url="https://dripline.io/boost">
               Boost a Token
             </button>
             <button class="dialog-close" type="button" title="Close (ESC)">
@@ -223,7 +223,7 @@ class FeaturedDialog {
       card.addEventListener("click", (e) => {
         if (e.target.closest("a, button")) return;
         window.dispatchEvent(
-          new CustomEvent("veloxbot:open-token-details", {
+          new CustomEvent("dripline:open-token-details", {
             detail: {
               mint,
               symbol: card.dataset.symbol || "",
@@ -410,7 +410,7 @@ class FeaturedDialog {
             <span class="feat-card-name">${this._escapeHtml(name)}</span>
             ${
               tier
-                ? `<span class="boost-mark${tier === "golden" ? " golden" : ""}" title="Boosted ${this._escapeHtml(boostCount)} on veloxbot.io"><i class="icon-zap" aria-hidden="true"></i><span class="boost-mark-count">${this._escapeHtml(boostCount)}</span></span>`
+                ? `<span class="boost-mark${tier === "golden" ? " golden" : ""}" title="Boosted ${this._escapeHtml(boostCount)} on dripline.io"><i class="icon-zap" aria-hidden="true"></i><span class="boost-mark-count">${this._escapeHtml(boostCount)}</span></span>`
                 : ""
             }
             ${priceHtml}

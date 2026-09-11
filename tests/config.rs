@@ -10,13 +10,13 @@
 
 mod common;
 
-use veloxbot::config::schemas::Config;
-use veloxbot::config::utils::{load_config_from_path, save_config_to_file, with_config};
+use dripline::config::schemas::Config;
+use dripline::config::utils::{load_config_from_path, save_config_to_file, with_config};
 
 #[test]
 fn config_survives_toml_round_trip() {
     let dir = tempfile::tempdir().expect("temp dir");
-    std::env::set_var("VELOXBOT_DATA_DIR", dir.path());
+    std::env::set_var("DRIPLINE_DATA_DIR", dir.path());
     let path = dir.path().join("config.toml");
     let path_str = path.to_str().expect("utf-8 temp path");
 

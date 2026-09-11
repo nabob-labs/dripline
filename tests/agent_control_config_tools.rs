@@ -14,11 +14,11 @@
 
 use std::sync::Once;
 
-use veloxbot::agent_control::config_access;
-use veloxbot::agent_control::{create_tool_registry, Error};
-use veloxbot::config::schemas::Config;
-use veloxbot::config::updates::update_config_section;
-use veloxbot::config::utils::{load_config_from_path, save_config_to_file, with_config};
+use dripline::agent_control::config_access;
+use dripline::agent_control::{create_tool_registry, Error};
+use dripline::config::schemas::Config;
+use dripline::config::updates::update_config_section;
+use dripline::config::utils::{load_config_from_path, save_config_to_file, with_config};
 use serde_json::{json, Value};
 
 static INIT: Once = Once::new();
@@ -30,7 +30,7 @@ const WALLET_NONCE: &str = "nonce-must-not-leak";
 fn init_config() {
     INIT.call_once(|| {
         let dir = tempfile::tempdir().expect("temp dir");
-        std::env::set_var("VELOXBOT_DATA_DIR", dir.path());
+        std::env::set_var("DRIPLINE_DATA_DIR", dir.path());
         // `get_config_path()` resolves to <data dir>/data/config.toml.
         let data = dir.path().join("data");
         std::fs::create_dir_all(&data).expect("data dir");
@@ -51,7 +51,7 @@ fn init_config() {
 }
 
 fn config_toml_on_disk() -> String {
-    std::fs::read_to_string(veloxbot::paths::get_config_path()).expect("config.toml on disk")
+    std::fs::read_to_string(dripline::paths::get_config_path()).expect("config.toml on disk")
 }
 
 #[test]

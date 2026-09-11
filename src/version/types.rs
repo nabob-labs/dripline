@@ -3,7 +3,7 @@
 //! A release ships two independently replaceable components that share one
 //! version number:
 //!
-//! * **core** — the `veloxbot` binary (it also embeds the whole dashboard).
+//! * **core** — the `dripline` binary (it also embeds the whole dashboard).
 //!   It can be replaced silently: the file is staged under the data directory
 //!   and the desktop shell picks it up the next time it launches the backend.
 //! * **shell** — the Electron bundle (Chromium + the main process). Replacing it
@@ -56,7 +56,7 @@ impl UpdateKind {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct CoreArtifact {
-    /// Release asset name, e.g. `VeloxBot-v0.2.2-macOS-arm64-core.gz`.
+    /// Release asset name, e.g. `DripLine-v0.2.2-macOS-arm64-core.gz`.
     pub filename: String,
     /// Size of the compressed asset in bytes.
     pub size: u64,

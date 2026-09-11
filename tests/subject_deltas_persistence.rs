@@ -19,7 +19,7 @@ mod common;
 
 use serde_json::json;
 
-use veloxbot::transactions::{Subject, Transaction, TransactionDatabase};
+use dripline::transactions::{Subject, Transaction, TransactionDatabase};
 
 const MINT: &str = "MintA111111111111111111111111111111111111";
 const POOL: &str = "Poo1Addre55111111111111111111111111111111";
@@ -80,11 +80,11 @@ async fn deltas_are_written_live_and_any_gap_is_repaired_on_the_next_boot() {
 
     // The data directory only exists once something writes to it; the pool cannot
     // create it for us.
-    if let Some(parent) = veloxbot::paths::get_transactions_db_path().parent() {
+    if let Some(parent) = dripline::paths::get_transactions_db_path().parent() {
         std::fs::create_dir_all(parent).expect("create the temp data directory");
     }
 
-    let db = TransactionDatabase::new(veloxbot::chains::ChainId::Solana)
+    let db = TransactionDatabase::new(dripline::chains::ChainId::Solana)
         .await
         .expect("open the transactions database");
 
@@ -104,7 +104,7 @@ async fn deltas_are_written_live_and_any_gap_is_repaired_on_the_next_boot() {
     assert_eq!(token.delta_raw, 2_000_000);
     assert_eq!(token.before_raw, Some(0));
     assert_eq!(token.after_raw, Some(2_000_000));
-    assert_eq!(token.chain, veloxbot::chains::ChainId::Solana);
+    assert_eq!(token.chain, dripline::chains::ChainId::Solana);
     assert_eq!(token.fee_native_raw, Some(5_000));
 
     // Storing the same transaction again is a no-op, not a duplicate: the primary key

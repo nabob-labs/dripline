@@ -208,7 +208,7 @@ export const HINTS = {
 This is the most reliable token list for trading as prices are derived from actual pool data, not external APIs.
 
 Click any token to view detailed information and manage blacklist status.`,
-      learnMoreUrl: "https://veloxbot.io/docs/dashboard/tokens",
+      learnMoreUrl: "https://dripline.io/docs/dashboard/tokens",
     },
 
     noMarketData: {
@@ -251,7 +251,7 @@ Filtering checks include:
 • **Market cap** — optional FDV/MC filters
 
 Configure filters in the **Filtering** page.`,
-      learnMoreUrl: "https://veloxbot.io/docs/dashboard/filtering",
+      learnMoreUrl: "https://dripline.io/docs/dashboard/filtering",
     },
 
     rejectedTokens: {
@@ -358,7 +358,7 @@ When DCA is triggered:
 • Entry count increments
 
 Configure DCA rules in **Auto Trader** settings.`,
-      learnMoreUrl: "https://veloxbot.io/docs/trading/dca-guide",
+      learnMoreUrl: "https://dripline.io/docs/trading/dca-guide",
     },
 
     partialExit: {
@@ -404,7 +404,7 @@ Tokens must pass **all enabled criteria** to appear in the passed list:
 • Meta filters (token age, etc.)
 
 Disabled criteria are skipped entirely.`,
-      learnMoreUrl: "https://veloxbot.io/docs/dashboard/filtering",
+      learnMoreUrl: "https://dripline.io/docs/dashboard/filtering",
     },
 
     dexscreener: {
@@ -443,7 +443,7 @@ GeckoTerminal often has data for newer tokens.`,
 • **Top Holders** — concentration risk
 
 Higher risk scores indicate more potential red flags.`,
-      learnMoreUrl: "https://veloxbot.io/docs/dashboard/filtering",
+      learnMoreUrl: "https://dripline.io/docs/dashboard/filtering",
     },
 
     meta: {
@@ -476,7 +476,7 @@ Components:
 • **Risk Controls** — loss limits and safety gates
 
 Start/stop trading from the control panel.`,
-      learnMoreUrl: "https://veloxbot.io/docs/dashboard/trader",
+      learnMoreUrl: "https://dripline.io/docs/dashboard/trader",
     },
 
     entryMonitor: {
@@ -517,7 +517,7 @@ Configure thresholds in Config.`,
     overview: {
       id: "services.overview",
       title: "System Services",
-      content: `Background services powering VeloxBot.
+      content: `Background services powering DripLine.
 
 Service states:
 • **Running** (green) — operating normally
@@ -707,7 +707,7 @@ Execute buy orders across multiple sub-wallets with randomized amounts to simula
 • Requires sufficient SOL in main wallet
 • Failed buys are logged but don't stop the session
 • Sub-wallets can be reused across sessions`,
-      learnMoreUrl: "https://veloxbot.io/docs/tools/multi-buy",
+      learnMoreUrl: "https://dripline.io/docs/tools/multi-buy",
     },
 
     multiSell: {
@@ -742,7 +742,7 @@ Sell tokens from all sub-wallets holding a specific token with automatic SOL con
 • Preview shows all wallets holding the token
 • Deselect wallets you don't want to sell from
 • Consolidation happens after all sells complete`,
-      learnMoreUrl: "https://veloxbot.io/docs/tools/multi-sell",
+      learnMoreUrl: "https://dripline.io/docs/tools/multi-sell",
     },
 
     tradeWatcher: {
@@ -772,7 +772,7 @@ Watch a token's trading activity and automatically react when trades occur.
 
 **Telegram Integration:**
 Configure Telegram in Config → Telegram to receive instant notifications when watches trigger.`,
-      learnMoreUrl: "https://veloxbot.io/docs/tools/trade-watcher",
+      learnMoreUrl: "https://dripline.io/docs/tools/trade-watcher",
     },
 
     walletConsolidation: {
@@ -802,7 +802,7 @@ View all sub-wallets and consolidate SOL, tokens, and reclaim ATA rent back to y
 • Use after Multi-Sell to collect remaining SOL
 • Regularly cleanup ATAs to reclaim rent
 • Empty wallets can be reused for future operations`,
-      learnMoreUrl: "https://veloxbot.io/docs/tools/consolidation",
+      learnMoreUrl: "https://dripline.io/docs/tools/consolidation",
     },
   },
 
@@ -813,7 +813,7 @@ View all sub-wallets and consolidate SOL, tokens, and reclaim ATA rent back to y
     overview: {
       id: "config.overview",
       title: "Configuration",
-      content: `System-wide settings for VeloxBot.
+      content: `System-wide settings for DripLine.
 
 Categories:
 • **Trader** — entry/exit rules, position sizing
@@ -823,7 +823,7 @@ Categories:
 • **Services** — background service settings
 
 Changes take effect immediately (hot reload).`,
-      learnMoreUrl: "https://veloxbot.io/docs/dashboard/system/config",
+      learnMoreUrl: "https://dripline.io/docs/dashboard/system/config",
     },
   },
 
@@ -849,7 +849,7 @@ Get notified about trades, positions, and important events directly in Telegram.
    • Message @userinfobot or @getidsbot
    • Copy the numeric ID it returns
 
-3. **Configure in VeloxBot:**
+3. **Configure in DripLine:**
    • Enable notifications toggle
    • Paste bot token and chat ID
    • Click "Test Connection" to verify
@@ -861,15 +861,15 @@ Get notified about trades, positions, and important events directly in Telegram.
 • Error notifications
 
 **Privacy:**
-Messages are sent directly from VeloxBot to your Telegram bot — no third-party servers involved.`,
-      learnMoreUrl: "https://veloxbot.io/docs/config/telegram",
+Messages are sent directly from DripLine to your Telegram bot — no third-party servers involved.`,
+      learnMoreUrl: "https://dripline.io/docs/config/telegram",
     },
     password: {
       id: "config.telegram.password",
       title: "Bot Authentication Password",
       content: `**Secure your Telegram bot with password authentication**
 
-When you interact with your VeloxBot Telegram bot, you'll need to authenticate with this password before executing sensitive commands.
+When you interact with your DripLine Telegram bot, you'll need to authenticate with this password before executing sensitive commands.
 
 **Why set a password?**
 • Prevents unauthorized users from controlling your bot
@@ -883,7 +883,7 @@ When you interact with your VeloxBot Telegram bot, you'll need to authenticate w
 4. Optionally enable 2FA for additional security
 
 **Note:** The password is stored as a secure SHA256 hash — we never store the plain text.`,
-      learnMoreUrl: "https://veloxbot.io/docs/config/telegram",
+      learnMoreUrl: "https://dripline.io/docs/config/telegram",
     },
     totp: {
       id: "config.telegram.totp",
@@ -910,7 +910,7 @@ Two-factor authentication uses time-based one-time passwords (TOTP) from apps li
 • Any TOTP-compatible app
 
 **Important:** Save your secret key in a safe place. If you lose access to your authenticator app, you'll need to disable 2FA from this dashboard.`,
-      learnMoreUrl: "https://veloxbot.io/docs/config/telegram",
+      learnMoreUrl: "https://dripline.io/docs/config/telegram",
     },
   },
 
@@ -936,7 +936,7 @@ In DeFi, tokens trade across **multiple pools** (Raydium, Orca, Meteora). Each p
 *Expect small differences between this chart and your final execution price.*
 
 **Status:** "Waiting for data" means background workers are fetching fresh candles.`,
-      learnMoreUrl: "https://veloxbot.io/docs/concepts/pricing",
+      learnMoreUrl: "https://dripline.io/docs/concepts/pricing",
     },
 
     tokenInfo: {
@@ -1026,7 +1026,7 @@ Higher scores indicate safer tokens. Factors include:
 • **LP Providers** — liquidity provider count
 
 Always verify security before trading significant amounts.`,
-      learnMoreUrl: "https://veloxbot.io/docs/concepts/security",
+      learnMoreUrl: "https://dripline.io/docs/concepts/security",
     },
 
     pools: {
@@ -1066,12 +1066,12 @@ The Pool Service calculates prices from the highest-liquidity SOL pair.`,
 **Boosting a token:**
 A boost buys visibility, never a recommendation. Boosted rows are marked in gold everywhere
 they appear, including your token table, so you always know which is which. Boost a token at
-**veloxbot.io/boost**.
+**dripline.io/boost**.
 
 **Disabling the row:**
 Hide it under **Settings → Interface → Show Featured Row**. The header action still opens the
 full Featured view.`,
-      learnMoreUrl: "https://veloxbot.io/docs/dashboard/featured",
+      learnMoreUrl: "https://dripline.io/docs/dashboard/featured",
     },
   },
 };

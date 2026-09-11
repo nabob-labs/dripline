@@ -1,6 +1,6 @@
-//! Token boosts — the paid promotion standing published by veloxbot.io.
+//! Token boosts — the paid promotion standing published by dripline.io.
 //!
-//! A boost is bought on the website (`veloxbot.io/boost`): a confirmed payment
+//! A boost is bought on the website (`dripline.io/boost`): a confirmed payment
 //! promotes a mint for a fixed window, and enough active boosts unlock the Golden
 //! tier. The website owns the money, the ledger and the thresholds; the desktop app
 //! only READS the resulting standing.

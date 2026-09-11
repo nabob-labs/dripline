@@ -195,7 +195,7 @@ async fn request_update(
     );
     let response = client
         .get(&url)
-        .header("User-Agent", format!("VeloxBot/{current_version}"))
+        .header("User-Agent", format!("DripLine/{current_version}"))
         .timeout(Duration::from_secs(10))
         .send()
         .await
@@ -335,7 +335,7 @@ pub(super) fn validate_release_filename(filename: &str, version: &str) -> Result
         && filename.len() <= 255
         && !filename.contains('/')
         && !filename.contains('\\')
-        && filename.starts_with(&format!("VeloxBot-v{version}-"))
+        && filename.starts_with(&format!("DripLine-v{version}-"))
         && filename
             .bytes()
             .all(|byte| byte.is_ascii_alphanumeric() || b"._+-".contains(&byte));
@@ -358,12 +358,12 @@ fn validate_download_url(download_url: &str) -> Result<()> {
         url: download_url.to_owned(),
         reason: error.to_string(),
     })?;
-    if url.scheme() == "https" && url.host_str() == Some("veloxbot.io") {
+    if url.scheme() == "https" && url.host_str() == Some("dripline.io") {
         Ok(())
     } else {
         Err(Error::InvalidUpdateUrl {
             url: download_url.to_owned(),
-            reason: "must use the VeloxBot HTTPS origin".to_owned(),
+            reason: "must use the DripLine HTTPS origin".to_owned(),
         })
     }
 }
@@ -459,7 +459,7 @@ mod tests {
                     "releaseNotes": "notes",
                     "publishedAt": "2026-08-21T00:00:00Z",
                     "downloadUrl": "/api/releases/download?version=0.1.122&platform=macos-x64",
-                    "filename": "VeloxBot-v0.1.122-macOS-x64.dmg",
+                    "filename": "DripLine-v0.1.122-macOS-x64.dmg",
                     "fileSize": 42,
                     "checksum": "a".repeat(64)
                 }
@@ -529,7 +529,7 @@ mod tests {
                     "update": {
                         "version": "0.1.122",
                         "downloadUrl": "/api/releases/download?version=0.1.122&platform=macos-x64",
-                        "filename": "VeloxBot-v0.1.122-macOS-x64.dmg",
+                        "filename": "DripLine-v0.1.122-macOS-x64.dmg",
                         "fileSize": 42,
                         "checksum": checksum
                     }
@@ -560,19 +560,19 @@ mod tests {
 
     #[test]
     fn rejects_insecure_or_unowned_download_urls() {
-        assert!(validate_download_url("http://veloxbot.io/file").is_err());
+        assert!(validate_download_url("http://dripline.io/file").is_err());
         assert!(validate_download_url("https://evil.example/file").is_err());
-        assert!(validate_download_url("https://veloxbot.io/file").is_ok());
+        assert!(validate_download_url("https://dripline.io/file").is_ok());
     }
 
     #[test]
     fn release_filenames_cannot_carry_path_syntax_or_a_foreign_version() {
         assert!(
-            validate_release_filename("VeloxBot-v0.2.2-macOS-arm64-core.gz", "0.2.2").is_ok()
+            validate_release_filename("DripLine-v0.2.2-macOS-arm64-core.gz", "0.2.2").is_ok()
         );
-        assert!(validate_release_filename("VeloxBot-v0.2.3-macOS-arm64.dmg", "0.2.2").is_err());
-        assert!(validate_release_filename("../VeloxBot-v0.2.2-x.dmg", "0.2.2").is_err());
-        assert!(validate_release_filename("VeloxBot-v0.2.2-a/b.dmg", "0.2.2").is_err());
+        assert!(validate_release_filename("DripLine-v0.2.3-macOS-arm64.dmg", "0.2.2").is_err());
+        assert!(validate_release_filename("../DripLine-v0.2.2-x.dmg", "0.2.2").is_err());
+        assert!(validate_release_filename("DripLine-v0.2.2-a/b.dmg", "0.2.2").is_err());
     }
 
     #[test]
@@ -600,8 +600,8 @@ mod tests {
     fn failed_refresh_preserves_a_previously_available_update() {
         let candidate = UpdateInfo {
             version: "0.2.5".to_owned(),
-            filename: "VeloxBot-v0.2.5-macOS-x64.dmg".to_owned(),
-            download_url: "https://veloxbot.io/update".to_owned(),
+            filename: "DripLine-v0.2.5-macOS-x64.dmg".to_owned(),
+            download_url: "https://dripline.io/update".to_owned(),
             file_size: 100,
             checksum: "a".repeat(64),
             manifest_checksum: None,
@@ -629,8 +629,8 @@ mod tests {
     fn staged_core_reuse_is_bound_to_binary_size_and_digest() {
         let mut candidate = UpdateInfo {
             version: "0.2.5".to_owned(),
-            filename: "VeloxBot-v0.2.5-macOS-x64.dmg".to_owned(),
-            download_url: "https://veloxbot.io/update".to_owned(),
+            filename: "DripLine-v0.2.5-macOS-x64.dmg".to_owned(),
+            download_url: "https://dripline.io/update".to_owned(),
             file_size: 100,
             checksum: "a".repeat(64),
             manifest_checksum: None,
@@ -638,7 +638,7 @@ mod tests {
             release_date: String::new(),
             kind: UpdateKind::Core,
             core: Some(CoreArtifact {
-                filename: "VeloxBot-v0.2.5-macOS-x64-core.gz".to_owned(),
+                filename: "DripLine-v0.2.5-macOS-x64-core.gz".to_owned(),
                 size: 20,
                 sha256: "b".repeat(64),
                 binary_size: 80,
@@ -648,7 +648,7 @@ mod tests {
         };
         let staged = StagedCore {
             version: candidate.version.clone(),
-            path: "0.2.5/veloxbot".to_owned(),
+            path: "0.2.5/dripline".to_owned(),
             sha256: "c".repeat(64),
             size: 80,
             staged_at: Utc::now(),

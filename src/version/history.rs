@@ -1,6 +1,6 @@
 //! The published release history shown inside the app.
 //!
-//! veloxbot.io is the only source: release notes live in the Website
+//! dripline.io is the only source: release notes live in the Website
 //! database, are edited there, and survive installer cleanup. GitHub carries
 //! artifacts, not the editorial record, so it is never consulted here.
 
@@ -93,7 +93,7 @@ async fn fetch_history() -> Result<Vec<ReleaseSummary>> {
         .get(&url)
         .header(
             "User-Agent",
-            format!("VeloxBot/{version}", version = super::VERSION),
+            format!("DripLine/{version}", version = super::VERSION),
         )
         .timeout(HISTORY_TIMEOUT)
         .send()

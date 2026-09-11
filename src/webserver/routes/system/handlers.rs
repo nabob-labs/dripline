@@ -29,7 +29,7 @@ pub fn is_client_ready() -> bool {
     CLIENT_READY_REPORTED.load(Ordering::SeqCst)
 }
 
-/// POST /api/system/reboot — Restart the entire veloxbot process
+/// POST /api/system/reboot — Restart the entire dripline process
 pub(super) async fn reboot_system() -> Response {
     logger::debug(LogTag::Webserver, "System reboot requested via API");
 

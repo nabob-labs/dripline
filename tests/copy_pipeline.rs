@@ -3,12 +3,12 @@
 use std::collections::HashMap;
 
 use chrono::{TimeZone, Utc};
-use veloxbot::chains::ChainId;
-use veloxbot::trader::copy::{
+use dripline::chains::ChainId;
+use dripline::trader::copy::{
     run_paper_pipeline, CopyMode, CopyOutcome, CopyTask, ExitMode, PaperCosts, PipelinePolicy,
     RiskContext, SizingMode, SpendState,
 };
-use veloxbot::wallets::watch::{ActivityKind, SwapSide, WalletActivity, WatchSource};
+use dripline::wallets::watch::{ActivityKind, SwapSide, WalletActivity, WatchSource};
 
 #[test]
 fn observed_buy_matches_sizes_and_produces_costed_paper_fill_with_telemetry() {

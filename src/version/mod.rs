@@ -6,10 +6,10 @@
 //!
 //! | Component | What it is | How it is replaced |
 //! |---|---|---|
-//! | core | the `veloxbot` binary, dashboard included | staged under the data directory and adopted on the next backend start — silent |
+//! | core | the `dripline` binary, dashboard included | staged under the data directory and adopted on the next backend start — silent |
 //! | shell | the Electron bundle (Chromium + main process) | the operating-system installer |
 //!
-//! veloxbot.io answers "what is the latest published version"; the GitHub
+//! dripline.io answers "what is the latest published version"; the GitHub
 //! release for that version is the artifact record. Its `…-update-manifest.json`
 //! asset names the shell revision the release was built with plus the per-platform
 //! core artifacts. When the manifest's shell revision equals the revision of the
@@ -18,7 +18,7 @@
 //! Chromium bundle, applied with a backend restart and no OS dialog at all.
 //!
 //! Every artifact is bound three ways before it is used: the size and SHA-256
-//! that veloxbot.io published, the digest GitHub reports for the same asset,
+//! that dripline.io published, the digest GitHub reports for the same asset,
 //! and — for a core update — the decompressed binary digest recorded in the
 //! manifest, which the desktop shell re-verifies before every launch.
 
@@ -47,16 +47,16 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::sync::{OnceCell, RwLock};
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
-const UPDATE_SERVER_URL: &str = "https://veloxbot.io/api";
-const GITHUB_RELEASES_API_URL: &str = "https://api.github.com/repos/nabob-labs/veloxbot";
+const UPDATE_SERVER_URL: &str = "https://dripline.io/api";
+const GITHUB_RELEASES_API_URL: &str = "https://api.github.com/repos/nabob-labs/dripline";
 const DOWNLOAD_TIMEOUT_SECS: u64 = 30 * 60;
 const MAX_UPDATE_BYTES: u64 = 2 * 1024 * 1024 * 1024;
 
 /// Environment variables the Electron shell sets when it spawns the backend.
 /// They are the only way this process can know which shell build owns it and
 /// whether it was launched from a staged core.
-const SHELL_REVISION_ENV: &str = "VELOXBOT_SHELL_REVISION";
-const CORE_STAGED_ENV: &str = "VELOXBOT_CORE_STAGED";
+const SHELL_REVISION_ENV: &str = "DRIPLINE_SHELL_REVISION";
+const CORE_STAGED_ENV: &str = "DRIPLINE_CORE_STAGED";
 
 static UPDATE_AVAILABLE: AtomicBool = AtomicBool::new(false);
 static UPDATE_STATE: OnceCell<RwLock<UpdateState>> = OnceCell::const_new();
@@ -327,9 +327,9 @@ pub(super) fn core_platform_key() -> &'static str {
 /// Name of the executable inside a staged core directory.
 pub(super) fn core_binary_name() -> &'static str {
     if cfg!(target_os = "windows") {
-        "veloxbot.exe"
+        "dripline.exe"
     } else {
-        "veloxbot"
+        "dripline"
     }
 }
 
@@ -340,7 +340,7 @@ mod tests {
     fn update(version: &str) -> UpdateInfo {
         UpdateInfo {
             version: version.to_owned(),
-            filename: format!("VeloxBot-v{version}-macOS-arm64.dmg"),
+            filename: format!("DripLine-v{version}-macOS-arm64.dmg"),
             download_url: "/api/releases/download".to_owned(),
             file_size: 1,
             checksum: "a".repeat(64),

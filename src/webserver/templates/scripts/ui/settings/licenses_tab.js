@@ -232,7 +232,7 @@ export function buildLicensesTab() {
         <i class="icon-scale"></i>
         <div>
           <h3>Open Source Licenses</h3>
-          <p>VeloxBot is built with the following open source software</p>
+          <p>DripLine is built with the following open source software</p>
         </div>
       </div>
       <div class="licenses-content">

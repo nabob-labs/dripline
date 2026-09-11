@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 
 /// The website's public boost feed. Boosts are bought there; the app only reads.
-const BOOST_FEED_URL: &str = "https://veloxbot.io/api/boost";
+const BOOST_FEED_URL: &str = "https://dripline.io/api/boost";
 
 /// The website serves the feed with a 30s cache; a minute here keeps the desktop
 /// app well inside that without ever making a paid boost take long to appear.

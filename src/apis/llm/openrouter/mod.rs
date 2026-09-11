@@ -146,14 +146,14 @@ impl OpenRouterClient {
             .post(&url)
             .header("Authorization", format!("Bearer {}", self.api_key))
             .header("Content-Type", "application/json")
-            .header("User-Agent", "VeloxBot/1.0 (https://veloxbot.io)")
+            .header("User-Agent", "DripLine/1.0 (https://dripline.io)")
             .header(
                 "HTTP-Referer",
-                self.site_url.as_deref().unwrap_or("https://veloxbot.io"),
+                self.site_url.as_deref().unwrap_or("https://dripline.io"),
             )
             .header(
                 "X-Title",
-                self.site_name.as_deref().unwrap_or("VeloxBot"),
+                self.site_name.as_deref().unwrap_or("DripLine"),
             );
 
         // Add optional site identification headers (override defaults)

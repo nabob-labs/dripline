@@ -211,7 +211,7 @@ impl RugcheckInfo {
     ///
     /// This is a pure data mapping (no I/O, no rate limiting) so it can be reused
     /// by every source that yields the same raw report shape: the direct Rugcheck
-    /// client AND the self-hosted veloxbot-data server (which caches and returns
+    /// client AND the self-hosted dripline-data server (which caches and returns
     /// the byte-identical upstream JSON under its `report` field).
     ///
     /// Authority fields use a fallback strategy: prefer the top-level field, fall

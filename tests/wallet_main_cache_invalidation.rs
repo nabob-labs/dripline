@@ -10,18 +10,18 @@
 
 mod common;
 
-use veloxbot::chains::solana::accounts::main_keypair;
-use veloxbot::chains::solana::solana_sdk::signature::Signer;
-use veloxbot::wallets::{create_wallet, set_main_wallet, CreateWalletRequest};
+use dripline::chains::solana::accounts::main_keypair;
+use dripline::chains::solana::solana_sdk::signature::Signer;
+use dripline::wallets::{create_wallet, set_main_wallet, CreateWalletRequest};
 
 #[tokio::test]
 async fn main_keypair_cache_follows_set_main_wallet() {
     let dir = tempfile::tempdir().expect("temp dir");
-    std::env::set_var("VELOXBOT_DATA_DIR", dir.path());
+    std::env::set_var("DRIPLINE_DATA_DIR", dir.path());
     std::fs::create_dir_all(dir.path().join("data")).expect("create data dir");
     common::ensure_config();
 
-    veloxbot::wallets::initialize()
+    dripline::wallets::initialize()
         .await
         .expect("wallet manager initialization must succeed");
 

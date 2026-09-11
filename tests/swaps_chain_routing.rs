@@ -20,12 +20,12 @@
 //! to the false branch until a second `ChainId` variant exists.
 
 use async_trait::async_trait;
-use veloxbot::chains::{active_chain, ChainId};
-use veloxbot::swaps::registry::{set_router_factory, try_get_registry, RouterRegistry};
-use veloxbot::swaps::router::SwapRouter;
-use veloxbot::swaps::types::{Quote, QuoteRequest, SwapMode, SwapResult};
-use veloxbot::tokens::Token;
-use veloxbot::Result;
+use dripline::chains::{active_chain, ChainId};
+use dripline::swaps::registry::{set_router_factory, try_get_registry, RouterRegistry};
+use dripline::swaps::router::SwapRouter;
+use dripline::swaps::types::{Quote, QuoteRequest, SwapMode, SwapResult};
+use dripline::tokens::Token;
+use dripline::Result;
 use std::sync::Arc;
 
 // ============================================================================
@@ -74,9 +74,9 @@ impl SwapRouter for StubRouter {
     fn chain(&self) -> ChainId {
         self.chain
     }
-    async fn get_quote(&self, request: &QuoteRequest) -> veloxbot::swaps::QuoteResult<Quote> {
+    async fn get_quote(&self, request: &QuoteRequest) -> dripline::swaps::QuoteResult<Quote> {
         self.accept_own_chain(request).map_err(|e| {
-            veloxbot::swaps::QuoteError::RouterRejected {
+            dripline::swaps::QuoteError::RouterRejected {
                 router: self.id.to_owned(),
                 detail: e.to_string(),
             }
@@ -84,7 +84,7 @@ impl SwapRouter for StubRouter {
         Ok(quote_from(self, request))
     }
     async fn execute_swap(&self, _token: &Token, _quote: &Quote) -> Result<SwapResult> {
-        Err(veloxbot::Error::api_error("stub router never executes"))
+        Err(dripline::Error::api_error("stub router never executes"))
     }
 }
 

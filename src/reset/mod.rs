@@ -5,8 +5,8 @@
 //!
 //! # Usage
 //! ```text
-//! cargo run --bin veloxbot -- --reset         # Interactive mode (asks for confirmation)
-//! cargo run --bin veloxbot -- --reset --force  # Force mode (no confirmation)
+//! cargo run --bin dripline -- --reset         # Interactive mode (asks for confirmation)
+//! cargo run --bin dripline -- --reset --force  # Force mode (no confirmation)
 //! ```
 
 mod error;

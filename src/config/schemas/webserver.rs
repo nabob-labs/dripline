@@ -76,7 +76,7 @@ config_struct! {
         /// Show logo on login page
         #[metadata(field_metadata! {
             label: "Show Logo",
-            hint: "Display the VeloxBot logo on the login page.",
+            hint: "Display the DripLine logo on the login page.",
             category: "Authentication",
         })]
         auth_show_logo: bool = true,
@@ -84,7 +84,7 @@ config_struct! {
         /// Show app name on login page
         #[metadata(field_metadata! {
             label: "Show App Name",
-            hint: "Display 'VeloxBot' on the login page.",
+            hint: "Display 'DripLine' on the login page.",
             category: "Authentication",
         })]
         auth_show_name: bool = true,

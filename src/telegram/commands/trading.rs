@@ -24,7 +24,7 @@ pub async fn handle_start_command() -> String {
         true,
     );
 
-    "🚀 <b>VeloxBot is Ready!</b>\n\n\
+    "🚀 <b>DripLine is Ready!</b>\n\n\
     Trading is <b>enabled</b>.\n\n\
     Use the keyboard below to control the bot.\n\
     Type /help for available commands."
@@ -131,7 +131,7 @@ pub async fn handle_resume_command() -> String {
 
 /// Handle /help command
 pub fn handle_help_command() -> String {
-    "🤖 <b>VeloxBot Help</b>\n\n\
+    "🤖 <b>DripLine Help</b>\n\n\
      <b>📊 Dashboard</b>\n\
      /status — System status & uptime\n\
      /stats — Daily performance\n\

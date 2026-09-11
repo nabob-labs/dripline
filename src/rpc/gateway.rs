@@ -49,7 +49,7 @@ const RELAYED_METHODS: &[&str] = &[
 /// redirect signed transactions to a server of their choosing. A signed
 /// transaction cannot be altered, but it can be WITHHELD, and front-running a
 /// swap you were handed early is worth real money.
-const GATEWAY_URL: &str = "https://veloxbot.io/data/v1/rpc";
+const GATEWAY_URL: &str = "https://dripline.io/data/v1/rpc";
 
 /// Short. If the relay is slow, the user's own RPC is right there.
 const TIMEOUT: Duration = Duration::from_secs(12);

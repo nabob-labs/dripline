@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../../public/logo.png" alt="VeloxBot Logo" width="80">
+  <img src="../../public/logo.png" alt="DripLine Logo" width="80">
 </p>
 
 <h1 align="center">Tokens Module</h1>
@@ -427,5 +427,5 @@ pub use search_tokens, add_favorite_async, get_favorites_async
 ---
 
 <p align="center">
-  Built for <strong>VeloxBot</strong> — The ultimate Native Solana trading experience.
+  Built for <strong>DripLine</strong> — The ultimate Native Solana trading experience.
 </p>

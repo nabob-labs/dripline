@@ -16,14 +16,14 @@
 use chrono::{DateTime, TimeZone, Utc};
 use std::collections::{HashMap, HashSet};
 
-use veloxbot::chains::ChainId;
-use veloxbot::positions::ledger::reduce_rounds;
-use veloxbot::positions::ledger::sync::{plan_position_writes, RoundMetadata, TraderLegs};
-use veloxbot::positions::ledger::{
+use dripline::chains::ChainId;
+use dripline::positions::ledger::reduce_rounds;
+use dripline::positions::ledger::sync::{plan_position_writes, RoundMetadata, TraderLegs};
+use dripline::positions::ledger::{
     LedgerEvent, LedgerEventKind, LedgerRound, QuoteAsset, QuoteLeg,
 };
-use veloxbot::positions::{Position, PositionManagement, PositionOrigin};
-use veloxbot::transactions::deltas::{DeltaKind, SubjectAssetDelta, NATIVE_SOL_SENTINEL};
+use dripline::positions::{Position, PositionManagement, PositionOrigin};
+use dripline::transactions::deltas::{DeltaKind, SubjectAssetDelta, NATIVE_SOL_SENTINEL};
 
 const MINT: &str = "So11111111111111111111111111111111111111112";
 const OTHER_MINT: &str = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";

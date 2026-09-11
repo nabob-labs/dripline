@@ -1,6 +1,6 @@
 # OHLCV Module
 
-Comprehensive OHLCV (Open, High, Low, Close, Volume) data management system for VeloxBot with multi-timeframe support, intelligent caching, gap-filling, and smart monitoring priorities.
+Comprehensive OHLCV (Open, High, Low, Close, Volume) data management system for DripLine with multi-timeframe support, intelligent caching, gap-filling, and smart monitoring priorities.
 
 ## 📁 Module Structure
 
@@ -84,7 +84,7 @@ Max Interval = Base Interval * 10 (capped)
 ### Public API
 
 ```rust
-use veloxbot::ohlcvs::{
+use dripline::ohlcvs::{
     get_ohlcv_data, get_available_pools, get_data_gaps,
     request_refresh, add_token_monitoring, Priority, Timeframe
 };
@@ -241,7 +241,7 @@ max_pool_failures = 5
 Access config values:
 
 ```rust
-use veloxbot::config::with_config;
+use dripline::config::with_config;
 
 let enabled = with_config(|cfg| cfg.ohlcv.enabled);
 let rate_limit = with_config(|cfg| cfg.ohlcv.api_rate_limit);
@@ -329,7 +329,7 @@ cargo test --lib ohlcvs::cache
 cargo test --lib ohlcvs::gaps
 
 # Integration test with API
-cargo run --bin veloxbot
+cargo run --bin dripline
 # Then: curl http://localhost:8080/api/ohlcv/metrics
 ```
 
@@ -441,4 +441,4 @@ When modifying the OHLCV module:
 
 ## 📄 License
 
-Part of VeloxBot - see main LICENSE file.
+Part of DripLine - see main LICENSE file.

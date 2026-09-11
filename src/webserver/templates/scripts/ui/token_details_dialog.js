@@ -793,7 +793,7 @@ export class TokenDetailsDialog {
         // Clean up favorites-changed listener
         if (this._favoritesChangedHandler) {
           window.removeEventListener(
-            "veloxbot:favorites-changed",
+            "dripline:favorites-changed",
             this._favoritesChangedHandler
           );
           this._favoritesChangedHandler = null;
@@ -1186,7 +1186,7 @@ export class TokenDetailsDialog {
 
   /**
    * Toggle favorite status for the current token. POST to add, DELETE to remove.
-   * Dispatches veloxbot:favorites-changed so other components stay in sync.
+   * Dispatches dripline:favorites-changed so other components stay in sync.
    */
   async _toggleFavorite() {
     const btn = this.dialogEl?.querySelector("#favoriteBtn");
@@ -1226,7 +1226,7 @@ export class TokenDetailsDialog {
 
       // Emit event for other UI components (context menu, favorites tab, etc.)
       window.dispatchEvent(
-        new CustomEvent("veloxbot:favorites-changed", {
+        new CustomEvent("dripline:favorites-changed", {
           detail: { mint, isFavorite: !currentlyFavorite },
         })
       );
@@ -1391,7 +1391,7 @@ export class TokenDetailsDialog {
         const button = event.target.closest("[data-profile-mint]");
         if (!button) return;
         event.preventDefault();
-        Utils.openExternal(`https://veloxbot.io/token-profile/${encodeURIComponent(button.dataset.profileMint)}`);
+        Utils.openExternal(`https://dripline.io/token-profile/${encodeURIComponent(button.dataset.profileMint)}`);
       };
       body.addEventListener("click", this._profileLinkHandler);
 
@@ -1430,7 +1430,7 @@ export class TokenDetailsDialog {
         this._updateFavoriteButton(e.detail.isFavorite);
       }
     };
-    window.addEventListener("veloxbot:favorites-changed", this._favoritesChangedHandler);
+    window.addEventListener("dripline:favorites-changed", this._favoritesChangedHandler);
 
     // Delegated retry handler for the initial-load error state's Retry button.
     if (body) {
@@ -1583,7 +1583,7 @@ applyPositionsTabMixin(TokenDetailsDialog);
 // state is not global enough: each copy used to install a window listener and
 // one featured click could create two identical dialogs. Store the coordinator
 // on window so every module instance shares one listener and one dialog.
-const coordinatorKey = Symbol.for("veloxbot.token-details-dialog");
+const coordinatorKey = Symbol.for("dripline.token-details-dialog");
 const globalCoordinator = window[coordinatorKey] || {
   dialogInstance: null,
   listenerInstalled: false,
@@ -1632,5 +1632,5 @@ async function handleOpenTokenDetails(event) {
 
 if (!globalCoordinator.listenerInstalled) {
   globalCoordinator.listenerInstalled = true;
-  window.addEventListener("veloxbot:open-token-details", handleOpenTokenDetails);
+  window.addEventListener("dripline:open-token-details", handleOpenTokenDetails);
 }

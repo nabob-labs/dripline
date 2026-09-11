@@ -343,7 +343,7 @@ function handleResultClick(e) {
 
 /**
  * Open the global token details dialog for a search result.
- * Reuses the shared `veloxbot:open-token-details` event so we stay decoupled
+ * Reuses the shared `dripline:open-token-details` event so we stay decoupled
  * from the dialog implementation (same path the context menu uses).
  */
 async function openTokenDetails(token) {
@@ -352,7 +352,7 @@ async function openTokenDetails(token) {
     return;
   }
   closeDialog();
-  // The token details dialog registers the global `veloxbot:open-token-details`
+  // The token details dialog registers the global `dripline:open-token-details`
   // listener on import. It is a heavy module (charts, tabs) loaded per-page, and
   // the search dialog is global, so load it lazily here — only when the user
   // actually opens details — then fire the event the listener handles.
@@ -363,7 +363,7 @@ async function openTokenDetails(token) {
     return;
   }
   window.dispatchEvent(
-    new CustomEvent("veloxbot:open-token-details", {
+    new CustomEvent("dripline:open-token-details", {
       detail: {
         mint: token.mint,
         symbol: token.symbol || "",

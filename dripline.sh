@@ -1,27 +1,27 @@
 #!/bin/bash
 #
-# ██╗   ██╗███████╗██╗      ██████╗ ██╗  ██╗██████╗  ██████╗ ████████╗
-# ██║   ██║██╔════╝██║     ██╔═══██╗╚██╗██╔╝██╔══██╗██╔═══██╗╚══██╔══╝
-# ██║   ██║█████╗  ██║     ██║   ██║ ╚███╔╝ ██████╔╝██║   ██║   ██║
-# ╚██╗ ██╔╝██╔══╝  ██║     ██║   ██║ ██╔██╗ ██╔══██╗██║   ██║   ██║
-#  ╚████╔╝ ███████╗███████╗╚██████╔╝██╔╝ ██╗██████╔╝╚██████╔╝   ██║
-#   ╚═══╝  ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═════╝  ╚═════╝    ╚═╝
+# ██████╗ ██████╗ ██╗██████╗ ██╗     ██╗███╗   ██╗███████╗
+# ██╔══██╗██╔══██╗██║██╔══██╗██║     ██║████╗  ██║██╔════╝
+# ██║  ██║██████╔╝██║██████╔╝██║     ██║██╔██╗ ██║█████╗
+# ██║  ██║██╔══██╗██║██╔═══╝ ██║     ██║██║╚██╗██║██╔══╝
+# ██████╔╝██║  ██║██║██║     ███████╗██║██║ ╚████║███████╗
+# ╚═════╝ ╚═╝  ╚═╝╚═╝╚═╝     ╚══════╝╚═╝╚═╝  ╚═══╝╚══════╝
+
+# DRIPLINE
 #
-# VELOXBOT
-#
-# VeloxBot VPS Manager - Installation, Update & Management Tool
-# https://veloxbot.io
+# DripLine VPS Manager - Installation, Update & Management Tool
+# https://dripline.io
 #
 # ◆ Automated Solana DeFi Trading Bot ◆
-# Copyright © 2025 VeloxBot. All rights reserved.
+# Copyright © 2025 DripLine. All rights reserved.
 #
 # USAGE:
-#   curl -fsSL https://veloxbot.io/install.sh | bash
+#   curl -fsSL https://dripline.io/install.sh | bash
 #   OR
-#   wget -qO- https://veloxbot.io/install.sh | bash
+#   wget -qO- https://dripline.io/install.sh | bash
 #
 # FEATURES:
-#   • Install/Update/Uninstall VeloxBot
+#   • Install/Update/Uninstall DripLine
 #   • Systemd service management
 #   • Backup and restore data
 #   • Auto-update notifications via Telegram
@@ -66,12 +66,12 @@ ensure_root
 # =============================================================================
 
 readonly SCRIPT_VERSION="1.1.2"
-readonly API_BASE="https://veloxbot.io/api"
-readonly INSTALL_SCRIPT_URL="https://veloxbot.io/install.sh"
-readonly INSTALL_DIR="/opt/veloxbot"
-readonly SYMLINK_PATH="/usr/local/bin/veloxbot"
-readonly MANAGER_PATH="/usr/local/bin/veloxbot-manager"
-readonly SERVICE_NAME="veloxbot"
+readonly API_BASE="https://dripline.io/api"
+readonly INSTALL_SCRIPT_URL="https://dripline.io/install.sh"
+readonly INSTALL_DIR="/opt/dripline"
+readonly SYMLINK_PATH="/usr/local/bin/dripline"
+readonly MANAGER_PATH="/usr/local/bin/dripline-manager"
+readonly SERVICE_NAME="dripline"
 readonly SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 readonly UPDATE_TIMER_FILE="/etc/systemd/system/${SERVICE_NAME}-update.timer"
 readonly UPDATE_SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}-update.service"
@@ -83,13 +83,13 @@ get_data_dir() {
     if [ -n "$SUDO_USER" ]; then
         home_dir=$(getent passwd "$SUDO_USER" | cut -d: -f6)
         # Ignore XDG_DATA_HOME when running as sudo to avoid using root's env
-        echo "${home_dir}/.local/share/VeloxBot"
+        echo "${home_dir}/.local/share/DripLine"
     else
         home_dir="$HOME"
         if [ -n "${XDG_DATA_HOME:-}" ]; then
-            echo "${XDG_DATA_HOME}/VeloxBot"
+            echo "${XDG_DATA_HOME}/DripLine"
         else
-            echo "${home_dir}/.local/share/VeloxBot"
+            echo "${home_dir}/.local/share/DripLine"
         fi
     fi
 }
@@ -276,16 +276,16 @@ print_banner() {
     echo -e "${CYAN}${BOLD}${ITALIC}"
 
     # ANSI Shadow font (Robotic/Cyberpunk style) - 93 chars wide
-    printf "   %s\n" "██╗   ██╗███████╗██╗      ██████╗ ██╗  ██╗██████╗  ██████╗ ████████╗"
-    printf "   %s\n" "██║   ██║██╔════╝██║     ██╔═══██╗╚██╗██╔╝██╔══██╗██╔═══██╗╚══██╔══╝"
-    printf "   %s\n" "██║   ██║█████╗  ██║     ██║   ██║ ╚███╔╝ ██████╔╝██║   ██║   ██║   "
-    printf "   %s\n" "╚██╗ ██╔╝██╔══╝  ██║     ██║   ██║ ██╔██╗ ██╔══██╗██║   ██║   ██║   "
-    printf "   %s\n" " ╚████╔╝ ███████╗███████╗╚██████╔╝██╔╝ ██╗██████╔╝╚██████╔╝   ██║   "
-    printf "   %s\n" "  ╚═══╝  ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═════╝  ╚═════╝    ╚═╝   "
+    printf "   %s\n" "██████╗ ██████╗ ██╗██████╗ ██╗     ██╗███╗   ██╗███████╗"
+    printf "   %s\n" "██╔══██╗██╔══██╗██║██╔══██╗██║     ██║████╗  ██║██╔════╝"
+    printf "   %s\n" "██║  ██║██████╔╝██║██████╔╝██║     ██║██╔██╗ ██║█████╗  "
+    printf "   %s\n" "██║  ██║██╔══██╗██║██╔═══╝ ██║     ██║██║╚██╗██║██╔══╝  "
+    printf "   %s\n" "██████╔╝██║  ██║██║██║     ███████╗██║██║ ╚████║███████╗"
+    printf "   %s\n" "╚═════╝ ╚═╝  ╚═╝╚═╝╚═╝     ╚══════╝╚═╝╚═╝  ╚═══╝╚══════╝"
 
     echo ""
-    # VELOXBOT (11 chars)
-    printf "   %42s%s\n" "" "VELOXBOT"
+    # DRIPLINE (11 chars)
+    printf "   %42s%s\n" "" "DRIPLINE"
     echo ""
     # Subtitle (37 chars)
     printf "   %29s%s\n" "" "◆ Automated Solana DeFi Trading Bot ◆"
@@ -294,9 +294,9 @@ print_banner() {
     # Social Links - Minimal Design
     # Left column: Website & Docs & X
     # Right column: Telegram Channel, Group & Support
-    printf "   %15s %-30s %15s %-30s\n" "Website:" "veloxbot.io" "Channel:" "t.me/veloxbotio"
-    printf "   %15s %-30s %15s %-30s\n" "Docs:" "veloxbot.io/docs" "Group:" "t.me/veloxbotio_talk"
-    printf "   %15s %-30s %15s %-30s\n" "X:" "x.com/veloxbotio" "Support:" "t.me/veloxbotio_support"
+    printf "   %15s %-30s %15s %-30s\n" "Website:" "dripline.io" "Channel:" "t.me/driplineio"
+    printf "   %15s %-30s %15s %-30s\n" "Docs:" "dripline.io/docs" "Group:" "t.me/driplineio_talk"
+    printf "   %15s %-30s %15s %-30s\n" "X:" "x.com/driplineio" "Support:" "t.me/driplineio_support"
     echo ""
 
     echo -e "${RESET}"
@@ -431,7 +431,7 @@ check_requirements() {
     # Check if running as root or with sudo
     if [ "$EUID" -ne 0 ]; then
         log_warn "This script requires root privileges for installation"
-        log_info "Please run with: sudo veloxbot"
+        log_info "Please run with: sudo dripline"
         echo ""
         if ! confirm "Continue anyway? (some features may not work)"; then
             exit 1
@@ -443,7 +443,7 @@ check_requirements() {
     arch=$(detect_arch)
     if [ -z "$arch" ]; then
         log_error "Unsupported architecture: $(uname -m)"
-        log_info "VeloxBot supports x86_64 (Intel/AMD) and aarch64 (ARM64)"
+        log_info "DripLine supports x86_64 (Intel/AMD) and aarch64 (ARM64)"
         errors=$((errors + 1))
     else
         log_success "Architecture: ${BOLD}$(uname -m)${RESET} (${arch})"
@@ -685,7 +685,7 @@ auto_check_script_update() {
     if [ -n "$remote_version" ]; then
         echo ""
         echo -e "${YELLOW}${ICON_WARN} Management script update available: v${SCRIPT_VERSION} → v${remote_version}${RESET}"
-        echo -e "${DIM}   Run option [12] to update, or use: curl -fsSL https://veloxbot.io/install.sh | bash${RESET}"
+        echo -e "${DIM}   Run option [12] to update, or use: curl -fsSL https://dripline.io/install.sh | bash${RESET}"
         echo ""
         sleep 2
     fi
@@ -715,7 +715,7 @@ install_manager_script() {
             chmod +x "$temp_script"
             mv "$temp_script" "$MANAGER_PATH"
             log_success "Manager installed: ${MANAGER_PATH}"
-            log_info "You can now run: ${BOLD}veloxbot-manager${RESET}"
+            log_info "You can now run: ${BOLD}dripline-manager${RESET}"
             return 0
         fi
     fi
@@ -783,10 +783,10 @@ self_update() {
 # =============================================================================
 
 get_installed_version() {
-    if [ -x "${SYMLINK_PATH}" ] || [ -x "${INSTALL_DIR}/veloxbot" ]; then
+    if [ -x "${SYMLINK_PATH}" ] || [ -x "${INSTALL_DIR}/dripline" ]; then
         local binary="${SYMLINK_PATH}"
         if [ ! -x "$binary" ]; then
-            binary="${INSTALL_DIR}/veloxbot"
+            binary="${INSTALL_DIR}/dripline"
         fi
         "$binary" --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1
     else
@@ -837,7 +837,7 @@ download_and_install() {
     
     local platform="linux-${arch}-headless"
     
-    log_step "Installing VeloxBot v${version}"
+    log_step "Installing DripLine v${version}"
     
     log_info "Platform: ${BOLD}${platform}${RESET}"
     log_info "Target directory: ${BOLD}${INSTALL_DIR}${RESET}"
@@ -855,7 +855,7 @@ download_and_install() {
     
     local download_url
     download_url=$(get_download_url "$version" "$platform")
-    local tarball="${temp_dir}/veloxbot.tar.gz"
+    local tarball="${temp_dir}/dripline.tar.gz"
     
     log_info "Downloading from: ${DIM}${download_url}${RESET}"
     
@@ -883,11 +883,11 @@ download_and_install() {
     log_info "Downloaded: ${BOLD}${file_size}${RESET}"
     
     # Backup existing installation
-    if [ -x "${INSTALL_DIR}/veloxbot" ]; then
+    if [ -x "${INSTALL_DIR}/dripline" ]; then
         local old_version
         old_version=$(get_installed_version)
         log_info "Backing up existing installation (v${old_version})..."
-        cp "${INSTALL_DIR}/veloxbot" "${INSTALL_DIR}/veloxbot.backup.${old_version}" 2>/dev/null || true
+        cp "${INSTALL_DIR}/dripline" "${INSTALL_DIR}/dripline.backup.${old_version}" 2>/dev/null || true
     fi
     
     # Extract (suppress Docker xattr warnings)
@@ -906,12 +906,12 @@ download_and_install() {
     fi
     
     # Make executable
-    chmod +x "${INSTALL_DIR}/veloxbot"
+    chmod +x "${INSTALL_DIR}/dripline"
     
     # Create symlink
-    if [ ! -L "${SYMLINK_PATH}" ] || [ "$(readlink -f "${SYMLINK_PATH}")" != "${INSTALL_DIR}/veloxbot" ]; then
-        log_info "Creating symlink: ${SYMLINK_PATH} -> ${INSTALL_DIR}/veloxbot"
-        ln -snf "${INSTALL_DIR}/veloxbot" "${SYMLINK_PATH}"
+    if [ ! -L "${SYMLINK_PATH}" ] || [ "$(readlink -f "${SYMLINK_PATH}")" != "${INSTALL_DIR}/dripline" ]; then
+        log_info "Creating symlink: ${SYMLINK_PATH} -> ${INSTALL_DIR}/dripline"
+        ln -snf "${INSTALL_DIR}/dripline" "${SYMLINK_PATH}"
     fi
     
     # Verify installation
@@ -922,7 +922,7 @@ download_and_install() {
         return 1
     fi
     
-    log_success "VeloxBot v${installed_version} installed successfully!"
+    log_success "DripLine v${installed_version} installed successfully!"
     
     # Clean up temp dir and trap
     rm -rf "${temp_dir}" 2>/dev/null
@@ -939,7 +939,7 @@ download_and_install() {
 }
 
 uninstall() {
-    log_step "Uninstalling VeloxBot"
+    log_step "Uninstalling DripLine"
     
     # Stop service if running
     if systemctl is-active --quiet "${SERVICE_NAME}" 2>/dev/null; then
@@ -981,7 +981,7 @@ uninstall() {
         rm -rf "${INSTALL_DIR}"
     fi
     
-    log_success "VeloxBot uninstalled successfully!"
+    log_success "DripLine uninstalled successfully!"
     
     # Data directory protection — NEVER delete wallet data
     local data_dir
@@ -1030,7 +1030,7 @@ create_backup() {
     echo "    Files: ${file_count}"
     echo ""
     
-    local backup_name="veloxbot-backup-$(date +%Y%m%d-%H%M%S).tar.gz"
+    local backup_name="dripline-backup-$(date +%Y%m%d-%H%M%S).tar.gz"
     local backup_path="${user_home}/${backup_name}"
     
     echo "  ${BOLD}Backup will be saved to:${RESET}"
@@ -1090,7 +1090,7 @@ restore_backup() {
     local backups=()
     while IFS= read -r -d '' file; do
         backups+=("$file")
-    done < <(find "${user_home}" -maxdepth 1 \( -name "veloxbot-backup-*.tar.gz" -o -name "veloxbot-pre-restore-*.tar.gz" \) -print0 2>/dev/null | sort -rz)
+    done < <(find "${user_home}" -maxdepth 1 \( -name "dripline-backup-*.tar.gz" -o -name "dripline-pre-restore-*.tar.gz" \) -print0 2>/dev/null | sort -rz)
     
     local backup_path=""
     
@@ -1201,7 +1201,7 @@ restore_backup() {
             systemctl stop "${SERVICE_NAME}"
         fi
         
-        local current_backup="${user_home}/veloxbot-pre-restore-$(date +%Y%m%d-%H%M%S).tar.gz"
+        local current_backup="${user_home}/dripline-pre-restore-$(date +%Y%m%d-%H%M%S).tar.gz"
         log_info "Backing up current data to: $(basename "$current_backup")"
         if tar -czf "$current_backup" -C "$(dirname "$data_dir")" "$(basename "$data_dir")"; then
             # Fix ownership if created as root
@@ -1258,7 +1258,7 @@ restore_backup() {
         
         # Offer to restart service
         if systemctl is-enabled --quiet "${SERVICE_NAME}" 2>/dev/null; then
-            if confirm "Start VeloxBot service now?"; then
+            if confirm "Start DripLine service now?"; then
                 if systemctl start "${SERVICE_NAME}"; then
                     log_success "Service started"
                 else
@@ -1323,8 +1323,8 @@ create_service() {
     
     cat > "${SERVICE_FILE}" << EOF
 [Unit]
-Description=VeloxBot - Automated Solana Trading Bot
-Documentation=https://veloxbot.io/docs
+Description=DripLine - Automated Solana Trading Bot
+Documentation=https://dripline.io/docs
 After=network-online.target
 Wants=network-online.target
 
@@ -1565,8 +1565,8 @@ setup_update_notifications() {
     config=$(get_telegram_config)
     
     if [ -z "$config" ]; then
-        log_warn "Telegram not configured in VeloxBot"
-        log_info "Please configure Telegram in the VeloxBot dashboard first:"
+        log_warn "Telegram not configured in DripLine"
+        log_info "Please configure Telegram in the DripLine dashboard first:"
         log_info "  Settings → Telegram → Configure bot token and chat ID"
         press_enter
         return 1
@@ -1576,7 +1576,7 @@ setup_update_notifications() {
     
     # Test notification
     if confirm "Send test notification?"; then
-        if send_telegram_message "🤖 <b>VeloxBot VPS Manager</b>%0A%0ATest notification from your VPS! Auto-update notifications are working."; then
+        if send_telegram_message "🤖 <b>DripLine VPS Manager</b>%0A%0ATest notification from your VPS! Auto-update notifications are working."; then
             log_success "Test message sent!"
         else
             log_error "Failed to send test message"
@@ -1599,21 +1599,21 @@ setup_update_notifications() {
     else
         user_home="$HOME"
     fi
-    local config_path="${user_home}/.local/share/VeloxBot/data/config.toml"
+    local config_path="${user_home}/.local/share/DripLine/data/config.toml"
     
     # Use non-quoted heredoc to allow variable substitution for config path
     cat > "${UPDATE_SERVICE_FILE}" << EOF
 [Unit]
-Description=VeloxBot Update Checker
+Description=DripLine Update Checker
 After=network-online.target
 
 [Service]
 Type=oneshot
 ExecStart=/bin/bash -c '\\
-    CURRENT=\$(/usr/local/bin/veloxbot --version 2>/dev/null | grep -oE "[0-9]+\\\\.[0-9]+\\\\.[0-9]+" | head -1); \\
+    CURRENT=\$(/usr/local/bin/dripline --version 2>/dev/null | grep -oE "[0-9]+\\\\.[0-9]+\\\\.[0-9]+" | head -1); \\
     if [ -z "\$CURRENT" ]; then exit 0; fi; \\
     ARCH=\$(uname -m | sed "s/x86_64/x64/;s/aarch64/arm64/;s/amd64/x64/"); \\
-    RESPONSE=\$(curl -fsSL "https://veloxbot.io/api/releases/check?version=\${CURRENT}&platform=linux-\${ARCH}-headless" 2>/dev/null); \\
+    RESPONSE=\$(curl -fsSL "https://dripline.io/api/releases/check?version=\${CURRENT}&platform=linux-\${ARCH}-headless" 2>/dev/null); \\
     if echo "\$RESPONSE" | grep -q "updateAvailable.*true"; then \\
         LATEST=\$(echo "\$RESPONSE" | sed -n "s/.*\\\\\"latestVersion\\\\\"[[:space:]]*:[[:space:]]*\\\\\"\\\\([^\\\\\",]*\\\\)\\\\\".*/\\\\1/p"); \\
         CONFIG_FILE="${config_path}"; \\
@@ -1621,7 +1621,7 @@ ExecStart=/bin/bash -c '\\
             BOT_TOKEN=\$(grep -A 20 "^\\\\[telegram\\\\]" "\$CONFIG_FILE" | grep "^bot_token" | head -1 | sed "s/.*= *\\"\\\\([^\\"]*\\\\)\\".*/\\\\1/"); \\
             CHAT_ID=\$(grep -A 20 "^\\\\[telegram\\\\]" "\$CONFIG_FILE" | grep "^chat_id" | head -1 | sed "s/.*= *\\"\\\\([^\\"]*\\\\)\\".*/\\\\1/"); \\
             if [ -n "\$BOT_TOKEN" ] && [ -n "\$CHAT_ID" ]; then \\
-                MSG="[UPDATE] <b>VeloxBot Update Available</b>%0A%0ACurrent: v\${CURRENT}%0ALatest: v\${LATEST}%0A%0ARun: <code>sudo veloxbot</code> to update"; \\
+                MSG="[UPDATE] <b>DripLine Update Available</b>%0A%0ACurrent: v\${CURRENT}%0ALatest: v\${LATEST}%0A%0ARun: <code>sudo dripline</code> to update"; \\
                 curl -fsSL -X POST "https://api.telegram.org/bot\${BOT_TOKEN}/sendMessage" -d "chat_id=\${CHAT_ID}" -d "text=\${MSG}" -d "parse_mode=HTML" &>/dev/null; \\
             fi; \\
         fi; \\
@@ -1630,7 +1630,7 @@ EOF
 
     cat > "${UPDATE_TIMER_FILE}" << EOF
 [Unit]
-Description=VeloxBot Update Checker Timer
+Description=DripLine Update Checker Timer
 
 [Timer]
 OnBootSec=5min
@@ -1680,7 +1680,7 @@ set_dashboard_password() {
     
     # Check if service is running
     if ! systemctl is-active --quiet "${SERVICE_NAME}" 2>/dev/null; then
-        log_error "VeloxBot service is not running"
+        log_error "DripLine service is not running"
         log_info "Start the service first: ${CYAN}systemctl start ${SERVICE_NAME}${RESET}"
         press_enter
         return 1
@@ -1691,7 +1691,7 @@ set_dashboard_password() {
     auth_status=$(get_auth_status)
     
     if [ -z "$auth_status" ]; then
-        log_error "Could not connect to VeloxBot dashboard"
+        log_error "Could not connect to DripLine dashboard"
         log_info "Make sure the service is running and healthy"
         press_enter
         return 1
@@ -1819,7 +1819,7 @@ manage_dashboard_security() {
         
         if [ -z "$auth_status" ]; then
             echo ""
-            log_warn "Cannot connect to VeloxBot dashboard"
+            log_warn "Cannot connect to DripLine dashboard"
             log_info "Make sure the service is running"
             echo ""
             echo "  ${CYAN}[1]${RESET} Start Service"
@@ -2041,11 +2041,11 @@ get_bot_positions() {
 
 # Get public IP
 get_public_ip() {
-    if [ -f /tmp/.veloxbot_ip ]; then
+    if [ -f /tmp/.dripline_ip ]; then
         local age
-        age=$(( $(date +%s) - $(stat -c %Y /tmp/.veloxbot_ip 2>/dev/null || echo 0) ))
+        age=$(( $(date +%s) - $(stat -c %Y /tmp/.dripline_ip 2>/dev/null || echo 0) ))
         if [ "$age" -lt 3600 ]; then
-            cat /tmp/.veloxbot_ip
+            cat /tmp/.dripline_ip
             return
         fi
     fi
@@ -2053,7 +2053,7 @@ get_public_ip() {
     local ip
     ip=$(curl -fsSL --connect-timeout 2 https://api.ipify.org 2>/dev/null)
     if [ -n "$ip" ]; then
-        echo "$ip" | tee /tmp/.veloxbot_ip
+        echo "$ip" | tee /tmp/.dripline_ip
     else
         echo "N/A"
     fi
@@ -2096,7 +2096,7 @@ system_monitor() {
         # Compact header
         echo -e "${CYAN}${BOLD}"
         echo "  ============================================================================"
-        echo "  |               VELOXBOT SYSTEM MONITOR                                |"
+        echo "  |               DRIPLINE SYSTEM MONITOR                                |"
         echo "  ============================================================================${RESET}"
         echo ""
         
@@ -2187,8 +2187,8 @@ system_monitor() {
         echo ""
         echo -e "  ${CYAN}----------------------------------------------------------------------------${RESET}"
         
-        # === VELOXBOT SECTION ===
-        echo -e "  ${BOLD}VELOXBOT${RESET}"
+        # === DRIPLINE SECTION ===
+        echo -e "  ${BOLD}DRIPLINE${RESET}"
         echo -e "  ${CYAN}----------------------------------------------------------------------------${RESET}"
         
         # Service status
@@ -2305,7 +2305,7 @@ system_monitor() {
 
 show_status() {
     print_banner
-    echo "${BOLD}  ${ICON_STATUS}  VeloxBot Status${RESET}"
+    echo "${BOLD}  ${ICON_STATUS}  DripLine Status${RESET}"
     echo ""
     print_separator
     
@@ -2319,10 +2319,10 @@ show_status() {
     
     if [ -n "$installed_version" ]; then
         echo "  Version:     ${GREEN}${BOLD}v${installed_version}${RESET}"
-        echo "  Binary:      ${INSTALL_DIR}/veloxbot"
+        echo "  Binary:      ${INSTALL_DIR}/dripline"
         echo "  Symlink:     ${SYMLINK_PATH}"
     else
-        echo "  ${DIM}VeloxBot is not installed${RESET}"
+        echo "  ${DIM}DripLine is not installed${RESET}"
     fi
     
     # Data directory
@@ -2396,7 +2396,7 @@ show_help() {
     
     echo "${BOLD}${CYAN}Quick Start:${RESET}"
     echo ""
-    echo "  1. Install VeloxBot using option [1]"
+    echo "  1. Install DripLine using option [1]"
     echo "  2. Configure your wallet and RPC in the dashboard"
     echo "  3. Access dashboard at http://localhost:8080"
     echo "  4. Enable auto-start via option [6] Manage Service"
@@ -2413,28 +2413,28 @@ show_help() {
     
     echo "${BOLD}${CYAN}Useful Commands:${RESET}"
     echo ""
-    echo "  View logs:          ${DIM}journalctl -u veloxbot -f${RESET}"
-    echo "  Restart service:    ${DIM}sudo systemctl restart veloxbot${RESET}"
-    echo "  Check status:       ${DIM}sudo systemctl status veloxbot${RESET}"
-    echo "  Edit config:        ${DIM}nano ~/.local/share/VeloxBot/data/config.toml${RESET}"
+    echo "  View logs:          ${DIM}journalctl -u dripline -f${RESET}"
+    echo "  Restart service:    ${DIM}sudo systemctl restart dripline${RESET}"
+    echo "  Check status:       ${DIM}sudo systemctl status dripline${RESET}"
+    echo "  Edit config:        ${DIM}nano ~/.local/share/DripLine/data/config.toml${RESET}"
     echo ""
     
     echo "${BOLD}${CYAN}Security Tips:${RESET}"
     echo ""
     echo "  • Never expose port 8080 to the public internet"
     echo "  • Use SSH tunnel or VPN for remote access"
-    echo "  • Keep your system and VeloxBot updated"
+    echo "  • Keep your system and DripLine updated"
     echo "  • Enable Telegram notifications for monitoring"
     echo "  • Regularly backup your data directory"
     echo ""
     
     echo "${BOLD}${CYAN}Resources:${RESET}"
     echo ""
-    echo "  Documentation:      ${CYAN}https://veloxbot.io/docs${RESET}"
-    echo "  Telegram Channel:   ${CYAN}https://t.me/veloxbotio${RESET}"
-    echo "  Telegram Group:     ${CYAN}https://t.me/veloxbotio_talk${RESET}"
-    echo "  Telegram Support:   ${CYAN}https://t.me/veloxbotio_support${RESET}"
-    echo "  Twitter/X:          ${CYAN}https://x.com/veloxbotio${RESET}"
+    echo "  Documentation:      ${CYAN}https://dripline.io/docs${RESET}"
+    echo "  Telegram Channel:   ${CYAN}https://t.me/driplineio${RESET}"
+    echo "  Telegram Group:     ${CYAN}https://t.me/driplineio_talk${RESET}"
+    echo "  Telegram Support:   ${CYAN}https://t.me/driplineio_support${RESET}"
+    echo "  Twitter/X:          ${CYAN}https://x.com/driplineio${RESET}"
     echo ""
     
     print_separator
@@ -2452,9 +2452,9 @@ get_quick_cpu() {
         read -r _ user nice sys idle iow irq sirq _ < /proc/stat
         local total=$((user + nice + sys + idle + iow + irq + sirq))
         
-        if [ -f /tmp/.veloxbot_cpu_stat ]; then
+        if [ -f /tmp/.dripline_cpu_stat ]; then
             local prev_total prev_idle
-            read -r prev_total prev_idle < /tmp/.veloxbot_cpu_stat
+            read -r prev_total prev_idle < /tmp/.dripline_cpu_stat
             
             local diff_total=$((total - prev_total))
             local diff_idle=$((idle - prev_idle))
@@ -2470,7 +2470,7 @@ get_quick_cpu() {
             echo "0"
         fi
         
-        echo "$total $idle" > /tmp/.veloxbot_cpu_stat
+        echo "$total $idle" > /tmp/.dripline_cpu_stat
     else
         echo "N/A"
     fi
@@ -2561,7 +2561,7 @@ print_dashboard_status() {
     # Option C Status - Clean Horizontal Bars
     echo -e "  ${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
     echo ""
-    echo -e "  ${BOLD}SYSTEM${RESET}                                 ${BOLD}VELOXBOT${RESET}"
+    echo -e "  ${BOLD}SYSTEM${RESET}                                 ${BOLD}DRIPLINE${RESET}"
     echo ""
     
     # Get system stats (fast)
@@ -2669,13 +2669,13 @@ main_menu() {
             installed_version=$(get_installed_version)
             local options=()
             if [ -z "$installed_version" ]; then
-                options+=("${ICON_PACKAGE} Install VeloxBot")
+                options+=("${ICON_PACKAGE} Install DripLine")
             else
-                options+=("${ICON_PACKAGE} Reinstall VeloxBot")
+                options+=("${ICON_PACKAGE} Reinstall DripLine")
             fi
             options+=(
-                "${ICON_UPDATE} Update VeloxBot"
-                "${ICON_TRASH} Uninstall VeloxBot"
+                "${ICON_UPDATE} Update DripLine"
+                "${ICON_TRASH} Uninstall DripLine"
                 "${ICON_BACKUP} Backup Data"
                 "${ICON_RESTORE} Restore Data"
                 "${ICON_SERVICE} Manage Service"
@@ -2738,7 +2738,7 @@ main_menu() {
             0)
                 # Install/Reinstall
                 if [ -n "$installed_version" ]; then
-                    log_warn "VeloxBot is already installed (v${installed_version})"
+                    log_warn "DripLine is already installed (v${installed_version})"
                     if ! confirm "Reinstall and replace current installation?"; then
                         continue
                     fi
@@ -2817,7 +2817,7 @@ main_menu() {
             1)
                 # Update
                 if [ -z "$installed_version" ]; then
-                    log_error "VeloxBot is not installed"
+                    log_error "DripLine is not installed"
                     press_enter
                     continue
                 fi
@@ -2870,13 +2870,13 @@ main_menu() {
             2)
                 # Uninstall
                 if [ -z "$installed_version" ]; then
-                    log_warn "VeloxBot is not installed"
+                    log_warn "DripLine is not installed"
                     press_enter
                     continue
                 fi
                 
                 echo ""
-                log_warn "This will remove VeloxBot from your system"
+                log_warn "This will remove DripLine from your system"
                 if confirm "Are you sure you want to uninstall?"; then
                     uninstall
                 fi
@@ -2927,7 +2927,7 @@ main_menu() {
                 ;;
             13|-1)
                 echo ""
-                log_info "Thanks for using VeloxBot! ${ICON_ROCKET}"
+                log_info "Thanks for using DripLine! ${ICON_ROCKET}"
                 echo ""
                 exit 0
                 ;;
@@ -2940,14 +2940,14 @@ main_menu() {
 # =============================================================================
 
 show_usage() {
-    echo "VeloxBot VPS Manager v${SCRIPT_VERSION}"
+    echo "DripLine VPS Manager v${SCRIPT_VERSION}"
     echo ""
     echo "Usage: $0 [command] [options]"
     echo ""
     echo "Commands:"
-    echo "  install [version]    Install VeloxBot (latest if version not specified)"
+    echo "  install [version]    Install DripLine (latest if version not specified)"
     echo "  update               Check and install bot updates"
-    echo "  uninstall            Remove VeloxBot"
+    echo "  uninstall            Remove DripLine"
     echo "  status               Show installation status"
     echo "  monitor              Live system monitor (CPU, memory, disk, bot stats)"
     echo "  backup               Create backup of data directory"
@@ -2957,7 +2957,7 @@ show_usage() {
     echo "  restart              Restart the service"
     echo "  logs                 View service logs"
     echo "  self-update          Update this management script"
-    echo "  install-manager      Install manager to /usr/local/bin/veloxbot-manager"
+    echo "  install-manager      Install manager to /usr/local/bin/dripline-manager"
     echo "  help                 Show this help message"
     echo ""
     echo "Without arguments, starts interactive menu mode (auto-checks for script updates)."
@@ -3001,7 +3001,7 @@ main() {
             local installed_version
             installed_version=$(get_installed_version)
             if [ -z "$installed_version" ]; then
-                log_error "VeloxBot is not installed"
+                log_error "DripLine is not installed"
                 exit 1
             fi
             
@@ -3042,7 +3042,7 @@ main() {
             version=$(get_installed_version)
             if [ -n "$version" ]; then
                 echo "Installed: v${version}"
-                echo "Binary: ${INSTALL_DIR}/veloxbot"
+                echo "Binary: ${INSTALL_DIR}/dripline"
             else
                 echo "Not installed"
             fi

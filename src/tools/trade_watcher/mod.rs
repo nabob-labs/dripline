@@ -8,7 +8,7 @@
 //! ## Usage
 //!
 //! ```rust,ignore
-//! use veloxbot::tools::trade_watcher::{
+//! use dripline::tools::trade_watcher::{
 //!     search_pools, start_trade_monitor, stop_trade_monitor, is_trade_monitor_running,
 //! };
 //!
@@ -32,7 +32,7 @@
 //! to add, remove, or modify watched tokens:
 //!
 //! ```rust,ignore
-//! use veloxbot::tools::database::{
+//! use dripline::tools::database::{
 //!     add_watched_token, get_watched_tokens, update_watched_token_status,
 //!     delete_watched_token, WatchedTokenConfig,
 //! };

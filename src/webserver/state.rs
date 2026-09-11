@@ -1,6 +1,6 @@
 //! Shared application state for the webserver
 //!
-//! Contains references to core VeloxBot systems and shared resources
+//! Contains references to core DripLine systems and shared resources
 //! that need to be accessed by route handlers.
 
 use std::collections::HashMap;

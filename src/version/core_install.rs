@@ -9,7 +9,7 @@
 //!
 //! ```text
 //! <data>/core/current.json      the pointer the desktop shell reads
-//! <data>/core/<version>/veloxbot
+//! <data>/core/<version>/dripline
 //! ```
 //!
 //! `electron/src/core_resolver.js` reads the pointer before every backend spawn,

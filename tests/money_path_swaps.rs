@@ -12,13 +12,13 @@
 //! `src/chains/solana/swaps/programs/raydium_clmm.rs` (CPMM already had its own).
 
 use async_trait::async_trait;
-use veloxbot::chains::ChainId;
-use veloxbot::swaps::operations::get_best_quote;
-use veloxbot::swaps::registry::set_router_factory;
-use veloxbot::swaps::router::SwapRouter;
-use veloxbot::swaps::types::{Quote, QuoteRequest, SwapMode, SwapResult};
-use veloxbot::tokens::Token;
-use veloxbot::Result;
+use dripline::chains::ChainId;
+use dripline::swaps::operations::get_best_quote;
+use dripline::swaps::registry::set_router_factory;
+use dripline::swaps::router::SwapRouter;
+use dripline::swaps::types::{Quote, QuoteRequest, SwapMode, SwapResult};
+use dripline::tokens::Token;
+use dripline::Result;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
@@ -151,9 +151,9 @@ impl SwapRouter for ScenarioRouter {
     fn chain(&self) -> ChainId {
         ChainId::Solana
     }
-    async fn get_quote(&self, request: &QuoteRequest) -> veloxbot::swaps::QuoteResult<Quote> {
+    async fn get_quote(&self, request: &QuoteRequest) -> dripline::swaps::QuoteResult<Quote> {
         self.accept_own_chain(request).map_err(|e| {
-            veloxbot::swaps::QuoteError::RouterRejected {
+            dripline::swaps::QuoteError::RouterRejected {
                 router: self.id.to_owned(),
                 detail: e.to_string(),
             }
@@ -198,14 +198,14 @@ impl SwapRouter for ScenarioRouter {
                 output_amount: 200,
                 ..base
             }),
-            _ => Err(veloxbot::swaps::QuoteError::Unavailable {
+            _ => Err(dripline::swaps::QuoteError::Unavailable {
                 router: self.id.to_owned(),
                 detail: "router not part of scenario".to_owned(),
             }),
         }
     }
     async fn execute_swap(&self, _token: &Token, _quote: &Quote) -> Result<SwapResult> {
-        Err(veloxbot::Error::api_error("stub router never executes"))
+        Err(dripline::Error::api_error("stub router never executes"))
     }
 }
 

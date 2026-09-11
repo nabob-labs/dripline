@@ -7,7 +7,7 @@ use std::sync::{Arc, LazyLock};
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 
-const PROFILE_FEED_URL: &str = "https://veloxbot.io/api/token-profile/public";
+const PROFILE_FEED_URL: &str = "https://dripline.io/api/token-profile/public";
 const CACHE_TTL: Duration = Duration::from_secs(60);
 const FETCH_TIMEOUT: Duration = Duration::from_secs(10);
 

@@ -41,7 +41,7 @@ impl FileLogger {
         // Create unique log file for each application start
         let now = Local::now();
         let timestamp = now.format("%Y-%m-%d_%H-%M-%S").to_string();
-        let log_file_name = format!("veloxbot_{timestamp}.log");
+        let log_file_name = format!("dripline_{timestamp}.log");
         let log_file_path = log_dir.join(&log_file_name);
 
         let file = OpenOptions::new()
@@ -122,7 +122,7 @@ impl FileLogger {
                 .filter(|entry| {
                     let file_name = entry.file_name();
                     let filename = file_name.to_string_lossy();
-                    filename.starts_with("veloxbot_") && filename.ends_with(".log")
+                    filename.starts_with("dripline_") && filename.ends_with(".log")
                 })
                 .collect();
 
@@ -188,7 +188,7 @@ fn get_log_directory() -> Result<PathBuf, Box<dyn std::error::Error>> {
     }
 
     // Final fallback to temp directory only if paths module fails
-    let temp_log_dir = std::env::temp_dir().join("veloxbot_logs");
+    let temp_log_dir = std::env::temp_dir().join("dripline_logs");
     fs::create_dir_all(&temp_log_dir)?;
     Ok(temp_log_dir)
 }

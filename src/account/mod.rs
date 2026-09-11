@@ -1,4 +1,4 @@
-//! The optional VeloxBot account, as seen from inside the app.
+//! The optional DripLine account, as seen from inside the app.
 //!
 //! ============================================================================
 //! WHAT SIGNING IN DOES AND DOES NOT DO
@@ -78,14 +78,14 @@ pub struct AccountStatus {
     pub email: Option<String>,
     pub scopes: Vec<String>,
     pub device_id: Option<String>,
-    /// True when the main wallet is known to veloxbot.io, so the UI can
+    /// True when the main wallet is known to dripline.io, so the UI can
     /// offer "sign in as this wallet" rather than a generic prompt.
     pub wallet_has_account: bool,
     /// Whether this build can reach the account service at all.
     pub online: bool,
     /// The persisted preference shown by the setup screen's gateway checkbox.
     pub use_gateway_rpc: bool,
-    /// Where this install stands with the VeloxBot data service.
+    /// Where this install stands with the DripLine data service.
     ///
     /// Carried on the account status rather than on a route of its own because
     /// it is the SAME question the panel is already asking — the setup screen and
@@ -127,7 +127,7 @@ pub fn initialize() {
         email: stored.account_email,
     });
 
-    logger::info(LogTag::System, "VeloxBot account session restored");
+    logger::info(LogTag::System, "DripLine account session restored");
 }
 
 pub fn is_signed_in() -> bool {
@@ -438,7 +438,7 @@ pub async fn complete_browser_signin(code: &str, state: &str) -> Result<()> {
     adopt_tokens(tokens, None, None)?;
     refresh_profile().await;
 
-    logger::info(LogTag::System, "Signed in to VeloxBot account");
+    logger::info(LogTag::System, "Signed in to DripLine account");
     Ok(())
 }
 
@@ -448,7 +448,7 @@ pub async fn sign_in_with_password(email: &str, password: &str) -> Result<()> {
     adopt_tokens(tokens, None, Some(email.to_string()))?;
     refresh_profile().await;
 
-    logger::info(LogTag::System, "Signed in to VeloxBot account");
+    logger::info(LogTag::System, "Signed in to DripLine account");
     Ok(())
 }
 
@@ -485,7 +485,7 @@ pub async fn sign_in_with_wallet(create: bool) -> Result<()> {
 
     if !challenge.has_account && !create {
         return Err(Error::Account(AccountError::Refused {
-            message: "No VeloxBot account uses this wallet yet.".to_string(),
+            message: "No DripLine account uses this wallet yet.".to_string(),
         }));
     }
 
@@ -503,7 +503,7 @@ pub async fn sign_in_with_wallet(create: bool) -> Result<()> {
 
     logger::info(
         LogTag::System,
-        "Signed in to VeloxBot account with wallet",
+        "Signed in to DripLine account with wallet",
     );
     Ok(())
 }
@@ -519,7 +519,7 @@ pub async fn poll_device_signin(device_code: &str) -> Result<bool> {
         Some(tokens) => {
             adopt_tokens(tokens, None, None)?;
             refresh_profile().await;
-            logger::info(LogTag::System, "Signed in to VeloxBot account");
+            logger::info(LogTag::System, "Signed in to DripLine account");
             Ok(true)
         }
         None => Ok(false),
@@ -538,7 +538,7 @@ pub async fn poll_device_signin(device_code: &str) -> Result<bool> {
 /// which is what the button says.
 pub fn sign_out() -> Result<()> {
     sign_out_locally();
-    logger::info(LogTag::System, "Signed out of VeloxBot account");
+    logger::info(LogTag::System, "Signed out of DripLine account");
     Ok(())
 }
 

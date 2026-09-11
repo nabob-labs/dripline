@@ -576,7 +576,7 @@ mod tests {
         // record_safe() reads config; point at a nonexistent path so it
         // initializes from defaults (ignore Err: another test may have
         // already set the process-wide CONFIG OnceLock).
-        let _ = crate::config::load_config_from_path("/nonexistent/veloxbot-test-config.toml");
+        let _ = crate::config::load_config_from_path("/nonexistent/dripline-test-config.toml");
 
         let mut descriptor = descriptor("TokenA", SOL_MINT, 100.0);
         descriptor.reserve_accounts =

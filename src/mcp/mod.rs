@@ -2,7 +2,7 @@
 //!
 //! This process is a thin bridge client. It contains NO trading/domain logic
 //! and NO local tool registry or policy: it discovers the already-running
-//! VeloxBot from the token-free `agent-runtime.json`, then calls a narrowly
+//! DripLine from the token-free `agent-runtime.json`, then calls a narrowly
 //! scoped internal HTTP bridge (`/api/agent-bridge/*`) on that live process.
 //! The live app authenticates the pairing credential, resolves the stored
 //! per-connection permission policy, applies `agent_control.enabled` and the
@@ -15,7 +15,7 @@
 //!   tool can run. There is no local execution fallback.
 //! - Approval-gated tools are listed once an approval route exists, but still
 //!   cannot run without an explicit in-app decision.
-//! - The pairing secret is read from `VELOXBOT_PAIRING_SECRET` (never a CLI
+//! - The pairing secret is read from `DRIPLINE_PAIRING_SECRET` (never a CLI
 //!   argument) and never written to stdout or any diagnostic.
 //! - stdout carries JSON-RPC framing exclusively; all diagnostics go to stderr.
 
@@ -49,8 +49,8 @@ const APPROVAL_WAIT_LIMIT: Duration = Duration::from_secs(5 * 60);
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(3);
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 
-const CLIENT_ID_ENV: &str = "VELOXBOT_CLIENT_ID";
-const SECRET_ENV: &str = "VELOXBOT_PAIRING_SECRET";
+const CLIENT_ID_ENV: &str = "DRIPLINE_CLIENT_ID";
+const SECRET_ENV: &str = "DRIPLINE_PAIRING_SECRET";
 
 /// The only hosts a runtime file may point the bridge at.
 const LOOPBACK_HOSTS: [&str; 2] = ["127.0.0.1", "localhost"];
@@ -88,14 +88,14 @@ enum BridgeError {
 impl BridgeError {
     fn user_message(&self) -> String {
         match self {
-            BridgeError::NotPaired => "this client is not paired (set VELOXBOT_CLIENT_ID and \
-                 VELOXBOT_PAIRING_SECRET)"
+            BridgeError::NotPaired => "this client is not paired (set DRIPLINE_CLIENT_ID and \
+                 DRIPLINE_PAIRING_SECRET)"
                 .to_owned(),
             BridgeError::NotRunning => {
-                "VeloxBot is not running (no agent-runtime.json)".to_owned()
+                "DripLine is not running (no agent-runtime.json)".to_owned()
             }
             BridgeError::Unreachable => {
-                "VeloxBot is not reachable at its known local address".to_owned()
+                "DripLine is not reachable at its known local address".to_owned()
             }
             BridgeError::Rejected(message) => message.clone(),
         }
@@ -188,8 +188,8 @@ impl McpServer {
         let response = self
             .http
             .post(format!("{origin}{path}"))
-            .header("x-veloxbot-client", client_id)
-            .header("x-veloxbot-pairing-secret", secret)
+            .header("x-dripline-client", client_id)
+            .header("x-dripline-pairing-secret", secret)
             .json(body)
             .send()
             .await
@@ -259,8 +259,8 @@ impl McpServer {
             // request can never push the total wait past the 5-minute contract.
             if Instant::now() + APPROVAL_POLL_INTERVAL + REQUEST_TIMEOUT >= deadline {
                 return error_result(&format!(
-                    "This action requires approval inside VeloxBot and is still pending \
-                     (request {approval_id}). Approve it in VeloxBot, then retry the same \
+                    "This action requires approval inside DripLine and is still pending \
+                     (request {approval_id}). Approve it in DripLine, then retry the same \
                      call — it will not run twice."
                 ));
             }
@@ -283,10 +283,10 @@ impl McpServer {
                 "failed" => {
                     return error_result_from(value.get("result"), "The approved request failed.")
                 }
-                "denied" => return error_result("A person denied this request in VeloxBot."),
+                "denied" => return error_result("A person denied this request in DripLine."),
                 "expired" => {
                     return error_result(
-                        "The approval request expired in VeloxBot without a decision.",
+                        "The approval request expired in DripLine without a decision.",
                     )
                 }
                 other => return error_result(&format!("Unexpected approval state: {other}")),
@@ -300,13 +300,13 @@ impl ServerHandler for McpServer {
         let mut info = ServerInfo::default();
         info.capabilities = ServerCapabilities::builder().enable_tools().build();
         info.server_info =
-            Implementation::new("veloxbot", env!("CARGO_PKG_VERSION")).with_title("VeloxBot");
+            Implementation::new("dripline", env!("CARGO_PKG_VERSION")).with_title("DripLine");
         info.instructions = Some(
-            "Local VeloxBot control surface. Capabilities come from the running VeloxBot \
-             process and are gated by this connection's own permissions, set in VeloxBot under \
+            "Local DripLine control surface. Capabilities come from the running DripLine \
+             process and are gated by this connection's own permissions, set in DripLine under \
              Settings > Agent Connections. A category set to ask parks the call until a person \
              approves it in the app. \
-             If VeloxBot is not running or this client is not paired, no capabilities are \
+             If DripLine is not running or this client is not paired, no capabilities are \
              offered."
                 .to_owned(),
         );
@@ -334,7 +334,7 @@ impl ServerHandler for McpServer {
             }
             Err(reason) => {
                 eprintln!(
-                    "VeloxBot MCP: no capabilities available ({}).",
+                    "DripLine MCP: no capabilities available ({}).",
                     reason.user_message()
                 );
                 Ok(ListToolsResult::with_all_items(Vec::new()))
@@ -377,10 +377,10 @@ impl ServerHandler for McpServer {
                     .and_then(|r| r.as_str())
                     .unwrap_or("This paired client is not authorized for this tool."),
             )),
-            "unknown_tool" => Ok(error_result("Unknown VeloxBot tool")),
-            "approval_denied" => Ok(error_result("A person denied this request in VeloxBot.")),
+            "unknown_tool" => Ok(error_result("Unknown DripLine tool")),
+            "approval_denied" => Ok(error_result("A person denied this request in DripLine.")),
             "approval_expired" => Ok(error_result(
-                "The approval request expired in VeloxBot without a decision.",
+                "The approval request expired in DripLine without a decision.",
             )),
             "approval_required" => {
                 let approval_id = value
@@ -490,7 +490,7 @@ fn read_runtime_info() -> Option<RuntimeInfo> {
             Some(origin) => origin,
             None => {
                 eprintln!(
-                    "VeloxBot MCP: agent-runtime.json url is not an accepted loopback origin; \
+                    "DripLine MCP: agent-runtime.json url is not an accepted loopback origin; \
                      serving zero capabilities."
                 );
                 return None;
@@ -534,7 +534,7 @@ fn credential_from_env(cli_client_id: Option<&str>) -> (Option<String>, Option<S
 ///
 /// Runtime discovery is dynamic: an unavailable origin is re-read on the next
 /// bridge request, while a transport failure re-reads the runtime and may adopt
-/// a changed origin. A long-lived client therefore recovers if VeloxBot
+/// a changed origin. A long-lived client therefore recovers if DripLine
 /// starts later or restarts on a different port. It never auto-starts the app.
 pub async fn serve_stdio(cli_client_id: Option<&str>) -> anyhow::Result<()> {
     let origin = read_runtime_info().map(|info| info.url);
@@ -542,14 +542,14 @@ pub async fn serve_stdio(cli_client_id: Option<&str>) -> anyhow::Result<()> {
 
     if origin.is_none() {
         eprintln!(
-            "VeloxBot MCP: VeloxBot does not appear to be running yet (no \
+            "DripLine MCP: DripLine does not appear to be running yet (no \
              agent-runtime.json); each request re-checks, so capabilities appear once it starts."
         );
     }
     if client_id.is_none() || secret.is_none() {
         eprintln!(
-            "VeloxBot MCP: set {CLIENT_ID_ENV} and {SECRET_ENV} to pair with a running \
-             VeloxBot; serving zero capabilities until then."
+            "DripLine MCP: set {CLIENT_ID_ENV} and {SECRET_ENV} to pair with a running \
+             DripLine; serving zero capabilities until then."
         );
     }
 
@@ -563,7 +563,7 @@ pub fn is_mcp_command(args: &[String]) -> bool {
     args.get(1).is_some_and(|arg| arg == "mcp")
 }
 
-/// Dispatch a `veloxbot mcp <...>` invocation. Runs before the normal boot
+/// Dispatch a `dripline mcp <...>` invocation. Runs before the normal boot
 /// path so protocol stdout stays clean.
 pub async fn dispatch(args: &[String]) -> anyhow::Result<bool> {
     if !is_mcp_command(args) {
@@ -588,7 +588,7 @@ pub async fn dispatch(args: &[String]) -> anyhow::Result<bool> {
             std::process::exit(code);
         }
         _ => {
-            eprintln!("Usage: veloxbot mcp <serve | doctor>");
+            eprintln!("Usage: dripline mcp <serve | doctor>");
             eprintln!("Pairing: set {CLIENT_ID_ENV} and {SECRET_ENV} in the environment.");
             Ok(true)
         }
@@ -662,7 +662,7 @@ async fn run_doctor(cli_client_id: Option<&str>) -> i32 {
     let runtime = read_runtime_info();
     match &runtime {
         None => {
-            eprintln!("VeloxBot MCP: VeloxBot is not running (no agent-runtime.json).");
+            eprintln!("DripLine MCP: DripLine is not running (no agent-runtime.json).");
         }
         Some(info) => {
             let pid = info
@@ -671,7 +671,7 @@ async fn run_doctor(cli_client_id: Option<&str>) -> i32 {
                 .unwrap_or_else(|| "?".to_owned());
             let version = info.version.clone().unwrap_or_else(|| "?".to_owned());
             eprintln!(
-                "VeloxBot MCP: runtime found — url {}, pid {pid}, version {version}.",
+                "DripLine MCP: runtime found — url {}, pid {pid}, version {version}.",
                 info.url
             );
         }
@@ -684,14 +684,14 @@ async fn run_doctor(cli_client_id: Option<&str>) -> i32 {
         DoctorProbe::Skipped
     } else if !credentials_present {
         eprintln!(
-            "VeloxBot MCP: {CLIENT_ID_ENV} / {SECRET_ENV} not both set; cannot check pairing."
+            "DripLine MCP: {CLIENT_ID_ENV} / {SECRET_ENV} not both set; cannot check pairing."
         );
         DoctorProbe::Skipped
     } else {
         match build_http_client() {
             Err(_) => {
                 eprintln!(
-                    "VeloxBot MCP: could not construct the bounded HTTP client; cannot check \
+                    "DripLine MCP: could not construct the bounded HTTP client; cannot check \
                      pairing."
                 );
                 DoctorProbe::Skipped
@@ -717,21 +717,21 @@ async fn run_doctor(cli_client_id: Option<&str>) -> i32 {
                             .and_then(|s| s.as_str())
                             .unwrap_or("");
                         eprintln!(
-                            "VeloxBot MCP: bridge reachable; pairing OK (label {label:?}, \
+                            "DripLine MCP: bridge reachable; pairing OK (label {label:?}, \
                              permissions {permissions})."
                         );
                         DoctorProbe::Ok
                     }
                     Err(BridgeError::Rejected(reason)) => {
                         eprintln!(
-                            "VeloxBot MCP: bridge reachable but the pairing was rejected \
+                            "DripLine MCP: bridge reachable but the pairing was rejected \
                              ({reason})."
                         );
                         DoctorProbe::Rejected
                     }
                     Err(other) => {
                         eprintln!(
-                            "VeloxBot MCP: bridge check failed ({}).",
+                            "DripLine MCP: bridge check failed ({}).",
                             other.user_message()
                         );
                         DoctorProbe::Unreachable
@@ -743,7 +743,7 @@ async fn run_doctor(cli_client_id: Option<&str>) -> i32 {
 
     let exit = decide_doctor(runtime.is_some(), credentials_present, probe);
     eprintln!(
-        "VeloxBot MCP: doctor result {exit:?} (exit code {}).",
+        "DripLine MCP: doctor result {exit:?} (exit code {}).",
         exit.code()
     );
     exit.code()
@@ -926,7 +926,7 @@ mod tests {
     fn secret_is_only_read_from_env_never_cli() {
         // `--client-id` supplies only the id; there is no CLI path for a secret.
         let args: Vec<String> = vec![
-            "veloxbot".into(),
+            "dripline".into(),
             "mcp".into(),
             "serve".into(),
             "--client-id".into(),

@@ -3,7 +3,7 @@
 // TransactionsManager - Core manager struct for transaction monitoring and coordination
 //
 // This module contains the main TransactionsManager struct that coordinates
-// all transaction-related operations for the VeloxBot trading system.
+// all transaction-related operations for the DripLine trading system.
 
 use chrono::{DateTime, Utc};
 use std::collections::{HashMap, HashSet};

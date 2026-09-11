@@ -352,7 +352,7 @@ impl RpcManager {
         params: serde_json::Value,
     ) -> Result<serde_json::Value, RpcError> {
         // A signed-in account may relay transaction SUBMISSION through
-        // veloxbot.io for free. Tried first and never depended on: any
+        // dripline.io for free. Tried first and never depended on: any
         // failure returns None and the request continues down the normal
         // provider path below, so the relay can never stop a trade.
         //

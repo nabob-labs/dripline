@@ -235,7 +235,7 @@ mod tests {
         let b58 = bs58::encode(keypair.to_bytes()).into_string();
         let parsed = parse_private_key(&b58).unwrap();
 
-        let message = b"veloxbot-signing-test";
+        let message = b"dripline-signing-test";
         let signature = parsed.sign_message(message);
         assert!(signature.verify(&parsed.pubkey().to_bytes(), message));
     }

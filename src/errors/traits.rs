@@ -50,7 +50,7 @@ pub trait ErrorClass {
 
 impl ErrorClass for AccountError {
     fn is_retryable(&self) -> bool {
-        // A garbled/unexpected response from veloxbot.io is often a
+        // A garbled/unexpected response from dripline.io is often a
         // one-off transport hiccup; everything else about an account error
         // is a final verdict that will not change by repeating the call.
         matches!(self, AccountError::UnexpectedResponse { .. })

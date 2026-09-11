@@ -71,7 +71,7 @@ pub async fn export_wallets_csv(Query(query): Query<ExportQuery>) -> impl IntoRe
     }
 
     let filename = format!(
-        "veloxbot_wallets_{}.csv",
+        "dripline_wallets_{}.csv",
         chrono::Utc::now().format("%Y%m%d_%H%M%S")
     );
 
@@ -216,7 +216,7 @@ pub async fn export_wallets_full(Json(request): Json<FullExportRequest>) -> impl
     }
 
     let filename = format!(
-        "veloxbot_wallets_FULL_{}.csv",
+        "dripline_wallets_FULL_{}.csv",
         chrono::Utc::now().format("%Y%m%d_%H%M%S")
     );
 

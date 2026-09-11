@@ -162,7 +162,7 @@ config_struct! {
         /// Referral attribution (opt-in; inert until a code is set)
         referral: ReferralConfig = ReferralConfig::default(),
 
-        /// VeloxBot account — optional sign-in. Holds no secrets; tokens
+        /// DripLine account — optional sign-in. Holds no secrets; tokens
         /// live in the encrypted store, and the server address is a constant.
         account: AccountConfig = AccountConfig::default(),
 

@@ -21,7 +21,7 @@ export function applyQuoteManagerMixin(TradeActionDialog) {
    */
   proto._loadRecentTrades = function () {
     try {
-      const stored = localStorage.getItem("veloxbot_recent_trades");
+      const stored = localStorage.getItem("dripline_recent_trades");
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
@@ -43,7 +43,7 @@ export function applyQuoteManagerMixin(TradeActionDialog) {
       recent.unshift({ mint, symbol: symbol || "Unknown", timestamp: Date.now() });
       // Keep max 10
       recent = recent.slice(0, 10);
-      localStorage.setItem("veloxbot_recent_trades", JSON.stringify(recent));
+      localStorage.setItem("dripline_recent_trades", JSON.stringify(recent));
     } catch {
       // Ignore localStorage errors
     }

@@ -13,7 +13,7 @@
     summarizeValidation,
     validateRpcValue,
     validateWalletValue,
-    waitForVeloxBotRestart,
+    waitForDripLineRestart,
   } = window.SetupRuntime;
 
   class SetupControllerClass {
@@ -418,18 +418,18 @@
         this.completeIcon.className = "setup-complete-icon icon-circle-check";
       }
       if (this.completeText) {
-        this.completeText.textContent = "Restarting VeloxBot with your verified configuration.";
+        this.completeText.textContent = "Restarting DripLine with your verified configuration.";
       }
       if (this.servicesStatus) this.servicesStatus.textContent = "Finishing restart…";
       if (this.restartIndicator) this.restartIndicator.hidden = false;
       if (this.completeActions) this.completeActions.hidden = true;
 
-      waitForVeloxBotRestart(this.previousInstanceId, {
+      waitForDripLineRestart(this.previousInstanceId, {
         target: "/home",
         signal: this.restartAbort.signal,
         onReady: () => {
           if (this.servicesStatus) {
-            this.servicesStatus.textContent = "VeloxBot is ready. Opening dashboard…";
+            this.servicesStatus.textContent = "DripLine is ready. Opening dashboard…";
           }
         },
       }).catch((error) => {

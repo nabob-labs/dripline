@@ -335,7 +335,7 @@ export function createCalendar(fetcher) {
       track(gridEl, "mouseout", onGridOut);
 
       // Re-tint cells when the theme changes (intensity floor differs per theme).
-      track(window, "veloxbot:theme", () => {
+      track(window, "dripline:theme", () => {
         if (lastData) render(lastData);
       });
 

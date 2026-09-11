@@ -9,10 +9,10 @@
 mod common;
 
 use common::{config_guard, filter_token, filters_all_disabled, filters_default_dex_only, holder};
-use veloxbot::config::FilteringConfig;
-use veloxbot::filtering::evaluate_token;
-use veloxbot::filtering::sources::{FilterRejectionReason, FilterSource};
-use veloxbot::tokens::types::{DataSource, Token};
+use dripline::config::FilteringConfig;
+use dripline::filtering::evaluate_token;
+use dripline::filtering::sources::{FilterRejectionReason, FilterSource};
+use dripline::tokens::types::{DataSource, Token};
 
 const MINT: &str = "PipelineMint11111111111111111111111111111111";
 
@@ -224,7 +224,7 @@ async fn pipeline_rejects_decimals_it_cannot_trust() {
     // mint that is not valid base58 ('0' is not in the alphabet) so the chain fallback fails
     // at parse time instead of opening a socket. There is no global database in this tier,
     // so the DB and Rugcheck fallbacks miss without any I/O either.
-    common::set_config(|cfg| cfg.tokens.sources.veloxbot_server.enabled = false);
+    common::set_config(|cfg| cfg.tokens.sources.dripline_server.enabled = false);
     const UNRESOLVED: &str = "0nresolvedMint111111111111111111111111111";
 
     for junk in [Some(0), Some(19), Some(123), None] {

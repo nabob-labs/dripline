@@ -55,7 +55,7 @@ async fn boosted_cards() -> Vec<FeaturedCard> {
     cards
 }
 
-/// GET /api/featured — the tokens boosted on veloxbot.io
+/// GET /api/featured — the tokens boosted on dripline.io
 pub(super) async fn get_featured_handler() -> Response {
     let cards = boosted_cards().await;
     success_response(serde_json::json!({

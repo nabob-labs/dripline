@@ -1,6 +1,6 @@
-//! VeloxBot - Automated Solana DeFi Trading Bot
+//! DripLine - Automated Solana DeFi Trading Bot
 //!
-//! This is the main entry point for the VeloxBot application.
+//! This is the main entry point for the DripLine application.
 //! The bot runs as a headless server with a web-based dashboard.
 
 // jemalloc: better fragmentation behavior than system allocator for long-running processes.
@@ -14,5 +14,5 @@ static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
 
 #[tokio::main]
 async fn main() {
-    veloxbot::run::boot().await;
+    dripline::run::boot().await;
 }

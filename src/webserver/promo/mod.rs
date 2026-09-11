@@ -5,7 +5,7 @@
 //! token arrays in `data.rs` (see `aggregates.rs`), so P&L, win rate, invested,
 //! trade counts and wallet worth all reconcile across endpoints.
 //!
-//! Enable fixtures with: cargo run --bin veloxbot -- --gui --promo-fixtures
+//! Enable fixtures with: cargo run --bin dripline -- --gui --promo-fixtures
 //!
 //! Affected endpoints:
 //! - /api/dashboard/home, /api/dashboard/overview, /api/dashboard/portfolio-calendar

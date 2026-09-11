@@ -2,7 +2,7 @@
  * Featured Row - the horizontal discovery strip above the status bar.
  *
  * Two bands, in this order and never mixed:
- *   1. BOOSTED - tokens whose teams paid to promote them on veloxbot.io. They
+ *   1. BOOSTED - tokens whose teams paid to promote them on dripline.io. They
  *      lead the row, carry the gold treatment and print their active boost count.
  *   2. DISCOVERY - Jupiter top-organic/top-traded and DexScreener trending, in
  *      that order, deduped against the boosted band and against each other.
@@ -20,7 +20,7 @@ import { openFeaturedDialog } from "./featured_dialog.js";
 import { boostTier, formatBoostCount } from "../core/boosts.js";
 import * as Hints from "../core/hints.js";
 import { HintTrigger } from "./hint_popover.js";
-// Side-effect import: registers the global "veloxbot:open-token-details"
+// Side-effect import: registers the global "dripline:open-token-details"
 // window listener. The featured row appears on pages (e.g. Home) that do not
 // otherwise load the token details dialog module, so without this the
 // open-token-details event a card click dispatches would have no listener.
@@ -374,7 +374,7 @@ class FeaturedRow {
       if (!mint) return;
       card.addEventListener("click", () => {
         window.dispatchEvent(
-          new CustomEvent("veloxbot:open-token-details", {
+          new CustomEvent("dripline:open-token-details", {
             detail: {
               mint,
               symbol: card.dataset.symbol || "",

@@ -1,4 +1,4 @@
-//! Published token-profile content owned by veloxbot.io.
+//! Published token-profile content owned by dripline.io.
 //!
 //! The website owns SOL payment, moderation, revisions and publication. The local
 //! app consumes only the published projection and keeps the last good feed while

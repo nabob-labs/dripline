@@ -2,7 +2,7 @@
 //
 // Loaded as an external script so it complies with the page CSP
 // (`script-src 'self'`). The splash is shown while the backend starts; if the
-// backend reports a fatal startup error (VELOXBOT_ERROR), the main process
+// backend reports a fatal startup error (DRIPLINE_ERROR), the main process
 // pushes a structured payload here and we render the dedicated error screen.
 
 (function () {
@@ -50,7 +50,7 @@
   const SUBTITLES = {
     wallet_mismatch: 'A different wallet was detected',
     port_in_use: 'A required network port is busy',
-    lock_held: 'VeloxBot is already running',
+    lock_held: 'DripLine is already running',
     config_invalid: 'Configuration problem',
     directory_setup: 'Storage problem',
     generic: 'Startup error'
@@ -60,7 +60,7 @@
     document.getElementById('splashScreen').classList.add('hidden');
 
     document.getElementById('bootErrorTitle').textContent =
-      payload.title || 'VeloxBot could not start';
+      payload.title || 'DripLine could not start';
     document.getElementById('bootErrorSubtitle').textContent =
       SUBTITLES[payload.code] || SUBTITLES.generic;
     document.getElementById('bootErrorDetail').textContent =

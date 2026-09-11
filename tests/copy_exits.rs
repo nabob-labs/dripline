@@ -6,14 +6,14 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use chrono::{TimeZone, Utc};
-use veloxbot::chains::ChainId;
-use veloxbot::positions::{PositionManagement, PositionOrigin};
-use veloxbot::trader::copy::{
+use dripline::chains::ChainId;
+use dripline::positions::{PositionManagement, PositionOrigin};
+use dripline::trader::copy::{
     execute_copy_sell_with, paper_sell_outcome, prepare_copy_sell, CopyMode, CopyOutcome,
     CopySellSubmitResult, CopySkip, CopyTask, ExitMode, PaperCosts, SizingMode,
 };
-use veloxbot::trader::{TradeAction, TradeReason};
-use veloxbot::wallets::watch::{ActivityKind, SwapSide, WalletActivity, WatchSource};
+use dripline::trader::{TradeAction, TradeReason};
+use dripline::wallets::watch::{ActivityKind, SwapSide, WalletActivity, WatchSource};
 
 fn task(exit_mode: ExitMode, mode: CopyMode) -> CopyTask {
     let now = Utc.timestamp_opt(10, 0).unwrap();
@@ -61,7 +61,7 @@ fn sell_activity() -> WalletActivity {
     }
 }
 
-fn copy_position(management: PositionManagement) -> veloxbot::positions::Position {
+fn copy_position(management: PositionManagement) -> dripline::positions::Position {
     let mut position = common::test_position(0.01, 1.0);
     position.id = Some(42);
     position.origin = PositionOrigin::Copy {
@@ -239,7 +239,7 @@ async fn hybrid_and_auto_exit_race_has_one_winner_through_the_existing_mint_lock
         let claimed = claimed.clone();
         let winners = winners.clone();
         tasks.push(tokio::spawn(async move {
-            let _lock = veloxbot::positions::acquire_position_lock("phase4-race-mint").await;
+            let _lock = dripline::positions::acquire_position_lock("phase4-race-mint").await;
             if !claimed.swap(true, Ordering::SeqCst) {
                 winners.fetch_add(1, Ordering::SeqCst);
                 tokio::task::yield_now().await;

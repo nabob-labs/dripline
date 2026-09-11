@@ -243,40 +243,40 @@ config_struct! {
         })]
         solana_tracker: OhlcvSolanaTrackerConfig = OhlcvSolanaTrackerConfig::default(),
         #[metadata(field_metadata! {
-            label: "VeloxBot Server Source",
-            hint: "Self-hosted VeloxBot OHLCV cache — tried FIRST (fast, shared cache); falls back to the providers below on a miss",
+            label: "DripLine Server Source",
+            hint: "Self-hosted DripLine OHLCV cache — tried FIRST (fast, shared cache); falls back to the providers below on a miss",
             impact: "high",
             category: "Sources",
         })]
-        veloxbot_server: OhlcvVeloxbotConfig = OhlcvVeloxbotConfig::default(),
+        dripline_server: OhlcvDriplineConfig = OhlcvDriplineConfig::default(),
     }
 }
 
 config_struct! {
-    /// Self-hosted VeloxBot OHLCV server — the preferred first-hop source. It
+    /// Self-hosted DripLine OHLCV server — the preferred first-hop source. It
     /// serves cached candles fast and warms itself; on a miss the fetcher falls
     /// back to GeckoTerminal/SolanaTracker as before.
-    pub struct OhlcvVeloxbotConfig {
-        /// Whether to try the VeloxBot server first
+    pub struct OhlcvDriplineConfig {
+        /// Whether to try the DripLine server first
         #[metadata(field_metadata! {
             label: "Enabled",
-            hint: "Try the self-hosted VeloxBot OHLCV server before external providers",
+            hint: "Try the self-hosted DripLine OHLCV server before external providers",
             impact: "high",
             category: "Sources",
         })]
         enabled: bool = true,
-        /// VeloxBot OHLCV server base URL (no trailing slash)
+        /// DripLine OHLCV server base URL (no trailing slash)
         #[metadata(field_metadata! {
             label: "Endpoint",
             hint: "Base URL of the self-hosted OHLCV server",
             impact: "critical",
             category: "Sources",
         })]
-        endpoint: String = "https://veloxbot.io/data".to_owned(),
+        endpoint: String = "https://dripline.io/data".to_owned(),
         /// HTTP request timeout in seconds (keep short so a miss falls back fast)
         #[metadata(field_metadata! {
             label: "Timeout (seconds)",
-            hint: "HTTP request timeout for the VeloxBot server (short so misses fall back quickly)",
+            hint: "HTTP request timeout for the DripLine server (short so misses fall back quickly)",
             impact: "low",
             category: "Sources",
             min: 1.0,

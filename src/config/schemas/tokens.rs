@@ -227,42 +227,42 @@ config_struct! {
         },
 
         #[metadata(field_metadata! {
-            label: "VeloxBot Server Source",
-            hint: "Self-hosted VeloxBot data server — shared first-hop cache for Rugcheck reports and boosted-token identity",
+            label: "DripLine Server Source",
+            hint: "Self-hosted DripLine data server — shared first-hop cache for Rugcheck reports and boosted-token identity",
             impact: "high",
             category: "Sources",
         })]
-        veloxbot_server: VeloxbotServerSourceConfig =
-            VeloxbotServerSourceConfig::default(),
+        dripline_server: DriplineServerSourceConfig =
+            DriplineServerSourceConfig::default(),
     }
 }
 
 config_struct! {
-    /// Self-hosted VeloxBot data server used as the preferred first-hop source
+    /// Self-hosted DripLine data server used as the preferred first-hop source
     /// for token security (Rugcheck) reports and boosted-token market identity. It
     /// serves a shared cache fast; every consumer retains a direct-provider fallback,
     /// so this is an accelerator rather than a hard dependency.
-    pub struct VeloxbotServerSourceConfig {
-        /// Whether to try the VeloxBot server as the shared first-hop cache
+    pub struct DriplineServerSourceConfig {
+        /// Whether to try the DripLine server as the shared first-hop cache
         #[metadata(field_metadata! {
             label: "Enabled",
-            hint: "Try the self-hosted VeloxBot server before direct data providers",
+            hint: "Try the self-hosted DripLine server before direct data providers",
             impact: "high",
             category: "Sources",
         })]
         enabled: bool = true,
-        /// VeloxBot data server base URL (no trailing slash)
+        /// DripLine data server base URL (no trailing slash)
         #[metadata(field_metadata! {
             label: "Endpoint",
-            hint: "Base URL of the self-hosted VeloxBot data server",
+            hint: "Base URL of the self-hosted DripLine data server",
             impact: "critical",
             category: "Sources",
         })]
-        endpoint: String = "https://veloxbot.io/data".to_owned(),
+        endpoint: String = "https://dripline.io/data".to_owned(),
         /// HTTP request timeout in seconds (keep short so a miss falls back fast)
         #[metadata(field_metadata! {
             label: "Timeout (seconds)",
-            hint: "HTTP request timeout for the VeloxBot server (short so misses fall back quickly)",
+            hint: "HTTP request timeout for the DripLine server (short so misses fall back quickly)",
             impact: "low",
             category: "Sources",
             min: 1.0,

@@ -4,7 +4,7 @@
 
 mod common;
 
-use veloxbot::ohlcvs::Timeframe;
+use dripline::ohlcvs::Timeframe;
 
 #[test]
 fn timeframe_seconds_are_canonical() {

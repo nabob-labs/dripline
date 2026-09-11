@@ -6,7 +6,7 @@ use super::{
 };
 use crate::rpc::errors::RpcError;
 
-/// Top-level error type for VeloxBot.
+/// Top-level error type for DripLine.
 ///
 /// This is re-exported as `crate::Error` for ergonomic usage across the codebase.
 #[derive(Debug, Clone, thiserror::Error)]
@@ -110,7 +110,7 @@ pub enum Error {
     #[error(transparent)]
     Process(#[from] crate::process::Error),
 
-    /// VeloxBot account / sign-in errors.
+    /// DripLine account / sign-in errors.
     #[error(transparent)]
     Account(#[from] AccountError),
 
@@ -151,7 +151,7 @@ pub enum Error {
     Data(#[from] DataError),
 }
 
-/// Convenient result type for VeloxBot core code.
+/// Convenient result type for DripLine core code.
 pub type Result<T> = std::result::Result<T, Error>;
 
 // =============================================================================

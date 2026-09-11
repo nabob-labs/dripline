@@ -15,7 +15,7 @@
 //!
 //! ## Usage
 //! ```rust,ignore
-//! use veloxbot::wallets;
+//! use dripline::wallets;
 //!
 //! // Initialize (call once at startup)
 //! wallets::initialize().await?;

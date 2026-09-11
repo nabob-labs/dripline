@@ -21,7 +21,7 @@
 mod common;
 
 use common::{seed_decimals, test_position, TEST_MINT};
-use veloxbot::positions::{
+use dripline::positions::{
     calculate_position_pnl, calculate_position_pnl_safe, calculate_position_total_fees,
     calculate_split_pnl, Position,
 };

@@ -1,4 +1,4 @@
-# Cross-compilation configuration for VeloxBot
+# Cross-compilation configuration for DripLine
 # Uses Docker containers with older GLIBC for maximum compatibility
 # 
 # Binary GLIBC requirement: 2.29

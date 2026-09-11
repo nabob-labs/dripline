@@ -1,9 +1,9 @@
-//! The ONE way this app talks to the VeloxBot data service.
+//! The ONE way this app talks to the DripLine data service.
 //!
 //! ============================================================================
 //! WHY THIS MODULE EXISTS
 //! ============================================================================
-//! Six subsystems read from veloxbot.io/data — candles, the SOL/USD reference
+//! Six subsystems read from dripline.io/data — candles, the SOL/USD reference
 //! chart, the pool registry, Rugcheck reports, token decimals and boosted-token
 //! identity. Each of them used to build its own URL, own timeout, own "was that
 //! a 200?" check and own silent `None`. That was survivable while the service was
@@ -42,7 +42,7 @@ pub use access::{status, DataAccess, DataAccessStatus};
 
 /// The app states its version so the service can retire a release. Kept in step
 /// with the header the Data Server reads in `api/auth.rs`.
-const VERSION_HEADER: &str = "x-veloxbot-version";
+const VERSION_HEADER: &str = "x-dripline-version";
 
 /// Which config section supplies the endpoint for this call.
 ///
@@ -51,9 +51,9 @@ const VERSION_HEADER: &str = "x-veloxbot-version";
 /// giving up the shared pool registry. They are read, never merged.
 #[derive(Debug, Clone, Copy)]
 pub enum Surface {
-    /// `[tokens.sources.veloxbot_server]` — pools, Rugcheck, decimals, market.
+    /// `[tokens.sources.dripline_server]` — pools, Rugcheck, decimals, market.
     Tokens,
-    /// `[ohlcv.sources.veloxbot_server]` — candles and the SOL/USD chart.
+    /// `[ohlcv.sources.dripline_server]` — candles and the SOL/USD chart.
     Ohlcv,
 }
 
@@ -66,11 +66,11 @@ impl Surface {
         crate::config::with_config(|config| {
             let (enabled, endpoint, timeout_seconds) = match self {
                 Surface::Tokens => {
-                    let source = &config.tokens.sources.veloxbot_server;
+                    let source = &config.tokens.sources.dripline_server;
                     (source.enabled, &source.endpoint, source.timeout_seconds)
                 }
                 Surface::Ohlcv => {
-                    let source = &config.ohlcv.sources.veloxbot_server;
+                    let source = &config.ohlcv.sources.dripline_server;
                     (source.enabled, &source.endpoint, source.timeout_seconds)
                 }
             };
@@ -289,7 +289,7 @@ mod tests {
     fn the_minimum_version_is_lifted_out_of_the_service_sentence() {
         let body = json!({
             "code": "version_unsupported",
-            "error": "This VeloxBot version is no longer served. Update to 0.3.1 or newer."
+            "error": "This DripLine version is no longer served. Update to 0.3.1 or newer."
         });
         let (code, minimum) = refusal_code(&body);
         assert_eq!(code, "version_unsupported");

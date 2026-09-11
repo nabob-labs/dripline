@@ -1,4 +1,4 @@
-//! Tools module for VeloxBot
+//! Tools module for DripLine
 //!
 //! Contains utility tools for token operations.
 //!

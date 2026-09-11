@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 // =============================================================================
-// RESPONSE TYPES (inline per VeloxBot convention)
+// RESPONSE TYPES (inline per DripLine convention)
 // =============================================================================
 
 /// Lockscreen status response

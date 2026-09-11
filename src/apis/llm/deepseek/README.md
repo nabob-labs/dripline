@@ -23,7 +23,7 @@ OpenAI-compatible LLM provider with very generous free tier and cheap pricing.
 2. Create client:
 
 ```rust
-use veloxbot::apis::llm::deepseek::DeepSeekClient;
+use dripline::apis::llm::deepseek::DeepSeekClient;
 
 let client = DeepSeekClient::new(
     api_key.to_string(),
@@ -35,7 +35,7 @@ let client = DeepSeekClient::new(
 3. Use via LlmClient trait:
 
 ```rust
-use veloxbot::apis::llm::{ChatMessage, ChatRequest};
+use dripline::apis::llm::{ChatMessage, ChatRequest};
 
 let request = ChatRequest::new(
     "deepseek-chat",

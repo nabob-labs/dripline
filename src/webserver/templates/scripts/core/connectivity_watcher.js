@@ -1,8 +1,8 @@
-// Connectivity watcher — detects when the VeloxBot backend becomes
+// Connectivity watcher — detects when the DripLine backend becomes
 // unreachable (process crash, mid-session network loss, restart) and shows a
 // single non-blocking "Waiting for core…" overlay instead of letting individual
 // pages/pollers fail with bare errors. Auto-recovers: when the backend answers
-// again it dismisses the overlay, emits a `veloxbot:reconnected` event so
+// again it dismisses the overlay, emits a `dripline:reconnected` event so
 // the router and pollers can refresh, and shows a brief toast.
 //
 // Detection is driven by TWO signals so it reacts within ~1 request instead of
@@ -65,7 +65,7 @@ function setOnline(isOnline) {
   if (isOnline) {
     hideOverlay();
     document.documentElement.removeAttribute("data-backend-offline");
-    window.dispatchEvent(new CustomEvent("veloxbot:reconnected"));
+    window.dispatchEvent(new CustomEvent("dripline:reconnected"));
     try {
       // Keyed: a flapping backend must leave one notice, not one per recovery.
       window.showToast?.({
@@ -79,7 +79,7 @@ function setOnline(isOnline) {
   } else {
     document.documentElement.setAttribute("data-backend-offline", "true");
     showOverlay();
-    window.dispatchEvent(new CustomEvent("veloxbot:offline"));
+    window.dispatchEvent(new CustomEvent("dripline:offline"));
   }
 }
 

@@ -182,7 +182,7 @@ pub async fn fetch_rugcheck_data(
 
     // 3. Fetch from a source.
     //
-    // Try the self-hosted VeloxBot data server FIRST (separate source): it
+    // Try the self-hosted DripLine data server FIRST (separate source): it
     // serves a shared cache fast and warms itself, sparing the direct Rugcheck
     // rate budget. On any disabled/miss/timeout/error it yields None and we fall
     // straight through to the direct Rugcheck API below — purely an accelerator,

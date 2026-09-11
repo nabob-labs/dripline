@@ -1024,10 +1024,10 @@ function createLifecycle() {
         if (id == null) return;
         table?.updateRow(id, { management });
       };
-      window.addEventListener("veloxbot:position-management-changed", handleManagementChanged);
+      window.addEventListener("dripline:position-management-changed", handleManagementChanged);
       ctx.onDispose(() =>
         window.removeEventListener(
-          "veloxbot:position-management-changed",
+          "dripline:position-management-changed",
           handleManagementChanged
         )
       );

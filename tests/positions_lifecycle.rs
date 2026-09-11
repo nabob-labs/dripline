@@ -14,12 +14,12 @@ mod common;
 
 use chrono::Utc;
 use common::config_guard;
-use veloxbot::positions::state::{
+use dripline::positions::state::{
     init_global_position_semaphore, register_position_slot, release_position_slot,
     try_consume_global_position_permit,
 };
-use veloxbot::positions::PositionTransition;
-use veloxbot::swaps::calculate_partial_amount;
+use dripline::positions::PositionTransition;
+use dripline::swaps::calculate_partial_amount;
 
 // ==================== PARTIAL EXIT SIZING ====================
 
@@ -330,12 +330,12 @@ async fn a_slot_is_released_at_most_once_however_many_paths_run() {
 
 /// Replace the in-memory position set. Serialised by the config guard, which every
 /// caller of this holds.
-async fn set_positions(positions: Vec<veloxbot::positions::Position>) {
-    let mut store = veloxbot::positions::state::POSITIONS.write().await;
+async fn set_positions(positions: Vec<dripline::positions::Position>) {
+    let mut store = dripline::positions::state::POSITIONS.write().await;
     *store = positions;
 }
 
-fn position_for(mint: &str) -> veloxbot::positions::Position {
+fn position_for(mint: &str) -> dripline::positions::Position {
     let mut position = common::test_position(0.01, 1.0);
     position.mint = mint.to_owned();
     position
@@ -369,7 +369,7 @@ async fn only_genuinely_open_positions_are_reported_as_open() {
     ])
     .await;
 
-    let open_mints: Vec<String> = veloxbot::positions::get_open_positions()
+    let open_mints: Vec<String> = dripline::positions::get_open_positions()
         .await
         .into_iter()
         .map(|p| p.mint)
@@ -402,13 +402,13 @@ async fn a_lookup_by_mint_never_returns_a_closed_position() {
     set_positions(vec![closed]).await;
 
     assert!(
-        veloxbot::positions::get_position_by_mint(mint)
+        dripline::positions::get_position_by_mint(mint)
             .await
             .is_none(),
         "a closed position must not answer a by-mint lookup"
     );
     assert!(
-        !veloxbot::positions::is_open_position(mint).await,
+        !dripline::positions::is_open_position(mint).await,
         "and must not report the token as held"
     );
 
@@ -433,7 +433,7 @@ async fn a_reentered_token_resolves_to_its_live_round() {
 
     set_positions(vec![first_round, second_round]).await;
 
-    let found = veloxbot::positions::get_position_by_mint(mint)
+    let found = dripline::positions::get_position_by_mint(mint)
         .await
         .expect("the live round must be found");
     assert_eq!(found.id, Some(2), "the open round, not the closed one");

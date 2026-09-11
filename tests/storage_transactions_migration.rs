@@ -25,9 +25,9 @@
 mod common;
 
 use rusqlite::{params, Connection};
-use veloxbot::chains::solana::solana_sdk::signature::{Keypair, Signer};
+use dripline::chains::solana::solana_sdk::signature::{Keypair, Signer};
 
-use veloxbot::transactions::{
+use dripline::transactions::{
     database::TransactionListFilters, Subject, Transaction, TransactionDatabase, TransactionStatus,
 };
 
@@ -38,7 +38,7 @@ fn configure_own_wallet() -> String {
     let keypair = Keypair::new();
     let address = keypair.pubkey().to_string();
     let private_key = bs58::encode(keypair.to_bytes()).into_string();
-    let encrypted = veloxbot::secure_storage::encrypt_private_key(&private_key)
+    let encrypted = dripline::secure_storage::encrypt_private_key(&private_key)
         .expect("encrypt throwaway test keypair");
 
     common::set_config(|cfg| {
@@ -214,12 +214,12 @@ async fn migration_bumps_version_rebuilds_tables_and_is_idempotent() {
     let _guard = common::isolated_env();
     let own_wallet = configure_own_wallet();
 
-    let db_path = veloxbot::paths::get_transactions_db_path();
+    let db_path = dripline::paths::get_transactions_db_path();
     seed_v4_database(&db_path, &own_wallet);
 
     // The public entry point the whole app uses -- exercises the exact migration
     // path a real upgrade takes, not a test-only shortcut.
-    let db = TransactionDatabase::new(veloxbot::chains::ChainId::Solana)
+    let db = TransactionDatabase::new(dripline::chains::ChainId::Solana)
         .await
         .expect("open + migrate v4 database");
 
@@ -310,8 +310,8 @@ async fn migration_bumps_version_rebuilds_tables_and_is_idempotent() {
     // 5. Two subjects can now both hold the same signature -- the exact collision the
     // migration exists to fix. Exercised through the public API, not raw SQL, since
     // that is what a real caller (the watch service) will do.
-    let target = veloxbot::chains::solana::transactions::subject::from_pubkey(
-        veloxbot::chains::solana::solana_sdk::pubkey::Pubkey::new_unique(),
+    let target = dripline::chains::solana::transactions::subject::from_pubkey(
+        dripline::chains::solana::solana_sdk::pubkey::Pubkey::new_unique(),
     );
     let own_subject = Subject::own().expect("own subject after wallet configured");
 
@@ -382,7 +382,7 @@ async fn migration_bumps_version_rebuilds_tables_and_is_idempotent() {
     // over which one's temp directory wins for the whole process under plain
     // `cargo test` (which runs a file's tests concurrently on threads, unlike
     // `cargo nextest`'s one-process-per-test).
-    let db_again = TransactionDatabase::new(veloxbot::chains::ChainId::Solana)
+    let db_again = TransactionDatabase::new(dripline::chains::ChainId::Solana)
         .await
         .expect("second open against an already-migrated database");
 
@@ -417,7 +417,7 @@ async fn migration_preserves_the_real_transactions_database_shape_and_rows() {
         return;
     };
     let own_wallet = configure_own_wallet();
-    let db_path = veloxbot::paths::get_transactions_db_path();
+    let db_path = dripline::paths::get_transactions_db_path();
 
     let before = Connection::open(&db_path).expect("open cloned real transactions database");
     let counts_before: Vec<i64> = [
@@ -438,7 +438,7 @@ async fn migration_preserves_the_real_transactions_database_shape_and_rows() {
     .collect();
     drop(before);
 
-    TransactionDatabase::new(veloxbot::chains::ChainId::Solana)
+    TransactionDatabase::new(dripline::chains::ChainId::Solana)
         .await
         .expect("migrate cloned real transactions database");
 

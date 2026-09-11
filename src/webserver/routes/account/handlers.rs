@@ -1,4 +1,4 @@
-//! Handlers for the VeloxBot account panel.
+//! Handlers for the DripLine account panel.
 
 use axum::{extract::Query, http::StatusCode, response::Response, Json};
 use serde::{Deserialize, Serialize};
@@ -77,7 +77,7 @@ pub async fn start_browser_signin() -> Response {
 /// it remains usable on the setup screen without widening the generic system
 /// API before initialization.
 pub async fn open_signup() -> Response {
-    const SIGN_UP_URL: &str = "https://veloxbot.io/signup";
+    const SIGN_UP_URL: &str = "https://dripline.io/signup";
 
     match paths::open_url_in_browser(SIGN_UP_URL) {
         Ok(()) => ok(BrowserSignInStarted { opened: true }),
@@ -85,7 +85,7 @@ pub async fn open_signup() -> Response {
             StatusCode::INTERNAL_SERVER_ERROR,
             "ACCOUNT_BROWSER_OPEN_FAILED",
             &error.to_string(),
-            Some("Open veloxbot.io/signup in your browser"),
+            Some("Open dripline.io/signup in your browser"),
         ),
     }
 }
@@ -250,7 +250,7 @@ pub struct OAuthCallback {
 /// ============================================================================
 /// WHY THIS ROUTE IS EXEMPT FROM THE SECURITY TOKEN, AND WHY THAT IS SAFE
 /// ============================================================================
-/// A browser redirect cannot carry `X-VeloxBot-Token`, so this route has to
+/// A browser redirect cannot carry `X-DripLine-Token`, so this route has to
 /// be reachable without it. Three things make that harmless:
 ///
 ///   1. It accepts nothing but a `code` and a `state`, and BOTH are checked
@@ -268,21 +268,21 @@ pub async fn oauth_callback(Query(params): Query<OAuthCallback>) -> Response {
     if let Some(error) = params.error {
         return callback_page(
             "Sign-in was cancelled",
-            &format!("You can close this window and try again from VeloxBot. ({error})"),
+            &format!("You can close this window and try again from DripLine. ({error})"),
         );
     }
 
     let (Some(code), Some(state)) = (params.code, params.state) else {
         return callback_page(
             "That link is incomplete",
-            "Close this window and start sign-in again from VeloxBot.",
+            "Close this window and start sign-in again from DripLine.",
         );
     };
 
     match account::complete_browser_signin(&code, &state).await {
         Ok(()) => callback_page(
             "You are signed in",
-            "You can close this window and go back to VeloxBot.",
+            "You can close this window and go back to DripLine.",
         ),
         Err(error) => callback_page("Sign-in could not be completed", &error.to_string()),
     }
@@ -295,7 +295,7 @@ fn callback_page(title: &str, detail: &str) -> Response {
     let body = format!(
         r#"<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>VeloxBot</title>
+<title>DripLine</title>
 <style>
   body {{ margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
          background:#0d0d0f; color:#f0f0f2;

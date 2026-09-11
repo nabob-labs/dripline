@@ -7,7 +7,7 @@
 //!
 //! ## Usage
 //! ```rust,ignore
-//! use veloxbot::tools::multi_wallet::{MultiBuyConfig, MultiSellConfig, ConsolidateConfig};
+//! use dripline::tools::multi_wallet::{MultiBuyConfig, MultiSellConfig, ConsolidateConfig};
 //!
 //! // Multi-buy across 5 wallets
 //! let config = MultiBuyConfig {

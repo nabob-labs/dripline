@@ -94,7 +94,7 @@ export function tokenCell(row) {
   const tier = boostTierForMint(row.mint);
   const boostCount = formatBoostCount(boostCountForMint(row.mint));
   const boostMark = tier
-    ? `<span class="boost-mark${tier === "golden" ? " golden" : ""}" title="Boosted ${boostCount} on veloxbot.io"><i class="icon-zap" aria-hidden="true"></i><span class="boost-mark-count">${boostCount}</span></span>`
+    ? `<span class="boost-mark${tier === "golden" ? " golden" : ""}" title="Boosted ${boostCount} on dripline.io"><i class="icon-zap" aria-hidden="true"></i><span class="boost-mark-count">${boostCount}</span></span>`
     : "";
   const mint = Utils.escapeHtml(row.mint || "");
   const disabledAttr = row.blacklisted ? ' disabled aria-disabled="true"' : "";

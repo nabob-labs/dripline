@@ -68,7 +68,7 @@ class ContextMenuManager {
     this.favoritesCacheLoaded = false;
 
     // Check if devtools are enabled (set by Electron/backend)
-    this.devtoolsEnabled = window.__VELOXBOT_DEVTOOLS__ === true;
+    this.devtoolsEnabled = window.__DRIPLINE_DEVTOOLS__ === true;
 
     // Bound handlers for proper cleanup
     this._boundHandleKeyDown = this._handleKeyDown.bind(this);

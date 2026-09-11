@@ -8,7 +8,7 @@ use crate::field_metadata;
 // ============================================================================
 
 config_struct! {
-    /// How VeloxBot keeps itself current.
+    /// How DripLine keeps itself current.
     ///
     /// A release ships two components: the core binary (which also carries the
     /// dashboard) and the Electron desktop shell. Core-only releases install
@@ -17,7 +17,7 @@ config_struct! {
     pub struct UpdatesConfig {
         #[metadata(field_metadata! {
             label: "Check for Updates",
-            hint: "Periodically ask veloxbot.io whether a newer release is published",
+            hint: "Periodically ask dripline.io whether a newer release is published",
             impact: "medium",
             category: "Checking",
         })]
@@ -53,7 +53,7 @@ config_struct! {
 
         #[metadata(field_metadata! {
             label: "Wait While Trading",
-            hint: "Postpone the restart while positions are open. The update still applies the next time VeloxBot starts.",
+            hint: "Postpone the restart while positions are open. The update still applies the next time DripLine starts.",
             impact: "high",
             category: "Installing",
         })]

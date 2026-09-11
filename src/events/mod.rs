@@ -13,7 +13,7 @@
 //!
 //! ## Usage:
 //! ```rust
-//! use veloxbot::events::{self, Event, EventCategory, Severity};
+//! use dripline::events::{self, Event, EventCategory, Severity};
 //! use serde_json::json;
 //!
 //! // Initialize at startup

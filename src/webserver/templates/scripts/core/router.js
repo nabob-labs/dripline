@@ -67,7 +67,7 @@ function activatePageStyles(pageName) {
 }
 
 function updateDocumentTitle(pageName) {
-  document.title = `${PAGE_TITLES[pageName] || "Dashboard"} - VeloxBot`;
+  document.title = `${PAGE_TITLES[pageName] || "Dashboard"} - DripLine`;
 }
 
 function waitForPageStylesheet(pageName, link) {
@@ -421,11 +421,11 @@ function renderOfflinePlaceholder(loadingEl, pageName) {
   }
   // Auto-recover: reload this page the moment the backend comes back.
   const onReconnect = () => {
-    window.removeEventListener("veloxbot:reconnected", onReconnect);
+    window.removeEventListener("dripline:reconnected", onReconnect);
     // Only reload if this failed navigation is still the visible placeholder.
     if (loadingEl.isConnected) loadPage(pageName, { historyMode: "replace" });
   };
-  window.addEventListener("veloxbot:reconnected", onReconnect, { once: true });
+  window.addEventListener("dripline:reconnected", onReconnect, { once: true });
 }
 
 export function initRouter() {

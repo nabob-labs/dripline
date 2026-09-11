@@ -31,7 +31,7 @@ pub fn format_mint_for_log(mint: &str) -> String {
 ///
 /// # Example
 /// ```
-/// use veloxbot::utils::format_price_adaptive;
+/// use dripline::utils::format_price_adaptive;
 ///
 /// assert_eq!(format_price_adaptive(0.00000000123), "1.230000000000000e-9");
 /// assert_eq!(format_price_adaptive(0.000123), "0.000123000000");

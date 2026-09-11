@@ -1,5 +1,5 @@
 /**
- * AdvancedChart - the shared OHLCV chart engine for VeloxBot dialogs
+ * AdvancedChart - the shared OHLCV chart engine for DripLine dialogs
  *
  * Features:
  * - Candlestick, line, area and bar series over one dataset

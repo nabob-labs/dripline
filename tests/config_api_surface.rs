@@ -17,11 +17,11 @@
 
 mod common;
 
-use veloxbot::config::metadata::collect_config_metadata;
-use veloxbot::config::schemas::Config;
-use veloxbot::config::updates::update_config_section;
-use veloxbot::config::utils::{load_config_from_path, save_config_to_file, with_config};
-use veloxbot::webserver::routes::config::getters::get_full_config;
+use dripline::config::metadata::collect_config_metadata;
+use dripline::config::schemas::Config;
+use dripline::config::updates::update_config_section;
+use dripline::config::utils::{load_config_from_path, save_config_to_file, with_config};
+use dripline::webserver::routes::config::getters::get_full_config;
 use serde_json::Value;
 use std::collections::BTreeSet;
 use std::sync::Once;
@@ -53,7 +53,7 @@ fn init_config() {
 
 fn init_config_once() {
     let dir = tempfile::tempdir().expect("temp dir");
-    std::env::set_var("VELOXBOT_DATA_DIR", dir.path());
+    std::env::set_var("DRIPLINE_DATA_DIR", dir.path());
     let path = dir.path().join("config.toml");
     let path_str = path.to_str().expect("utf-8 temp path").to_owned();
     save_config_to_file(&Config::default(), &path_str, false).expect("write default config");

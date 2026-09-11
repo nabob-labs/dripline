@@ -22,11 +22,11 @@ mod common;
 
 use chrono::Duration;
 use common::{aged, config_guard, set_config, test_position};
-use veloxbot::positions::{Position, PositionManagement};
-use veloxbot::trader::evaluators::{exit_roi, exit_stop_loss, exit_time, exit_trailing};
-use veloxbot::trader::policy::ExitPolicy;
-use veloxbot::trader::safety::check_risk_limits;
-use veloxbot::trader::{TradeAction, TradePriority, TradeReason};
+use dripline::positions::{Position, PositionManagement};
+use dripline::trader::evaluators::{exit_roi, exit_stop_loss, exit_time, exit_trailing};
+use dripline::trader::policy::ExitPolicy;
+use dripline::trader::safety::check_risk_limits;
+use dripline::trader::{TradeAction, TradePriority, TradeReason};
 
 #[test]
 fn position_management_matches_the_exit_ownership_matrix() {

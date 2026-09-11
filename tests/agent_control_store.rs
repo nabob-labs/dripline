@@ -4,7 +4,7 @@
 //!
 //! `store::POOL` is a process-global `LazyLock`. Every test goes through
 //! `setup()`, whose one-time initializer points the pool at a temp file (via
-//! `VELOXBOT_AGENT_CONTROL_DB`) *before* the pool is first built, then runs
+//! `DRIPLINE_AGENT_CONTROL_DB`) *before* the pool is first built, then runs
 //! the schema. Rows are namespaced per test by unique client ids.
 //!
 //! `setup()` also takes a process-wide lock so the test bodies run one at a
@@ -15,14 +15,14 @@
 
 use std::sync::{LazyLock, Mutex, MutexGuard, PoisonError};
 
-use veloxbot::agent_control::{
+use dripline::agent_control::{
     approvals, audit, pairing, store, Error, PermissionLevel, ToolPermissions,
 };
 
 static SETUP: LazyLock<()> = LazyLock::new(|| {
     let dir = tempfile::tempdir().expect("tempdir");
     let db = dir.path().join("agent_control.db");
-    std::env::set_var("VELOXBOT_AGENT_CONTROL_DB", &db);
+    std::env::set_var("DRIPLINE_AGENT_CONTROL_DB", &db);
     // Keep the temp dir alive for the whole test binary.
     std::mem::forget(dir);
     store::init().expect("store init");
@@ -214,7 +214,7 @@ fn concurrent_create_or_reuse_yields_exactly_one_row() {
 
 /// Count `approvals` rows for a client+tool by opening the temp DB directly.
 fn approval_row_count(client_id: &str, tool: &str) -> i64 {
-    let path = std::env::var("VELOXBOT_AGENT_CONTROL_DB").expect("db path set by setup()");
+    let path = std::env::var("DRIPLINE_AGENT_CONTROL_DB").expect("db path set by setup()");
     let conn = rusqlite::Connection::open(path).expect("open temp agent_control.db");
     conn.query_row(
         "SELECT COUNT(*) FROM approvals WHERE client_id = ?1 AND tool = ?2",
@@ -476,7 +476,7 @@ fn claim_with_corrupt_canonical_args_fails_the_row_closed() {
     // parse that then fails.
     let bad = "this is not json";
     let digest = Sha256::digest(bad.as_bytes()).to_vec();
-    let path = std::env::var("VELOXBOT_AGENT_CONTROL_DB").expect("db path set by setup()");
+    let path = std::env::var("DRIPLINE_AGENT_CONTROL_DB").expect("db path set by setup()");
     let conn = rusqlite::Connection::open(&path).expect("open temp agent_control.db");
     conn.execute(
         "UPDATE approvals SET canonical_args = ?1, args_digest = ?2 WHERE id = ?3",

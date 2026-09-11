@@ -3,7 +3,7 @@
 //! The discovery surfaces of the dashboard — the featured row above the status bar
 //! and the full featured dialog — read from here. Two kinds of source feed them:
 //!
-//! - **Boosted** — tokens their owners PAID to promote on veloxbot.io. The
+//! - **Boosted** — tokens their owners PAID to promote on dripline.io. The
 //!   standing comes from `routes::boosts`; these cards carry `boosts`/`golden` and
 //!   every surface pins them above the organic rows.
 //! - **Discovery** — Jupiter top-organic/top-traded and DexScreener trending. Third

@@ -57,7 +57,7 @@ fn create_totp(secret: &str, account: &str, issuer: &str) -> Result<TOTP> {
 ///
 /// This URI can be encoded as a QR code for easy setup.
 pub fn get_totp_uri(secret: &str, account: &str) -> Result<String> {
-    let totp = create_totp(secret, account, "VeloxBot")?;
+    let totp = create_totp(secret, account, "DripLine")?;
     Ok(totp.get_url())
 }
 
@@ -71,7 +71,7 @@ pub fn verify_totp(secret: &str, code: &str) -> Result<bool> {
         return Ok(false);
     }
 
-    let totp = create_totp(secret, "user", "VeloxBot")?;
+    let totp = create_totp(secret, "user", "DripLine")?;
 
     // Use current time for verification
     let time = std::time::SystemTime::now()
@@ -131,7 +131,7 @@ mod tests {
         let secret = generate_secret();
         let uri = get_totp_uri(&secret, "test@example.com").unwrap();
         assert!(uri.starts_with("otpauth://totp/"));
-        assert!(uri.contains("VeloxBot"));
+        assert!(uri.contains("DripLine"));
     }
 
     #[test]

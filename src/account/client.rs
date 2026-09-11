@@ -21,10 +21,10 @@ use serde::{Deserialize, Serialize};
 use crate::errors::{AccountError, Error, NetworkError, Result};
 
 /// The only server this module will talk to.
-const API_BASE: &str = "https://veloxbot.io";
+const API_BASE: &str = "https://dripline.io";
 
 /// A public identifier, not a credential. Safe in a public binary by design.
-pub const CLIENT_ID: &str = "veloxbot-desktop";
+pub const CLIENT_ID: &str = "dripline-desktop";
 
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(20);
 
@@ -121,8 +121,8 @@ pub fn authorize_url(challenge: &str, state: &str, redirect_uri: &str) -> String
 /// one label that lets somebody recognise which install to revoke.
 pub fn device_label() -> String {
     match hostname() {
-        Some(name) if !name.trim().is_empty() => format!("VeloxBot on {}", name.trim()),
-        _ => "VeloxBot desktop".to_string(),
+        Some(name) if !name.trim().is_empty() => format!("DripLine on {}", name.trim()),
+        _ => "DripLine desktop".to_string(),
     }
 }
 
@@ -166,7 +166,7 @@ async fn post_token(body: serde_json::Value) -> Result<TokenResponse> {
         .await
         .map_err(|e| {
             Error::Network(NetworkError::RequestFailed {
-                endpoint: "veloxbot.io".to_owned(),
+                endpoint: "dripline.io".to_owned(),
                 detail: e.to_string(),
             })
         })?;
@@ -242,7 +242,7 @@ pub async fn wallet_challenge(wallet: &str) -> Result<WalletChallenge> {
         .await
         .map_err(|e| {
             Error::Network(NetworkError::RequestFailed {
-                endpoint: "veloxbot.io".to_owned(),
+                endpoint: "dripline.io".to_owned(),
                 detail: e.to_string(),
             })
         })?;
@@ -297,7 +297,7 @@ pub async fn start_device_flow() -> Result<DeviceCodeResponse> {
         .await
         .map_err(|e| {
             Error::Network(NetworkError::RequestFailed {
-                endpoint: "veloxbot.io".to_owned(),
+                endpoint: "dripline.io".to_owned(),
                 detail: e.to_string(),
             })
         })?;
@@ -343,7 +343,7 @@ pub async fn fetch_profile(access_token: &str) -> Result<AccountProfile> {
         .await
         .map_err(|e| {
             Error::Network(NetworkError::RequestFailed {
-                endpoint: "veloxbot.io".to_owned(),
+                endpoint: "dripline.io".to_owned(),
                 detail: e.to_string(),
             })
         })?;

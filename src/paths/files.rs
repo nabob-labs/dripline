@@ -35,7 +35,7 @@ pub fn get_ui_state_path() -> PathBuf {
 
 /// Returns the process lock file path.
 pub fn get_process_lock_path() -> PathBuf {
-    get_data_directory().join(".veloxbot.lock")
+    get_data_directory().join(".dripline.lock")
 }
 
 /// Returns the test output file path.

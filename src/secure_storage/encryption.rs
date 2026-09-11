@@ -9,7 +9,7 @@ use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use super::{Error, Result};
 
 /// Salt used for key derivation — app-specific to prevent rainbow attacks.
-const APP_SALT: &[u8] = b"veloxbot-wallet-encryption-v1";
+const APP_SALT: &[u8] = b"dripline-wallet-encryption-v1";
 
 /// Encrypted data with nonce for AES-256-GCM.
 #[derive(Debug, Clone)]

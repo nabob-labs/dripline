@@ -114,7 +114,7 @@ async fn fetch_jupiter_traded() -> Result<Vec<ExternalToken>> {
 /// Fetch DexScreener trending (top boosted) tokens.
 ///
 /// This is DexScreener's OWN boost product and has nothing to do with a
-/// VeloxBot boost — it is a third-party discovery board, so its rows stay
+/// DripLine boost — it is a third-party discovery board, so its rows stay
 /// `boosts: 0` and never earn our gold treatment.
 async fn fetch_dexscreener_trending() -> Result<Vec<ExternalToken>> {
     let api = get_api_manager();

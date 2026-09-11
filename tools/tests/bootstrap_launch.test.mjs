@@ -127,10 +127,10 @@ test("ui_ready releases the loader and resolves waitForReady", async () => {
   assert.equal(getBootstrapState().settled, true);
   assert.equal(getBootstrapState().outcome, BOOTSTRAP_OUTCOME.READY);
   assert.ok(
-    events.some((event) => event.type === "veloxbot:ready"),
+    events.some((event) => event.type === "dripline:ready"),
     "a ready launch must announce itself"
   );
-  assert.equal(globalThis.window.__veloxbot_ready, true);
+  assert.equal(globalThis.window.__dripline_ready, true);
 });
 
 test("a first run needing setup releases the loader too", async () => {
@@ -152,11 +152,11 @@ test("the loader announces its terminal outcome for the splash to render", async
 
   await waitForReady();
 
-  const settled = events.find((event) => event.type === "veloxbot:bootstrap-settled");
+  const settled = events.find((event) => event.type === "dripline:bootstrap-settled");
   assert.ok(settled, "every launch must announce a terminal outcome exactly once");
   assert.equal(settled.detail.outcome, "ready");
   assert.equal(
-    events.filter((event) => event.type === "veloxbot:bootstrap-settled").length,
+    events.filter((event) => event.type === "dripline:bootstrap-settled").length,
     1
   );
 });

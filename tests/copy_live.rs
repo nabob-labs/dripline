@@ -4,16 +4,16 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use chrono::{TimeZone, Utc};
-use veloxbot::chains::ChainId;
-use veloxbot::positions::{PositionManagement, PositionOrigin};
-use veloxbot::trader::admission::EntryBlock;
-use veloxbot::trader::copy::{
+use dripline::chains::ChainId;
+use dripline::positions::{PositionManagement, PositionOrigin};
+use dripline::trader::admission::EntryBlock;
+use dripline::trader::copy::{
     confirm_mode_transition, execute_live_with, management_for_exit_mode, prepare_live_entry,
     CopyMode, CopyOutcome, CopySkip, CopyTask, CopyTaskInput, ExitMode, LiveSubmitResult,
     PipelinePolicy, RiskContext, SizingMode, SpendState, LIVE_ARM_CONFIRMATION,
 };
-use veloxbot::trader::TradeResult;
-use veloxbot::wallets::watch::{ActivityKind, SwapSide, WalletActivity, WatchSource};
+use dripline::trader::TradeResult;
+use dripline::wallets::watch::{ActivityKind, SwapSide, WalletActivity, WatchSource};
 
 fn task(exit_mode: ExitMode) -> CopyTask {
     let now = Utc.timestamp_opt(10, 0).unwrap();
@@ -81,7 +81,7 @@ fn activity() -> WalletActivity {
     }
 }
 
-fn plan(exit_mode: ExitMode) -> veloxbot::trader::copy::PreparedLiveEntry {
+fn plan(exit_mode: ExitMode) -> dripline::trader::copy::PreparedLiveEntry {
     prepare_live_entry(
         &activity(),
         &task(exit_mode),

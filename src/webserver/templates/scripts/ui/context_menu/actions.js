@@ -68,7 +68,7 @@
     manager._viewTokenDetails = function (context) {
       // Dispatch custom event that token pages listen for
       window.dispatchEvent(
-        new CustomEvent("veloxbot:open-token-details", {
+        new CustomEvent("dripline:open-token-details", {
           detail: {
             mint: context.mint,
             symbol: context.symbol,
@@ -85,7 +85,7 @@
     manager._viewPositionDetails = function (context) {
       // Dispatch custom event to open position details dialog
       window.dispatchEvent(
-        new CustomEvent("veloxbot:open-position-details", {
+        new CustomEvent("dripline:open-position-details", {
           detail: {
             id: context.id,
             mint: context.mint,
@@ -101,7 +101,7 @@
       // row element for an unambiguous target.
       const id = context.element?.dataset?.rowId || null;
       window.dispatchEvent(
-        new CustomEvent("veloxbot:toggle-position-management", {
+        new CustomEvent("dripline:toggle-position-management", {
           detail: { id, mint: context.mint, management },
         })
       );
@@ -200,7 +200,7 @@
 
         // Emit event for other UI components
         window.dispatchEvent(
-          new CustomEvent("veloxbot:favorites-changed", {
+          new CustomEvent("dripline:favorites-changed", {
             detail: { mint: context.mint, isFavorite: !currentlyFavorite },
           })
         );
@@ -258,7 +258,7 @@
 
         // Emit event for UI refresh
         window.dispatchEvent(
-          new CustomEvent("veloxbot:token-blacklisted", {
+          new CustomEvent("dripline:token-blacklisted", {
             detail: { mint: context.mint },
           })
         );

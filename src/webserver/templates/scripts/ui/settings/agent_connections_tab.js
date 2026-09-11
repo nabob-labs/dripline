@@ -1,7 +1,7 @@
 /**
  * Agent Connections Tab — pair external MCP clients with the running app.
  *
- * The app itself is the authority and the executable: `veloxbot mcp serve` is
+ * The app itself is the authority and the executable: `dripline mcp serve` is
  * a thin stdio bridge into this process, gated by that connection's OWN
  * per-category permissions. This tab creates, lists, limits and revokes those
  * pairings and hands the operator client-specific setup built from the new
@@ -28,7 +28,7 @@
  * open panel. It is rendered once into the visible setup text (that is the whole
  * point of the panel) but is never written to a DOM attribute, a URL, browser
  * storage, a log, or a later list response, and it cannot be shown again once
- * dismissed. VeloxBot stores only a one-way SHA-256 verifier; the MCP client,
+ * dismissed. DripLine stores only a one-way SHA-256 verifier; the MCP client,
  * once configured, keeps the plaintext under its own config (e.g. `claude mcp
  * get` prints it back; Codex masks it).
  *
@@ -42,19 +42,19 @@ const pairingUrl = (clientId) => `${LIST_URL}/${encodeURIComponent(clientId)}`;
 
 /** The native stdio command a paired client runs. */
 export const SERVE_ARGS = ["mcp", "serve"];
-export const CLIENT_ID_ENV = "VELOXBOT_CLIENT_ID";
-export const SECRET_ENV = "VELOXBOT_PAIRING_SECRET";
-export const DATA_DIR_ENV = "VELOXBOT_DATA_DIR";
+export const CLIENT_ID_ENV = "DRIPLINE_CLIENT_ID";
+export const SECRET_ENV = "DRIPLINE_PAIRING_SECRET";
+export const DATA_DIR_ENV = "DRIPLINE_DATA_DIR";
 
 /** The registered MCP server name across every client (matches JSON/TOML keys). */
-export const MCP_SERVER_NAME = "veloxbot";
+export const MCP_SERVER_NAME = "dripline";
 
 /**
  * The pairing response normally reports the running app's absolute backend
  * path. This placeholder is only the fail-safe for an unusual platform path
  * that cannot be represented as UTF-8 JSON.
  */
-export const EXE_PLACEHOLDER = "/absolute/path/to/veloxbot";
+export const EXE_PLACEHOLDER = "/absolute/path/to/dripline";
 
 /** Label constraints mirror `agent_control::pairing` (1..=64, no control chars). */
 export const MAX_LABEL = 64;
@@ -232,7 +232,7 @@ export function mcpServerEntry(exe, clientId, secret) {
   };
 }
 
-/** `mcpServers.veloxbot` wrapper — Claude Desktop and generic stdio clients. */
+/** `mcpServers.dripline` wrapper — Claude Desktop and generic stdio clients. */
 export function genericStdioJson(exe, clientId, secret) {
   return JSON.stringify(
     { mcpServers: { [MCP_SERVER_NAME]: mcpServerEntry(exe, clientId, secret) } },
@@ -241,7 +241,7 @@ export function genericStdioJson(exe, clientId, secret) {
   );
 }
 
-/** `[mcp_servers.veloxbot]` block for Codex CLI `~/.codex/config.toml`. */
+/** `[mcp_servers.dripline]` block for Codex CLI `~/.codex/config.toml`. */
 export function codexToml(exe, clientId, secret) {
   return [
     `[mcp_servers.${MCP_SERVER_NAME}]`,
@@ -313,12 +313,12 @@ export function clientSetup(id, exe, clientId, secret) {
   const shared = [];
   if (exePath(exe) === EXE_PLACEHOLDER) {
     shared.push(
-      `Replace ${EXE_PLACEHOLDER} with the absolute path to your VeloxBot binary — ` +
+      `Replace ${EXE_PLACEHOLDER} with the absolute path to your DripLine binary — ` +
         "the running app could not represent its executable path on this system."
     );
   }
   shared.push(
-    `If you run VeloxBot with a non-default data directory, also set ${DATA_DIR_ENV} ` +
+    `If you run DripLine with a non-default data directory, also set ${DATA_DIR_ENV} ` +
       "on the client (another -e / --env flag, or an env entry) to the same path."
   );
 
@@ -328,7 +328,7 @@ export function clientSetup(id, exe, clientId, secret) {
         notes: [
           "Run the command, or add the TOML block to ~/.codex/config.toml " +
             "($CODEX_HOME/config.toml). Restart Codex afterwards.",
-          "`codex mcp get veloxbot` masks the secret in its output.",
+          "`codex mcp get dripline` masks the secret in its output.",
           ...shared,
         ],
         blocks: [
@@ -348,7 +348,7 @@ export function clientSetup(id, exe, clientId, secret) {
       return {
         notes: [
           "Claude Code: run the command, then restart Claude Code. `claude mcp get " +
-            "veloxbot` will print the configured environment, including the secret.",
+            "dripline` will print the configured environment, including the secret.",
           "Claude Desktop: merge the JSON into claude_desktop_config.json under " +
             "`mcpServers` and restart the app.",
           ...shared,
@@ -369,7 +369,7 @@ export function clientSetup(id, exe, clientId, secret) {
     case "openclaw":
       return {
         notes: [
-          "Run the command, then use `openclaw mcp doctor veloxbot --probe` to verify " +
+          "Run the command, then use `openclaw mcp doctor dripline --probe` to verify " +
             "that the saved stdio server starts and exposes tools.",
           ...shared,
         ],
@@ -540,7 +540,7 @@ function buildShell() {
         Agent Connections
       </h3>
       <p class="settings-section-description">
-        Connect Claude, Codex, Hermes, OpenClaw, or any stdio MCP client. VeloxBot must remain
+        Connect Claude, Codex, Hermes, OpenClaw, or any stdio MCP client. DripLine must remain
         running. Each connection carries its own permissions: full access by default, limited per
         connection whenever you want. No connection can ever read or change your wallet key.
       </p>
@@ -595,7 +595,7 @@ function buildShell() {
         <div class="agent-issued-warn">
           <i class="icon-triangle-alert"></i>
           <span>Copy the secret now. It is shown once and cannot be retrieved again — revoke and
-          recreate the connection if you lose it. VeloxBot keeps only a one-way verifier; your
+          recreate the connection if you lose it. DripLine keeps only a one-way verifier; your
           MCP client stores the plaintext under its own configuration.</span>
         </div>
         <div class="agent-issued-fields">
@@ -849,7 +849,7 @@ export async function loadAgentConnectionsTab(_dialog, content) {
       await refreshList();
     } catch {
       if (controller.signal.aborted) return;
-      showError("Could not reach VeloxBot to create the connection.");
+      showError("Could not reach DripLine to create the connection.");
     } finally {
       createBtn.disabled = false;
     }
@@ -892,7 +892,7 @@ export async function loadAgentConnectionsTab(_dialog, content) {
       await refreshList();
     } catch {
       if (controller.signal.aborted) return;
-      Utils.showToast({ type: "error", title: "Could not reach VeloxBot to save" });
+      Utils.showToast({ type: "error", title: "Could not reach DripLine to save" });
     } finally {
       if (saveBtn) saveBtn.disabled = false;
     }
@@ -920,7 +920,7 @@ export async function loadAgentConnectionsTab(_dialog, content) {
       await refreshList();
     } catch {
       if (controller.signal.aborted) return;
-      Utils.showToast({ type: "error", title: "Could not reach VeloxBot to revoke" });
+      Utils.showToast({ type: "error", title: "Could not reach DripLine to revoke" });
     }
   }
 

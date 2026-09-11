@@ -287,7 +287,7 @@ export class ConfigExportDialog {
       const a = document.createElement("a");
       a.href = url;
       const date = new Date().toISOString().split("T")[0];
-      a.download = `veloxbot-config-${date}.json`;
+      a.download = `dripline-config-${date}.json`;
       a.click();
       URL.revokeObjectURL(url);
 

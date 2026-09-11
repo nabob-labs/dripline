@@ -75,7 +75,7 @@ test("exePath falls back to the marked placeholder, uses a real path verbatim", 
   assert.equal(exePath(null), EXE_PLACEHOLDER);
   assert.equal(exePath(""), EXE_PLACEHOLDER);
   assert.equal(exePath("   "), EXE_PLACEHOLDER);
-  assert.equal(exePath("/opt/screener bot/veloxbot"), "/opt/screener bot/veloxbot");
+  assert.equal(exePath("/opt/screener bot/dripline"), "/opt/screener bot/dripline");
 });
 
 test("shQuote wraps in single quotes and escapes embedded single quotes", async () => {
@@ -90,20 +90,20 @@ test("mcpServerEntry runs the native binary with the mcp serve args, credential 
   assert.equal(entry.command, EXE_PLACEHOLDER);
   assert.deepEqual(entry.args, ["mcp", "serve"]);
   assert.deepEqual(entry.env, {
-    VELOXBOT_CLIENT_ID: CID,
-    VELOXBOT_PAIRING_SECRET: SECRET,
+    DRIPLINE_CLIENT_ID: CID,
+    DRIPLINE_PAIRING_SECRET: SECRET,
   });
   // No package / npx / node / installer anywhere.
-  assert.ok(!JSON.stringify(entry).match(/npx|npm|@veloxbot|node_modules|install-mcp/i));
+  assert.ok(!JSON.stringify(entry).match(/npx|npm|@dripline|node_modules|install-mcp/i));
 });
 
 test("claudeCodeCommand is a native `claude mcp add` with quoted, env-only credential", async () => {
   const { claudeCodeCommand, EXE_PLACEHOLDER } = await mod();
-  const cmd = claudeCodeCommand("/bin/veloxbot", CID, SECRET);
-  assert.match(cmd, /^claude mcp add --scope user veloxbot /);
-  assert.match(cmd, new RegExp(`-e 'VELOXBOT_CLIENT_ID=${CID}'`));
-  assert.match(cmd, new RegExp(`-e 'VELOXBOT_PAIRING_SECRET=${esc(SECRET)}'`));
-  assert.match(cmd, /-- '\/bin\/veloxbot' mcp serve$/);
+  const cmd = claudeCodeCommand("/bin/dripline", CID, SECRET);
+  assert.match(cmd, /^claude mcp add --scope user dripline /);
+  assert.match(cmd, new RegExp(`-e 'DRIPLINE_CLIENT_ID=${CID}'`));
+  assert.match(cmd, new RegExp(`-e 'DRIPLINE_PAIRING_SECRET=${esc(SECRET)}'`));
+  assert.match(cmd, /-- '\/bin\/dripline' mcp serve$/);
   // The secret is only ever inside the -e value, never a bare CLI arg.
   assert.equal(cmd.split(SECRET).length - 1, 1);
   // Placeholder path is quoted too.
@@ -112,49 +112,49 @@ test("claudeCodeCommand is a native `claude mcp add` with quoted, env-only crede
 
 test("codexCommand is a native `codex mcp add` with --env and quoting", async () => {
   const { codexCommand } = await mod();
-  const cmd = codexCommand("/bin/veloxbot", CID, SECRET);
-  assert.match(cmd, /^codex mcp add veloxbot /);
-  assert.match(cmd, /--env 'VELOXBOT_CLIENT_ID=/);
-  assert.match(cmd, /--env 'VELOXBOT_PAIRING_SECRET=/);
-  assert.match(cmd, /-- '\/bin\/veloxbot' mcp serve$/);
+  const cmd = codexCommand("/bin/dripline", CID, SECRET);
+  assert.match(cmd, /^codex mcp add dripline /);
+  assert.match(cmd, /--env 'DRIPLINE_CLIENT_ID=/);
+  assert.match(cmd, /--env 'DRIPLINE_PAIRING_SECRET=/);
+  assert.match(cmd, /-- '\/bin\/dripline' mcp serve$/);
 });
 
 test("shell commands survive an executable path with a single quote", async () => {
   const { claudeCodeCommand, codexCommand } = await mod();
-  const nasty = "/home/o'brien/veloxbot";
-  assert.match(claudeCodeCommand(nasty, CID, SECRET), /-- '\/home\/o'\\''brien\/veloxbot' mcp serve$/);
-  assert.match(codexCommand(nasty, CID, SECRET), /-- '\/home\/o'\\''brien\/veloxbot' mcp serve$/);
+  const nasty = "/home/o'brien/dripline";
+  assert.match(claudeCodeCommand(nasty, CID, SECRET), /-- '\/home\/o'\\''brien\/dripline' mcp serve$/);
+  assert.match(codexCommand(nasty, CID, SECRET), /-- '\/home\/o'\\''brien\/dripline' mcp serve$/);
 });
 
-test("generic and Claude Desktop use the mcpServers.veloxbot stdio JSON", async () => {
+test("generic and Claude Desktop use the mcpServers.dripline stdio JSON", async () => {
   const { genericStdioJson } = await mod();
   const parsed = JSON.parse(genericStdioJson(null, CID, SECRET));
   assert.deepEqual(Object.keys(parsed), ["mcpServers"]);
-  assert.ok(parsed.mcpServers.veloxbot);
-  assert.deepEqual(parsed.mcpServers.veloxbot.args, ["mcp", "serve"]);
-  assert.equal(parsed.mcpServers.veloxbot.env.VELOXBOT_PAIRING_SECRET, SECRET);
+  assert.ok(parsed.mcpServers.dripline);
+  assert.deepEqual(parsed.mcpServers.dripline.args, ["mcp", "serve"]);
+  assert.equal(parsed.mcpServers.dripline.env.DRIPLINE_PAIRING_SECRET, SECRET);
 });
 
 test("openClawCommand uses OpenClaw's native saved-server CLI", async () => {
   const { openClawCommand } = await mod();
-  const cmd = openClawCommand("/bin/veloxbot", CID, SECRET);
-  assert.match(cmd, /^openclaw mcp add veloxbot /);
-  assert.match(cmd, /--command '\/bin\/veloxbot'/);
+  const cmd = openClawCommand("/bin/dripline", CID, SECRET);
+  assert.match(cmd, /^openclaw mcp add dripline /);
+  assert.match(cmd, /--command '\/bin\/dripline'/);
   assert.match(cmd, /--arg 'mcp' --arg 'serve'/);
-  assert.match(cmd, /--env 'VELOXBOT_CLIENT_ID=/);
-  assert.match(cmd, /--env 'VELOXBOT_PAIRING_SECRET=/);
+  assert.match(cmd, /--env 'DRIPLINE_CLIENT_ID=/);
+  assert.match(cmd, /--env 'DRIPLINE_PAIRING_SECRET=/);
   assert.equal(cmd.split(SECRET).length - 1, 1);
 });
 
-test("codex TOML declares [mcp_servers.veloxbot] with an env sub-table", async () => {
+test("codex TOML declares [mcp_servers.dripline] with an env sub-table", async () => {
   const { codexToml } = await mod();
-  const toml = codexToml("/bin/veloxbot", CID, SECRET);
-  assert.match(toml, /^\[mcp_servers\.veloxbot\]$/m);
-  assert.match(toml, /^\[mcp_servers\.veloxbot\.env\]$/m);
-  assert.match(toml, /command = "\/bin\/veloxbot"/);
+  const toml = codexToml("/bin/dripline", CID, SECRET);
+  assert.match(toml, /^\[mcp_servers\.dripline\]$/m);
+  assert.match(toml, /^\[mcp_servers\.dripline\.env\]$/m);
+  assert.match(toml, /command = "\/bin\/dripline"/);
   assert.match(toml, /args = \["mcp", "serve"\]/);
-  assert.match(toml, new RegExp(`VELOXBOT_CLIENT_ID = "${CID}"`));
-  assert.match(toml, new RegExp(`VELOXBOT_PAIRING_SECRET = "${esc(SECRET)}"`));
+  assert.match(toml, new RegExp(`DRIPLINE_CLIENT_ID = "${CID}"`));
+  assert.match(toml, new RegExp(`DRIPLINE_PAIRING_SECRET = "${esc(SECRET)}"`));
 });
 
 test("TOML string escaping handles quotes/backslashes", async () => {
@@ -165,12 +165,12 @@ test("TOML string escaping handles quotes/backslashes", async () => {
 
 test("Hermes YAML uses the documented mcp_servers shape, not Claude JSON", async () => {
   const { hermesYaml } = await mod();
-  const yaml = hermesYaml("/bin/veloxbot", CID, SECRET);
+  const yaml = hermesYaml("/bin/dripline", CID, SECRET);
   assert.match(yaml, /^mcp_servers:$/m);
-  assert.match(yaml, /^ {2}veloxbot:$/m);
-  assert.match(yaml, /^ {4}command: "\/bin\/veloxbot"$/m);
+  assert.match(yaml, /^ {2}dripline:$/m);
+  assert.match(yaml, /^ {4}command: "\/bin\/dripline"$/m);
   assert.match(yaml, /^ {4}args: \["mcp", "serve"\]$/m);
-  assert.match(yaml, /^ {6}VELOXBOT_PAIRING_SECRET: "/m);
+  assert.match(yaml, /^ {6}DRIPLINE_PAIRING_SECRET: "/m);
   // It must not be JSON.
   assert.throws(() => JSON.parse(yaml));
 });
@@ -192,7 +192,7 @@ test("clientSetup gives Claude and Codex native commands, others a config artifa
     ["sh", "toml"]
   );
   assert.match(codex.blocks[0].body, /^codex mcp add /);
-  assert.match(codex.blocks[1].body, /\[mcp_servers\.veloxbot\]/);
+  assert.match(codex.blocks[1].body, /\[mcp_servers\.dripline\]/);
 
   assert.equal(clientSetup("hermes", null, CID, SECRET).blocks[0].lang, "yaml");
   const openclaw = clientSetup("openclaw", null, CID, SECRET);
@@ -221,14 +221,14 @@ test("placeholder is only a path-encoding fallback; a reported path needs no rep
   const withPlaceholder = clientSetup("claude", null, CID, SECRET);
   assert.ok(withPlaceholder.notes.some((n) => n.includes(EXE_PLACEHOLDER)));
   assert.ok(withPlaceholder.notes.some((n) => /could not represent/.test(n)));
-  const withPath = clientSetup("claude", "/usr/local/bin/veloxbot", CID, SECRET);
+  const withPath = clientSetup("claude", "/usr/local/bin/dripline", CID, SECRET);
   assert.ok(!withPath.notes.some((n) => n.includes(EXE_PLACEHOLDER)));
 });
 
 test("setup notes cover the non-default data directory case", async () => {
   const { clientSetup } = await mod();
-  const setup = clientSetup("generic", "/bin/veloxbot", CID, SECRET);
-  assert.ok(setup.notes.some((n) => /VELOXBOT_DATA_DIR/.test(n)));
+  const setup = clientSetup("generic", "/bin/dripline", CID, SECRET);
+  assert.ok(setup.notes.some((n) => /DRIPLINE_DATA_DIR/.test(n)));
 });
 
 test("nothing in the module references the removed install-mcp.sh configurator", async () => {

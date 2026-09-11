@@ -1,4 +1,4 @@
-//! Keeps the VeloxBot account session alive.
+//! Keeps the DripLine account session alive.
 //!
 //! Two jobs, both background: renew the access token before it expires, and —
 //! only when the user has switched it on — offer the wallet sign-in once at

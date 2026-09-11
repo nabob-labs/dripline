@@ -28,7 +28,7 @@ pub enum CallOutcome {
     Executed { result: ToolResult },
     /// Policy denies this tool for this client.
     Denied { reason: String },
-    /// A human must approve the call inside VeloxBot before it can run.
+    /// A human must approve the call inside DripLine before it can run.
     ApprovalRequired {
         approval_id: String,
         expires_at: i64,

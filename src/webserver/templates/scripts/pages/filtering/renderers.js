@@ -688,7 +688,7 @@ export function createFilteringRenderers({ state, $: _$, Utils, requestManager: 
    * bounds at once, because they are two ends of one parameter.
    *
    * This is not the footer's Reset: that one reverts unsaved edits to the last
-   * saved config, this one goes back to what VeloxBot ships.
+   * saved config, this one goes back to what DripLine ships.
    */
   function renderRowReset(row, source) {
     const defaults = row.fields.map((field) => getFieldDefault(state.metadata, source, field.key));

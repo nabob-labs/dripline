@@ -22,7 +22,7 @@
 //! # Safety
 //!
 //! [`common::real_db_env`] clones the databases into a temp directory and repoints
-//! `VELOXBOT_DATA_DIR`, so the live files are never touched and the bot may be running.
+//! `DRIPLINE_DATA_DIR`, so the live files are never touched and the bot may be running.
 //! The clone pays a one-time index build on first open (~3 s against the owner's database),
 //! which is startup cost, not query cost — every measurement below takes a warm pass first.
 //!
@@ -67,7 +67,7 @@ fn setup() -> Option<tempfile::TempDir> {
 /// The rejection reason holding the most tokens — the one Explore opens on, and the worst
 /// case for a query that has to sort within a reason.
 async fn largest_rejection_reason() -> Option<(String, i64)> {
-    let stats = veloxbot::tokens::get_rejection_stats_async()
+    let stats = dripline::tokens::get_rejection_stats_async()
         .await
         .expect("rejection stats");
 
@@ -86,12 +86,12 @@ async fn status_tab_rejection_stats_are_index_driven() {
 
     // Warm pass: the first touch of a freshly cloned file pays page-cache faults that have
     // nothing to do with the query plan.
-    let _ = veloxbot::tokens::get_rejection_stats_async()
+    let _ = dripline::tokens::get_rejection_stats_async()
         .await
         .expect("warm rejection stats");
 
     let started = Instant::now();
-    let stats = veloxbot::tokens::get_rejection_stats_async()
+    let stats = dripline::tokens::get_rejection_stats_async()
         .await
         .expect("rejection stats");
     let elapsed = started.elapsed();
@@ -116,17 +116,17 @@ async fn analytics_tab_reads_are_index_driven() {
     let Some(_env) = setup() else { return };
 
     // Warm pass over both reads the analytics endpoint makes.
-    let _ = veloxbot::tokens::get_rejection_stats_with_time_filter_async(None, None).await;
-    let _ = veloxbot::tokens::get_recent_rejections_async(20).await;
+    let _ = dripline::tokens::get_rejection_stats_with_time_filter_async(None, None).await;
+    let _ = dripline::tokens::get_recent_rejections_async(20).await;
 
     let started = Instant::now();
-    let breakdown = veloxbot::tokens::get_rejection_stats_with_time_filter_async(None, None)
+    let breakdown = dripline::tokens::get_rejection_stats_with_time_filter_async(None, None)
         .await
         .expect("rejection breakdown");
     let breakdown_elapsed = started.elapsed();
 
     let started = Instant::now();
-    let recent = veloxbot::tokens::get_recent_rejections_async(20)
+    let recent = dripline::tokens::get_recent_rejections_async(20)
         .await
         .expect("recent rejections");
     let recent_elapsed = started.elapsed();
@@ -168,7 +168,7 @@ async fn explore_tab_pages_are_index_driven() {
     let deep_offset = ((count as usize).saturating_sub(page_size)).min(20_000);
 
     // Warm pass, so the measurement is of the plan rather than the filesystem.
-    let _ = veloxbot::tokens::get_rejected_tokens_async(
+    let _ = dripline::tokens::get_rejected_tokens_async(
         Some(reason.clone()),
         None,
         None,
@@ -178,7 +178,7 @@ async fn explore_tab_pages_are_index_driven() {
     .await;
 
     let started = Instant::now();
-    let first = veloxbot::tokens::get_rejected_tokens_async(
+    let first = dripline::tokens::get_rejected_tokens_async(
         Some(reason.clone()),
         None,
         None,
@@ -190,7 +190,7 @@ async fn explore_tab_pages_are_index_driven() {
     let first_elapsed = started.elapsed();
 
     let started = Instant::now();
-    let deep = veloxbot::tokens::get_rejected_tokens_async(
+    let deep = dripline::tokens::get_rejected_tokens_async(
         Some(reason.clone()),
         None,
         None,
@@ -238,14 +238,14 @@ async fn opening_the_filtering_tab_never_waits_for_a_snapshot() {
     // in which the tab used to sit blank for tens of seconds.
     let started = Instant::now();
     let (stats, rejection_stats, analytics_breakdown, recent, explore_page) = tokio::join!(
-        veloxbot::filtering::try_fetch_stats(),
-        veloxbot::tokens::get_rejection_stats_async(),
-        veloxbot::tokens::get_rejection_stats_with_time_filter_async(None, None),
-        veloxbot::tokens::get_recent_rejections_async(20),
+        dripline::filtering::try_fetch_stats(),
+        dripline::tokens::get_rejection_stats_async(),
+        dripline::tokens::get_rejection_stats_with_time_filter_async(None, None),
+        dripline::tokens::get_recent_rejections_async(20),
         async {
             match reason.clone() {
                 Some(reason) => {
-                    veloxbot::tokens::get_rejected_tokens_async(Some(reason), None, None, 50, 0)
+                    dripline::tokens::get_rejected_tokens_async(Some(reason), None, None, 50, 0)
                         .await
                 }
                 None => Ok(Vec::new()),

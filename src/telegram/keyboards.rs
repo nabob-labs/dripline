@@ -1,4 +1,4 @@
-//! Telegram keyboard builders for VeloxBot
+//! Telegram keyboard builders for DripLine
 //!
 //! Provides pre-built keyboard layouts for:
 //! - Reply keyboard (persistent bottom keyboard)

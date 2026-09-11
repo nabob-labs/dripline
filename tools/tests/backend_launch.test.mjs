@@ -29,7 +29,7 @@ test("backend protocol lines survive arbitrary stream chunk boundaries", () => {
 
   assert.deepEqual(lines, [
     "ordinary log",
-    "VELOXBOT_READY:49152:secret",
+    "DRIPLINE_READY:49152:secret",
     "last line",
   ]);
 });

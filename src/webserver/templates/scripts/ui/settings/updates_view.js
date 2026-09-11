@@ -185,14 +185,14 @@ export function createUpdatesView(Utils) {
     switch (state.phase) {
       case "idle":
         headline = "Ready to check for updates";
-        detail = `VeloxBot v${current} is installed.`;
+        detail = `DripLine v${current} is installed.`;
         icon = "icon-refresh-cw";
         tone = "neutral";
         actions = [button("updatesCheck", "Check now", "icon-refresh-cw")];
         break;
       case "up_to_date":
         headline = "You are up to date";
-        detail = `VeloxBot v${current} is the latest version.`;
+        detail = `DripLine v${current} is the latest version.`;
         icon = "icon-circle-check";
         tone = "success";
         actions = [button("updatesCheck", "Check again", "icon-refresh-cw", "ghost")];
@@ -246,7 +246,7 @@ export function createUpdatesView(Utils) {
         break;
       case "applying":
         headline = "Installing update";
-        detail = "VeloxBot is restarting onto the new version.";
+        detail = "DripLine is restarting onto the new version.";
         icon = "icon-loader";
         tone = "primary";
         actions = [];
@@ -360,7 +360,7 @@ export function createUpdatesView(Utils) {
   /**
    * The Release Notes panel: every published release, newest first.
    *
-   * `releases` comes from veloxbot.io, which owns the editorial record. When
+   * `releases` comes from dripline.io, which owns the editorial record. When
    * it cannot be read the panel still shows whatever single release the updater
    * itself knows about, so an offline machine is never left with nothing.
    */

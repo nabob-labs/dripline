@@ -206,7 +206,7 @@ pub async fn get(chain: ChainId, mint: &str) -> Option<u8> {
         return Some(d);
     }
 
-    // Try the self-hosted VeloxBot data server FIRST (a fast shared cache of
+    // Try the self-hosted DripLine data server FIRST (a fast shared cache of
     // Rugcheck-sourced decimals). On any disabled/miss/timeout it yields None and
     // we fall through to on-chain extraction below. This path never touches a
     // provider rate limiter (the server enforces its own per-IP limit).
@@ -369,10 +369,10 @@ async fn get_from_db(chain: ChainId, mint: &str) -> Option<u8> {
 }
 
 /// Try to get decimals from stored RugCheck data
-/// Fetch decimals from the self-hosted VeloxBot data server's `/v1/decimals`
+/// Fetch decimals from the self-hosted DripLine data server's `/v1/decimals`
 /// endpoint. Returns `None` when the source is disabled/unconfigured or the
 /// request misses/times out/errors, so the caller falls back to on-chain
-/// extraction. Gated by the shared `[tokens.sources.veloxbot_server]` config;
+/// extraction. Gated by the shared `[tokens.sources.dripline_server]` config;
 /// deliberately at the request layer so no provider rate limiter is consumed.
 async fn get_from_server(mint: &str) -> Option<u8> {
     // Response shape: { "decimals": { "<mint>": <n> }, "requested": N }.

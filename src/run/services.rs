@@ -123,7 +123,7 @@ pub(super) async fn create_and_start_services(mode_label: &str) -> Result<()> {
         *guard = Some(service_manager);
     }
 
-    // VELOXBOT_READY is an adoption boundary for silent core updates. Emit
+    // DRIPLINE_READY is an adoption boundary for silent core updates. Emit
     // it only after every enabled service has started and the manager is back
     // in global state, so every dashboard route sees the complete graph.
     crate::webserver::announce_gui_ready();

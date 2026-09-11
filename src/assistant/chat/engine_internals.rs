@@ -73,7 +73,7 @@ impl ChatEngine {
     pub(super) fn build_system_prompt(&self, context: &Option<ChatContext>) -> String {
         let mut prompt = String::with_capacity(8192);
         prompt.push_str(
-            "You are the VeloxBot Assistant for a Solana trading bot. \
+            "You are the DripLine Assistant for a Solana trading bot. \
              You help users analyze tokens, manage positions, and configure the bot.\n\n",
         );
 
@@ -147,10 +147,10 @@ impl ChatEngine {
         prompt.push_str("```json\n{\"tool_calls\": [{\"name\": \"get_positions\", \"arguments\": {}}]}\n```\n\n");
 
         prompt.push_str("**User:** \"How does the bot work?\"\n");
-        prompt.push_str("**Assistant:** VeloxBot is a Solana trading bot that monitors tokens and executes trades based on your configured strategies. It can automatically buy and sell tokens based on market conditions.\n\n");
+        prompt.push_str("**Assistant:** DripLine is a Solana trading bot that monitors tokens and executes trades based on your configured strategies. It can automatically buy and sell tokens based on market conditions.\n\n");
 
         prompt.push_str("**User:** \"Hello!\"\n");
-        prompt.push_str("**Assistant:** Hello! I'm your VeloxBot assistant. I can help you analyze tokens, check positions, manage trades, and configure settings. What would you like to do?\n\n");
+        prompt.push_str("**Assistant:** Hello! I'm your DripLine assistant. I can help you analyze tokens, check positions, manage trades, and configure settings. What would you like to do?\n\n");
 
         // List all tools with full parameter schemas
         prompt.push_str("## AVAILABLE TOOLS\n\n");
@@ -760,7 +760,7 @@ I'll fetch that information now.
         let engine = ChatEngine::new();
 
         let prompt = engine.build_system_prompt(&None);
-        assert!(prompt.contains("VeloxBot"));
+        assert!(prompt.contains("DripLine"));
         assert!(prompt.contains("AVAILABLE TOOLS"));
         assert!(prompt.contains("tool_calls"));
 

@@ -33,7 +33,7 @@ class SplashController {
    * would otherwise keep waiting for as long as the window stays open.
    */
   watchLaunchOutcome() {
-    window.addEventListener("veloxbot:bootstrap-settled", (event) => {
+    window.addEventListener("dripline:bootstrap-settled", (event) => {
       if (event.detail?.outcome !== "unreachable") {
         return;
       }
@@ -44,7 +44,7 @@ class SplashController {
       }
       this.splashEl?.classList.add("settled");
       this.setState(
-        "VeloxBot could not start",
+        "DripLine could not start",
         "Check the log file, then restart the app."
       );
     });
@@ -140,7 +140,7 @@ class SplashController {
       // Initialization state is authoritative. Never guess "dashboard" on a
       // transient failure because that can bypass first-run onboarding.
       if (Date.now() - this.startTime >= SPLASH_SLOW_AFTER_MS) {
-        this.setState("Starting VeloxBot", "Waiting for the local core to answer.");
+        this.setState("Starting DripLine", "Waiting for the local core to answer.");
       }
       this.retryTimeout = setTimeout(() => this.checkInitialization(), 1500);
     }

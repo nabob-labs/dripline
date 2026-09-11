@@ -20,8 +20,8 @@
 
 mod common;
 
-use veloxbot::chains::solana::solana_sdk::pubkey::Pubkey;
-use veloxbot::chains::solana::swaps::direct::{
+use dripline::chains::solana::solana_sdk::pubkey::Pubkey;
+use dripline::chains::solana::swaps::direct::{
     self, DirectSwapIntent, FeeSide, PlatformFee, SwapAccounts,
 };
 use std::str::FromStr;
@@ -348,7 +348,7 @@ fn assert_fee_is_collected(fee: &PlatformFee, plan: &direct::SwapPlan) {
         .expect("a collectible fee has a destination");
 
     let carried = plan.instructions.iter().any(|ix| {
-        ix.program_id == veloxbot::chains::solana::spl_token::id()
+        ix.program_id == dripline::chains::solana::spl_token::id()
             && ix.data.first() == Some(&12)
             && ix.accounts.iter().any(|a| a.pubkey == destination)
     });
@@ -1097,7 +1097,7 @@ async fn a_real_round_trip_through_fluxbeam_settles_and_pays_the_platform_fee() 
 async fn round_trip(ctx: &common::MainnetCtx, pool: &str, token: &str) {
     let keypair = ctx.keypair();
     let owner = {
-        use veloxbot::chains::solana::solana_sdk::signature::Signer;
+        use dripline::chains::solana::solana_sdk::signature::Signer;
         keypair.pubkey()
     };
     let amount_in = ctx.max_lamports.min(MINIMUM_SWAP_LAMPORTS);
@@ -1202,9 +1202,9 @@ async fn holder_with_associated_account(
     mint: &Pubkey,
     token_program: &Pubkey,
 ) -> Vec<(Pubkey, u64)> {
-    use veloxbot::chains::solana::rpc::{get_rpc_client, RpcClientMethods};
-    use veloxbot::chains::solana::solana_sdk::commitment_config::CommitmentLevel;
-    use veloxbot::chains::solana::spl_associated_token_account::get_associated_token_address_with_program_id;
+    use dripline::chains::solana::rpc::{get_rpc_client, RpcClientMethods};
+    use dripline::chains::solana::solana_sdk::commitment_config::CommitmentLevel;
+    use dripline::chains::solana::spl_associated_token_account::get_associated_token_address_with_program_id;
 
     const SIGNATURES_PER_PAGE: usize = 40;
     const PAGES_TO_SCAN: usize = 3;
@@ -1319,7 +1319,7 @@ async fn holder_with_associated_account(
         .zip(owner_accounts.into_iter())
         .filter(|(_, account)| {
             account.as_ref().is_some_and(|a| {
-                a.owner == veloxbot::chains::solana::solana_sdk::system_program::id()
+                a.owner == dripline::chains::solana::solana_sdk::system_program::id()
                     && a.lamports > 10_000_000
             })
         })
@@ -1338,8 +1338,8 @@ async fn holders_from_the_token_programme(
     mint: &Pubkey,
     token_program: &Pubkey,
 ) -> Vec<(Pubkey, u64)> {
-    use veloxbot::chains::solana::rpc::{get_rpc_client, RpcClientMethods, RpcFilterType};
-    use veloxbot::chains::solana::spl_associated_token_account::get_associated_token_address_with_program_id;
+    use dripline::chains::solana::rpc::{get_rpc_client, RpcClientMethods, RpcFilterType};
+    use dripline::chains::solana::spl_associated_token_account::get_associated_token_address_with_program_id;
 
     const TOKEN_ACCOUNT_SIZE: u64 = 165;
 
@@ -1397,7 +1397,7 @@ async fn holders_from_the_token_programme(
         .zip(owner_accounts.into_iter())
         .filter(|(_, account)| {
             account.as_ref().is_some_and(|a| {
-                a.owner == veloxbot::chains::solana::solana_sdk::system_program::id()
+                a.owner == dripline::chains::solana::solana_sdk::system_program::id()
                     && a.lamports > 10_000_000
             })
         })

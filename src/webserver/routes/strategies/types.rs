@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 // =============================================================================
-// RESPONSE TYPES (Inline with routes as per VeloxBot patterns)
+// RESPONSE TYPES (Inline with routes as per DripLine patterns)
 // =============================================================================
 
 /// Strategy list response

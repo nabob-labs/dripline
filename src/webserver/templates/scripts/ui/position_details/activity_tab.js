@@ -278,7 +278,7 @@ export function applyActivityTabMixin(PositionDetailsDialog) {
           <span class="pdd-act-round-index"><i class="icon-wallet"></i></span>
           <span class="pdd-act-round-main">
             <span class="pdd-act-round-title">Wallet-only activity</span>
-            <span class="pdd-act-round-date">Transactions outside VeloxBot · ${range}</span>
+            <span class="pdd-act-round-date">Transactions outside DripLine · ${range}</span>
           </span>
           <span class="pdd-act-round-facts">
             <span class="pdd-act-round-count">${events.length} event${events.length === 1 ? "" : "s"}</span>

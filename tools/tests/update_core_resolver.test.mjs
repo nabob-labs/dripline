@@ -144,7 +144,7 @@ test("a verified staged core is what gets launched", async (t) => {
   const binaryPath = await stage(dir);
   const resolved = await resolver.resolveCore({
     coreDir: dir,
-    bundledPath: "/bundled/veloxbot",
+    bundledPath: "/bundled/dripline",
     bundledVersion: "0.2.1",
   });
   assert.equal(resolved.staged, true);
@@ -164,7 +164,7 @@ test("a staged core is a first run only until it has actually come up", async (t
   await stage(dir);
   const options = {
     coreDir: dir,
-    bundledPath: "/bundled/veloxbot",
+    bundledPath: "/bundled/dripline",
     bundledVersion: "0.2.1",
   };
 
@@ -184,7 +184,7 @@ test("the bundled binary is never reported as a first run", async (t) => {
 
   const resolved = await resolver.resolveCore({
     coreDir: dir,
-    bundledPath: "/bundled/veloxbot",
+    bundledPath: "/bundled/dripline",
     bundledVersion: "0.2.1",
   });
   assert.equal(resolved.staged, false);
@@ -211,7 +211,7 @@ test("dropping the stage drops the adoption record with it", async (t) => {
   // record of what was adopted from it must not outlive it.
   const resolved = await resolver.resolveCore({
     coreDir: dir,
-    bundledPath: "/bundled/veloxbot",
+    bundledPath: "/bundled/dripline",
     bundledVersion: "0.2.2",
   });
   assert.equal(resolved.staged, false);
@@ -225,11 +225,11 @@ test("a staged core whose bytes changed is quarantined, not launched", async (t)
   await stage(dir, { digest: "b".repeat(64) });
   const resolved = await resolver.resolveCore({
     coreDir: dir,
-    bundledPath: "/bundled/veloxbot",
+    bundledPath: "/bundled/dripline",
     bundledVersion: "0.2.1",
   });
   assert.equal(resolved.staged, false);
-  assert.equal(resolved.path, "/bundled/veloxbot");
+  assert.equal(resolved.path, "/bundled/dripline");
 
   const quarantine = JSON.parse(await fs.readFile(path.join(dir, "quarantine.json"), "utf8"));
   assert.deepEqual(quarantine.versions, ["0.2.2"]);
@@ -247,7 +247,7 @@ test("a missing or wrong-sized staged core is quarantined once", async (t) => {
 
     const resolved = await resolver.resolveCore({
       coreDir: dir,
-      bundledPath: "/bundled/veloxbot",
+      bundledPath: "/bundled/dripline",
       bundledVersion: "0.2.1",
     });
     assert.equal(resolved.staged, false, mode);
@@ -267,7 +267,7 @@ test("a quarantined version stays quarantined across relaunches", async (t) => {
 
   const resolved = await resolver.resolveCore({
     coreDir: dir,
-    bundledPath: "/bundled/veloxbot",
+    bundledPath: "/bundled/dripline",
     bundledVersion: "0.2.1",
   });
   assert.equal(resolved.staged, false);
@@ -295,26 +295,26 @@ test("pruning removes version trees and leaves anything else alone", async (t) =
 test("the base directory matches what the Rust core resolves", () => {
   assert.equal(
     paths.resolveBaseDirectory("/home/u", "darwin", {}),
-    "/home/u/Library/Application Support/VeloxBot"
+    "/home/u/Library/Application Support/DripLine"
   );
   assert.equal(
     paths.resolveBaseDirectory("/home/u", "win32", { LOCALAPPDATA: "C:\\Users\\u\\AppData\\Local" }),
-    path.join("C:\\Users\\u\\AppData\\Local", "VeloxBot")
+    path.join("C:\\Users\\u\\AppData\\Local", "DripLine")
   );
   assert.equal(
     paths.resolveBaseDirectory("/home/u", "linux", {}),
-    "/home/u/.local/share/VeloxBot"
+    "/home/u/.local/share/DripLine"
   );
   assert.equal(
     paths.resolveBaseDirectory("/home/u", "linux", { XDG_DATA_HOME: "/data" }),
-    "/data/VeloxBot"
+    "/data/DripLine"
   );
 });
 
 test("the test-and-development data override wins on every platform", () => {
   for (const platform of ["darwin", "win32", "linux"]) {
     assert.equal(
-      paths.resolveBaseDirectory("/home/u", platform, { VELOXBOT_DATA_DIR: "/tmp/pinned" }),
+      paths.resolveBaseDirectory("/home/u", platform, { DRIPLINE_DATA_DIR: "/tmp/pinned" }),
       "/tmp/pinned"
     );
   }

@@ -27,7 +27,7 @@ pub fn hash_password(password: &str, salt: &str) -> Result<String> {
     let mut key = [0u8; 32];
     let mut key_hasher = blake3::Hasher::new();
     key_hasher.update(&salt_bytes);
-    key_hasher.update(b"veloxbot-lockscreen-v1");
+    key_hasher.update(b"dripline-lockscreen-v1");
     let key_hash = key_hasher.finalize();
     key.copy_from_slice(key_hash.as_bytes());
 

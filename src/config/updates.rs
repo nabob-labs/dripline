@@ -21,7 +21,7 @@ use crate::logger::{self, LogTag};
 ///
 /// # Example
 /// ```
-/// use veloxbot::config::update_config_section;
+/// use dripline::config::update_config_section;
 ///
 /// // Update trader config
 /// update_config_section(
@@ -72,7 +72,7 @@ where
 ///
 /// # Example
 /// ```
-/// use veloxbot::config::update_with_diff;
+/// use dripline::config::update_with_diff;
 ///
 /// let (old, new) = update_with_diff(
 /// |cfg| cfg.trader.clone(),
@@ -114,7 +114,7 @@ where
 ///
 /// # Example
 /// ```
-/// use veloxbot::config::reset_config_to_defaults_preserving_credentials;
+/// use dripline::config::reset_config_to_defaults_preserving_credentials;
 ///
 /// reset_config_to_defaults_preserving_credentials()?;
 /// ```

@@ -84,7 +84,7 @@ function buildTelegramTab(settings) {
         Connection
       </h3>
       <p class="settings-section-description">
-        Connect your Telegram bot to receive notifications and control VeloxBot remotely.
+        Connect your Telegram bot to receive notifications and control DripLine remotely.
       </p>
 
       <div class="settings-group">

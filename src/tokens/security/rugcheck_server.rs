@@ -1,4 +1,4 @@
-//! Rugcheck security reports via the self-hosted VeloxBot data server.
+//! Rugcheck security reports via the self-hosted DripLine data server.
 //!
 //! This is a SEPARATE source from the direct Rugcheck API client
 //! (`crate::apis::rugcheck`). The security fetcher tries this server FIRST: it
@@ -18,7 +18,7 @@ use std::collections::HashMap;
 /// the server-side cap.
 pub const SERVER_RUGCHECK_BATCH: usize = 30;
 
-/// Try to fetch a Rugcheck report for `mint` from the self-hosted VeloxBot
+/// Try to fetch a Rugcheck report for `mint` from the self-hosted DripLine
 /// data server. Returns `None` (so the caller falls back) when the source is
 /// disabled, unconfigured, or the request misses/times out/errors.
 ///

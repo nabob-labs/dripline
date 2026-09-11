@@ -162,7 +162,7 @@ mod tests {
 
     fn test_path(label: &str) -> std::path::PathBuf {
         std::env::temp_dir().join(format!(
-            "veloxbot-ohlcv-data-version-{label}-{}.db",
+            "dripline-ohlcv-data-version-{label}-{}.db",
             std::process::id()
         ))
     }

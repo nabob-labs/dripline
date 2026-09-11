@@ -26,10 +26,10 @@ mod common;
 
 use std::time::Duration;
 
-use veloxbot::chains::solana::accounts::{
+use dripline::chains::solana::accounts::{
     cached_main_wallet_id, configured_address, configured_address_async, configured_keypair,
 };
-use veloxbot::wallet::{
+use dripline::wallet::{
     get_current_wallet_status, get_recent_wallet_snapshots, get_wallet_monitor_stats,
     initialize_wallet_database,
 };
@@ -37,7 +37,7 @@ use veloxbot::wallet::{
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn wallet_monitor_reads_stay_key_free_and_the_sync_bridge_never_hangs() {
     let dir = tempfile::tempdir().expect("temp dir");
-    std::env::set_var("VELOXBOT_DATA_DIR", dir.path());
+    std::env::set_var("DRIPLINE_DATA_DIR", dir.path());
     std::fs::create_dir_all(dir.path().join("data")).expect("create data dir");
     common::ensure_config();
     common::configure_own_wallet();

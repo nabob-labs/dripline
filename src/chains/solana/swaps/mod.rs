@@ -10,7 +10,7 @@
 //!   attach our own fee. No third party in the money path.
 //!
 //! `revenue` holds the fee rate and destinations BOTH use, so there is exactly
-//! one definition of what a VeloxBot swap charges.
+//! one definition of what a DripLine swap charges.
 //!
 //! Chain-neutral swap intent, quoting policy, routing/fallback orchestration and
 //! the `SwapRouter` contract stay in `crate::swaps` — this module implements that

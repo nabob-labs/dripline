@@ -3,7 +3,7 @@
 use std::sync::RwLock;
 
 /// Security token required for all API requests in GUI mode.
-/// Generated at startup, must be passed in X-VeloxBot-Token header.
+/// Generated at startup, must be passed in X-DripLine-Token header.
 static SECURITY_TOKEN: RwLock<Option<String>> = RwLock::new(None);
 
 /// Generate and store a new security token (called at webserver startup in GUI mode).

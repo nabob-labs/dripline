@@ -1,4 +1,4 @@
-//! Centralized argument handling system for VeloxBot.
+//! Centralized argument handling system for DripLine.
 //!
 //! This module provides a unified interface for command-line argument parsing.
 //!

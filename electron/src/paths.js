@@ -13,16 +13,16 @@
 const path = require('path');
 const os = require('os');
 
-const APP_DIR = 'VeloxBot';
+const APP_DIR = 'DripLine';
 
 /**
- * Base directory for all VeloxBot data, matching `paths::get_base_directory()`.
+ * Base directory for all DripLine data, matching `paths::get_base_directory()`.
  * @param {string=} homeDir override, for tests
  * @param {NodeJS.Platform=} platform override, for tests
  * @param {NodeJS.ProcessEnv=} env override, for tests
  */
 function resolveBaseDirectory(homeDir = os.homedir(), platform = process.platform, env = process.env) {
-  const override = (env.VELOXBOT_DATA_DIR || '').trim();
+  const override = (env.DRIPLINE_DATA_DIR || '').trim();
   if (override) return override;
 
   if (platform === 'darwin') {

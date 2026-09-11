@@ -1,7 +1,7 @@
 /**
  * Promo capture bridge.
  *
- * Present only when the app is launched with VELOXBOT_PROMO_CONTROL set — the
+ * Present only when the app is launched with DRIPLINE_PROMO_CONTROL set — the
  * promo studio driver does that; a normal launch never loads any of this.
  *
  * It exposes one local HTTP endpoint the driver posts commands to, and routes
@@ -426,7 +426,7 @@ function startPromoBridge(window, { port = 0, mediaDir = null } = {}) {
     server.on('error', reject);
     server.listen(port, HOST, () => {
       const actual = server.address().port;
-      console.log(`VELOXBOT_PROMO_BRIDGE:${actual}`);
+      console.log(`DRIPLINE_PROMO_BRIDGE:${actual}`);
       resolve(actual);
     });
   });

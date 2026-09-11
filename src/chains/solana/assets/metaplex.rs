@@ -240,7 +240,7 @@ async fn fetch_json_metadata(uri: &str) -> Result<JsonMetadata, NftMetadataError
 
     let response = client
         .get(&url)
-        .header("User-Agent", "VeloxBot/1.0")
+        .header("User-Agent", "DripLine/1.0")
         .send()
         .await
         .map_err(|e| NftMetadataError::JsonFetchFailed(e.to_string()))?;

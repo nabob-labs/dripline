@@ -9,7 +9,7 @@ import { createHeaderMetrics } from "./header_metrics.js";
 import { showSettingsDialog } from "../ui/settings_dialog.js";
 import { SetupDialog } from "../ui/setup_dialog.js";
 import { playToggleOn, playToggleOff, playError } from "./sounds.js";
-// Side-effect import: registers the `veloxbot:open-token-details` window
+// Side-effect import: registers the `dripline:open-token-details` window
 // listener so the SOL price card (and any header control) can open the dialog.
 // Without this the event fires into the void on pages that don't load the dialog.
 import "../ui/token_details_dialog.js";
@@ -335,7 +335,7 @@ function initCardHandlers() {
   if (solPriceCard) {
     const openSolDetails = () => {
       window.dispatchEvent(
-        new CustomEvent("veloxbot:open-token-details", {
+        new CustomEvent("dripline:open-token-details", {
           detail: {
             mint: "So11111111111111111111111111111111111111112",
             symbol: "SOL",
@@ -621,7 +621,7 @@ async function handleRestart() {
 
     const result = await res.json();
 
-    const waitForRestart = window.waitForVeloxBotRestart;
+    const waitForRestart = window.waitForDripLineRestart;
     if (typeof waitForRestart !== "function") {
       throw new Error("Automatic restart helper is unavailable. Reload the dashboard shortly.");
     }

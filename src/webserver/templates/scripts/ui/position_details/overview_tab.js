@@ -527,7 +527,7 @@ export function applyOverviewTabMixin(PositionDetailsDialog) {
       const { mint, symbol, name, logo_url, image_url } = p;
       this.close();
       window.dispatchEvent(
-        new CustomEvent("veloxbot:open-token-details", {
+        new CustomEvent("dripline:open-token-details", {
           detail: { mint, symbol, name, logo_url: logo_url || image_url || null },
         })
       );

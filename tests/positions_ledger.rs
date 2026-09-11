@@ -18,12 +18,12 @@
 //!
 //! No database, no network, no clock: `SubjectAssetDelta` values are built inline.
 
-use veloxbot::chains::solana::constants::{SOL_MINT, USDC_MINT};
-use veloxbot::chains::ChainId;
-use veloxbot::positions::ledger::{
+use dripline::chains::solana::constants::{SOL_MINT, USDC_MINT};
+use dripline::chains::ChainId;
+use dripline::positions::ledger::{
     reconcile_with_wallet, reduce_rounds, LedgerEventKind, LedgerRound, QuoteAsset, WalletHolding,
 };
-use veloxbot::transactions::deltas::{DeltaKind, SubjectAssetDelta, NATIVE_SOL_SENTINEL};
+use dripline::transactions::deltas::{DeltaKind, SubjectAssetDelta, NATIVE_SOL_SENTINEL};
 
 const WALLET: &str = "6uodGCMLfDLfeXkyW71WpUDK1BEG19bU2EV51x2dcGMv";
 const MINT_A: &str = "MintA111111111111111111111111111111111111";

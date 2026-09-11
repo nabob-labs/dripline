@@ -1,7 +1,7 @@
 //! OHLCV fetcher — retrieves candlestick data from multiple sources.
 //!
 //! Sources (in priority order):
-//! 0. VeloxBot self-hosted OHLCV server — fast shared cache, tried FIRST
+//! 0. DripLine self-hosted OHLCV server — fast shared cache, tried FIRST
 //! 1. SolanaTracker — uses token address, credit-based, high quality
 //! 2. GeckoTerminal — uses pool address, rate-limited 30/min, free
 
@@ -337,7 +337,7 @@ impl OhlcvFetcher {
     /// Fetch OHLCV with multi-source fallback: SolanaTracker → GeckoTerminal
     /// `mint` is needed for SolanaTracker, `pool_address` for GeckoTerminal
     /// Map the GeckoTerminal (endpoint, aggregate) pair back to the canonical
-    /// timeframe string the VeloxBot server expects.
+    /// timeframe string the DripLine server expects.
     fn server_timeframe(api_endpoint: &str, aggregate: u32) -> Option<&'static str> {
         match (api_endpoint, aggregate) {
             ("minute", 1) => Some("1m"),
@@ -351,10 +351,10 @@ impl OhlcvFetcher {
         }
     }
 
-    /// Try the VeloxBot data service. `None` on anything at all — switched
+    /// Try the DripLine data service. `None` on anything at all — switched
     /// off, signed out, refused, missed or timed out — so the caller falls back
     /// to the providers. The reason is published once by `data_server::access`.
-    async fn fetch_from_veloxbot_server(
+    async fn fetch_from_dripline_server(
         &self,
         mint: &str,
         pool_address: &str,
@@ -386,12 +386,12 @@ impl OhlcvFetcher {
         limit: usize,
         pool_is_sol: bool,
     ) -> OhlcvResult<Vec<Candle>> {
-        // Try the self-hosted VeloxBot OHLCV server first: it serves a shared
+        // Try the self-hosted DripLine OHLCV server first: it serves a shared
         // cache fast and warms itself, sparing the external providers' budgets. On
         // any miss/timeout/error we fall straight through to the providers below,
         // so this is purely an accelerator — never a hard dependency.
         if let Some(candles) = self
-            .fetch_from_veloxbot_server(mint, pool_address, api_endpoint, aggregate, limit)
+            .fetch_from_dripline_server(mint, pool_address, api_endpoint, aggregate, limit)
             .await
         {
             if !candles.is_empty() {

@@ -16,7 +16,7 @@ pub fn restart_after_graceful_shutdown() -> ! {
         // Electron must retain ownership of the backend process so quitting the
         // desktop app can still terminate it. Its main process handles this
         // signal/exit code and loads the new dynamic-port dashboard automatically.
-        println!("VELOXBOT_RESTART");
+        println!("DRIPLINE_RESTART");
         let _ = std::io::stdout().flush();
         std::process::exit(RESTART_EXIT_CODE);
     }
@@ -32,7 +32,7 @@ pub fn restart_after_graceful_shutdown() -> ! {
 
     info(
         LogTag::System,
-        "Graceful shutdown complete; restarting VeloxBot",
+        "Graceful shutdown complete; restarting DripLine",
     );
 
     #[cfg(unix)]

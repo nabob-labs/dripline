@@ -54,7 +54,7 @@ function notify(status) {
   });
 
   window.dispatchEvent(
-    new CustomEvent("veloxbot:bootstrap-status", {
+    new CustomEvent("dripline:bootstrap-status", {
       detail: status,
     })
   );
@@ -74,7 +74,7 @@ function settle(outcome, status) {
 
   // Electron polls this flag to detect a fully loaded frontend; only a genuine
   // ready launch may claim it.
-  window.__veloxbot_ready = state.ready;
+  window.__dripline_ready = state.ready;
 
   if (typeof resolveReady === "function") {
     resolveReady(status || null);
@@ -82,7 +82,7 @@ function settle(outcome, status) {
 
   if (state.ready) {
     window.dispatchEvent(
-      new CustomEvent("veloxbot:ready", {
+      new CustomEvent("dripline:ready", {
         detail: status,
       })
     );
@@ -91,7 +91,7 @@ function settle(outcome, status) {
   }
 
   window.dispatchEvent(
-    new CustomEvent("veloxbot:bootstrap-settled", {
+    new CustomEvent("dripline:bootstrap-settled", {
       detail: {
         outcome,
         status: status || null,
@@ -143,7 +143,7 @@ async function pollStatus() {
     console.warn("[Bootstrap] Status check failed", error);
     notify(null);
     window.dispatchEvent(
-      new CustomEvent("veloxbot:bootstrap-error", {
+      new CustomEvent("dripline:bootstrap-error", {
         detail: error?.message || String(error),
       })
     );

@@ -6,8 +6,8 @@
 
 mod common;
 
-use veloxbot::apis::{DexScreenerClient, RugcheckClient};
-use veloxbot::sol_price::fetch_and_cache_sol_price;
+use dripline::apis::{DexScreenerClient, RugcheckClient};
+use dripline::sol_price::fetch_and_cache_sol_price;
 
 const WSOL: &str = "So11111111111111111111111111111111111111112";
 const USDC: &str = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
@@ -56,5 +56,5 @@ async fn rugcheck_returns_a_report_for_usdc() {
 
 // Add next, same pattern (common::isolated_env + a real app client, `#[ignore]`):
 //   - GeckoTerminal OHLCV fetch (SOL-denominated, volume > 0, ts snapped) -> ohlcv.rs
-//   - veloxbot-data server: /v1/health, /v1/ohlcv, /v1/pools, /v1/rugcheck
+//   - dripline-data server: /v1/health, /v1/ohlcv, /v1/pools, /v1/rugcheck
 //   - Jupiter quote only (no execution)

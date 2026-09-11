@@ -23,48 +23,48 @@
 
 mod common;
 
-use veloxbot::chains::solana::solana_sdk::pubkey::Pubkey;
-use veloxbot::chains::solana::swaps::direct::venues::clmm_ticks::{
+use dripline::chains::solana::solana_sdk::pubkey::Pubkey;
+use dripline::chains::solana::swaps::direct::venues::clmm_ticks::{
     decode_tick_array, TickArrayBitmap,
 };
-use veloxbot::chains::solana::swaps::direct::venues::fluxbeam::{
+use dripline::chains::solana::swaps::direct::venues::fluxbeam::{
     FluxbeamMarket, FluxbeamPoolState,
 };
-use veloxbot::chains::solana::swaps::direct::venues::layout::{
+use dripline::chains::solana::swaps::direct::venues::layout::{
     mint_decimals, token_account_amount, u64_at, u8_at,
 };
-use veloxbot::chains::solana::swaps::direct::venues::meteora_damm::{DammMarket, DammPoolState};
-use veloxbot::chains::solana::swaps::direct::venues::meteora_dbc::{
+use dripline::chains::solana::swaps::direct::venues::meteora_damm::{DammMarket, DammPoolState};
+use dripline::chains::solana::swaps::direct::venues::meteora_dbc::{
     DbcMarket, PoolConfigState as DbcPoolConfigState, VirtualPoolState,
 };
-use veloxbot::chains::solana::swaps::direct::venues::meteora_dlmm::{
+use dripline::chains::solana::swaps::direct::venues::meteora_dlmm::{
     bin_array_address, bitmap_extension_address as dlmm_bitmap_extension_address,
     event_authority_address, oracle_address as dlmm_oracle_address, DlmmMarket, LbPairState,
 };
-use veloxbot::chains::solana::swaps::direct::venues::moonit::{
+use dripline::chains::solana::swaps::direct::venues::moonit::{
     ConfigAccountState, CurveAccountState, MoonitMarket,
 };
-use veloxbot::chains::solana::swaps::direct::venues::orca_whirlpool::{
+use dripline::chains::solana::swaps::direct::venues::orca_whirlpool::{
     candidate_tick_array_starts, decode_tick_array as orca_decode_tick_array, oracle_address,
     tick_array_address as orca_tick_array_address, WhirlpoolMarket, WhirlpoolState,
 };
-use veloxbot::chains::solana::swaps::direct::venues::pumpfun_amm::{
+use dripline::chains::solana::swaps::direct::venues::pumpfun_amm::{
     FeeTierTable, GlobalConfig, PumpAmmMarket, PumpAmmPoolState,
 };
-use veloxbot::chains::solana::swaps::direct::venues::pumpfun_legacy::{
+use dripline::chains::solana::swaps::direct::venues::pumpfun_legacy::{
     BondingCurve, GlobalFeeRecipients, PumpLegacyMarket,
 };
-use veloxbot::chains::solana::swaps::direct::venues::raydium_amm_v4::{
+use dripline::chains::solana::swaps::direct::venues::raydium_amm_v4::{
     AmmV4Market, AmmV4PoolState,
 };
-use veloxbot::chains::solana::swaps::direct::venues::raydium_clmm::{
+use dripline::chains::solana::swaps::direct::venues::raydium_clmm::{
     ClmmFeeConfig, ClmmMarket, ClmmPoolState,
 };
-use veloxbot::chains::solana::swaps::direct::venues::raydium_cpmm::{
+use dripline::chains::solana::swaps::direct::venues::raydium_cpmm::{
     CpmmFeeConfig, CpmmMarket, CpmmPoolState,
 };
-use veloxbot::chains::solana::swaps::direct::venues::token2022::transfer_fee_schedule;
-use veloxbot::chains::solana::swaps::direct::{
+use dripline::chains::solana::swaps::direct::venues::token2022::transfer_fee_schedule;
+use dripline::chains::solana::swaps::direct::{
     self, DirectSwapIntent, FeeSide, PoolMarket, SwapAccounts,
 };
 use std::collections::HashMap;
@@ -78,7 +78,7 @@ const WSOL: &str = "So11111111111111111111111111111111111111112";
 
 struct Fixture {
     pool: Pubkey,
-    accounts: HashMap<String, veloxbot::chains::solana::solana_sdk::account::Account>,
+    accounts: HashMap<String, dripline::chains::solana::solana_sdk::account::Account>,
 }
 
 impl Fixture {
@@ -105,7 +105,7 @@ impl Fixture {
                 .expect("account data is valid base64");
             accounts.insert(
                 address.clone(),
-                veloxbot::chains::solana::solana_sdk::account::Account {
+                dripline::chains::solana::solana_sdk::account::Account {
                     lamports: 0,
                     data,
                     owner: Pubkey::from_str(value["owner"].as_str().expect("account has an owner"))
@@ -129,7 +129,7 @@ impl Fixture {
     fn account(
         &self,
         address: &Pubkey,
-    ) -> &veloxbot::chains::solana::solana_sdk::account::Account {
+    ) -> &dripline::chains::solana::solana_sdk::account::Account {
         self.accounts
             .get(&address.to_string())
             .unwrap_or_else(|| panic!("fixture is missing account {address}"))
@@ -168,7 +168,7 @@ fn amm_v4_market() -> AmmV4Market {
 }
 
 fn clmm_market() -> ClmmMarket {
-    use veloxbot::chains::solana::swaps::direct::venues::clmm_ticks::{
+    use dripline::chains::solana::swaps::direct::venues::clmm_ticks::{
         bitmap_extension_address, tick_array_address,
     };
 
@@ -606,7 +606,7 @@ fn the_clmm_layout_reads_real_values_at_every_offset_it_claims() {
 
 #[test]
 fn the_clmm_captured_tick_arrays_hold_real_ticks_not_padding() {
-    use veloxbot::chains::solana::swaps::direct::venues::clmm_ticks::tick_array_address;
+    use dripline::chains::solana::swaps::direct::venues::clmm_ticks::tick_array_address;
 
     let fixture = Fixture::load("raydium_clmm_pool");
     let program = fixture.account(&fixture.pool).owner;
@@ -1072,7 +1072,7 @@ fn the_plan_carries_the_fee_transfer_in_the_same_transaction_as_the_swap() {
         .instructions
         .iter()
         .position(|ix| {
-            ix.program_id == veloxbot::chains::solana::spl_token::id()
+            ix.program_id == dripline::chains::solana::spl_token::id()
                 && ix.data.first() == Some(&12)
                 && ix.accounts.iter().any(|a| a.pubkey == destination)
         })
@@ -1083,7 +1083,7 @@ fn the_plan_carries_the_fee_transfer_in_the_same_transaction_as_the_swap() {
         .position(|ix| ix.program_id.to_string() == "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8")
         .expect("the swap instruction must be present");
     let close_index = plan.instructions.iter().position(|ix| {
-        ix.program_id == veloxbot::chains::solana::spl_token::id() && ix.data.first() == Some(&9)
+        ix.program_id == dripline::chains::solana::spl_token::id() && ix.data.first() == Some(&9)
     });
 
     assert!(
@@ -1298,7 +1298,7 @@ fn a_dlmm_swap_instruction_names_the_event_authority_and_orients_from_the_input_
     let market = dlmm_market();
     let (mint_x, mint_y) = market.mints();
     let program =
-        Pubkey::from_str(veloxbot::chains::solana::constants::METEORA_DLMM_PROGRAM_ID).unwrap();
+        Pubkey::from_str(dripline::chains::solana::constants::METEORA_DLMM_PROGRAM_ID).unwrap();
     let owner = Pubkey::new_unique();
     let ata_in = Pubkey::new_unique();
     let ata_out = Pubkey::new_unique();
@@ -1642,7 +1642,7 @@ fn the_dbc_curve_points_are_real_segments_not_padding() {
     // the same target performed when the config was created, not a decode
     // error (an offset error produces a wildly different value, not an
     // agreement to eleven significant figures).
-    let migration_sqrt_price = veloxbot::chains::solana::swaps::direct::venues::layout::u128_at(
+    let migration_sqrt_price = dripline::chains::solana::swaps::direct::venues::layout::u128_at(
         fixture.data(&state.config),
         280,
     )
@@ -1730,7 +1730,7 @@ fn the_output_token_collect_fee_mode_is_a_real_second_pool_not_a_toy() {
     // or an explicit InsufficientLiquidity is acceptable here, a panic is not.
     match buy {
         Ok(q) => assert!(q.expected_out > 0),
-        Err(veloxbot::chains::solana::swaps::direct::error::DirectSwapError::InsufficientLiquidity { .. }) => {}
+        Err(dripline::chains::solana::swaps::direct::error::DirectSwapError::InsufficientLiquidity { .. }) => {}
         Err(e) => panic!("unexpected error against a real captured pool: {e:?}"),
     }
 }
@@ -2552,7 +2552,7 @@ fn measurement_plan(mint: Pubkey, min_net_out: u64) -> direct::SwapPlan {
         output_is_native: false,
         quote: direct::DirectQuote {
             pool: Pubkey::new_unique(),
-            program: veloxbot::chains::solana::pools::types::ProgramKind::RaydiumCpmm,
+            program: dripline::chains::solana::pools::types::ProgramKind::RaydiumCpmm,
             input_mint: Pubkey::from_str(WSOL).unwrap(),
             output_mint: mint,
             amount_in: 5_000_000,
@@ -2570,12 +2570,12 @@ fn measurement_plan(mint: Pubkey, min_net_out: u64) -> direct::SwapPlan {
 }
 
 fn transaction_details(
-    meta: Option<veloxbot::chains::solana::rpc::types::TransactionMeta>,
+    meta: Option<dripline::chains::solana::rpc::types::TransactionMeta>,
     owner: &Pubkey,
-) -> veloxbot::chains::solana::rpc::types::TransactionDetails {
-    veloxbot::chains::solana::rpc::types::TransactionDetails {
+) -> dripline::chains::solana::rpc::types::TransactionDetails {
+    dripline::chains::solana::rpc::types::TransactionDetails {
         slot: 42,
-        transaction: veloxbot::chains::solana::rpc::types::TransactionData {
+        transaction: dripline::chains::solana::rpc::types::TransactionData {
             message: serde_json::json!({ "accountKeys": [owner.to_string()] }),
             signatures: vec!["sig".to_owned()],
         },
@@ -2588,13 +2588,13 @@ fn token_balance(
     owner: Option<&Pubkey>,
     mint: &Pubkey,
     amount: &str,
-) -> veloxbot::chains::solana::rpc::types::TokenBalance {
-    veloxbot::chains::solana::rpc::types::TokenBalance {
+) -> dripline::chains::solana::rpc::types::TokenBalance {
+    dripline::chains::solana::rpc::types::TokenBalance {
         account_index: 0,
         mint: mint.to_string(),
         owner: owner.map(|o| o.to_string()),
         program_id: None,
-        ui_token_amount: veloxbot::chains::solana::rpc::types::UiTokenAmount {
+        ui_token_amount: dripline::chains::solana::rpc::types::UiTokenAmount {
             amount: amount.to_owned(),
             decimals: 6,
             ui_amount: None,
@@ -2603,8 +2603,8 @@ fn token_balance(
     }
 }
 
-fn empty_meta() -> veloxbot::chains::solana::rpc::types::TransactionMeta {
-    veloxbot::chains::solana::rpc::types::TransactionMeta {
+fn empty_meta() -> dripline::chains::solana::rpc::types::TransactionMeta {
+    dripline::chains::solana::rpc::types::TransactionMeta {
         err: None,
         pre_balances: vec![],
         post_balances: vec![],

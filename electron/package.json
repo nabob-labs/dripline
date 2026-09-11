@@ -1,9 +1,9 @@
 {
-  "name": "VeloxBot",
+  "name": "DripLine",
   "version": "0.2.5",
-  "description": "VeloxBot Electron Edition - Automated Solana DeFi Trading Bot",
+  "description": "DripLine Electron Edition - Automated Solana DeFi Trading Bot",
   "main": "src/main.js",
-  "author": "VeloxBot",
+  "author": "DripLine",
   "license": "Apache-2.0",
   "private": true,
   "scripts": {

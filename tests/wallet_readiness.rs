@@ -2,21 +2,21 @@
 //! false to true, and never earlier than a real initialized database.
 //!
 //! Own test file (own process) because `crate::paths` resolves
-//! `VELOXBOT_DATA_DIR` into a process-wide `LazyLock` on first access, and
+//! `DRIPLINE_DATA_DIR` into a process-wide `LazyLock` on first access, and
 //! `WALLET_DB_READY`/`GLOBAL_WALLET_DB` are process-wide statics that can only
 //! go from not-ready to ready once per process — see
 //! `src/wallets/balance_monitor/database.rs`.
 
 mod common;
 
-use veloxbot::wallet::{
+use dripline::wallet::{
     get_current_wallet_status, initialize_wallet_database, is_wallet_database_ready,
 };
 
 #[tokio::test]
 async fn database_readiness_flips_once_and_initialization_is_idempotent() {
     let dir = tempfile::tempdir().expect("temp dir");
-    std::env::set_var("VELOXBOT_DATA_DIR", dir.path());
+    std::env::set_var("DRIPLINE_DATA_DIR", dir.path());
     std::fs::create_dir_all(dir.path().join("data")).expect("create data dir");
     common::ensure_config();
     common::configure_own_wallet();

@@ -17,7 +17,7 @@ use crate::{
 };
 
 /// Security header name for token validation
-pub const SECURITY_TOKEN_HEADER: &str = "X-VeloxBot-Token";
+pub const SECURITY_TOKEN_HEADER: &str = "X-DripLine-Token";
 
 /// Security gate middleware (GUI mode only)
 ///
@@ -27,14 +27,14 @@ pub const SECURITY_TOKEN_HEADER: &str = "X-VeloxBot-Token";
 /// The security token is:
 /// - Generated at startup (random 64-char alphanumeric)
 /// - Injected into the HTML template by the server
-/// - Required in X-VeloxBot-Token header for all API requests
+/// - Required in X-DripLine-Token header for all API requests
 ///
 /// Allowed without token (required for initial page load):
 /// - Root path (/) - returns HTML with embedded token
 /// - Static assets (/assets/*, /scripts/*, /styles/*)
 /// - Page HTML (/api/pages/*)
 /// - SSE streams (/api/*/stream) - EventSource API doesn't support custom headers
-/// - /oauth/callback - the system browser returns here after a VeloxBot
+/// - /oauth/callback - the system browser returns here after a DripLine
 ///   account sign-in and cannot send a custom header. Safe because the route
 ///   accepts only a `code` and a `state`, both checked against an in-memory
 ///   PendingAuth this process created, with the state compared in constant
@@ -116,7 +116,7 @@ pub async fn security_gate(request: Request, next: Next) -> Response {
                 StatusCode::FORBIDDEN,
                 "MISSING_TOKEN",
                 "Security token required",
-                Some("This endpoint is only accessible from within VeloxBot"),
+                Some("This endpoint is only accessible from within DripLine"),
             )
         }
     }
@@ -219,7 +219,7 @@ pub async fn initialization_gate(request: Request, next: Next) -> Response {
         return next.run(request).await;
     }
 
-    // The VeloxBot account panel sits on the setup screen, so it has to work
+    // The DripLine account panel sits on the setup screen, so it has to work
     // before setup is complete. Allowed HERE and not in `security_gate`: these
     // routes still require the GUI token, which is what keeps a page in another
     // browser tab from driving them over 127.0.0.1.

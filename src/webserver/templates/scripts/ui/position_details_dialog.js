@@ -394,7 +394,7 @@ export class PositionDetailsDialog {
 
         if (this._managementChangedHandler) {
           window.removeEventListener(
-            "veloxbot:position-management-changed",
+            "dripline:position-management-changed",
             this._managementChangedHandler
           );
           this._managementChangedHandler = null;
@@ -799,7 +799,7 @@ export class PositionDetailsDialog {
         "success"
       );
       window.dispatchEvent(
-        new CustomEvent("veloxbot:favorites-changed", {
+        new CustomEvent("dripline:favorites-changed", {
           detail: { mint: position.mint, isFavorite },
         })
       );
@@ -900,7 +900,7 @@ export class PositionDetailsDialog {
     if (manualToggle) {
       this._manualToggleHandler = () => {
         window.dispatchEvent(
-          new CustomEvent("veloxbot:toggle-position-management", {
+          new CustomEvent("dripline:toggle-position-management", {
             detail: {
               id: this.positionData.id,
               mint: this.positionData.mint,
@@ -920,7 +920,7 @@ export class PositionDetailsDialog {
       this._refreshManualToggle();
     };
     window.addEventListener(
-      "veloxbot:position-management-changed",
+      "dripline:position-management-changed",
       this._managementChangedHandler
     );
 
@@ -997,7 +997,7 @@ applyUtilitiesMixin(PositionDetailsDialog);
 
 let globalPositionDialogInstance = null;
 
-window.addEventListener("veloxbot:open-position-details", async (event) => {
+window.addEventListener("dripline:open-position-details", async (event) => {
   const { id, mint, symbol, position_type } = event.detail || {};
 
   if (!id && !mint) {
@@ -1042,10 +1042,10 @@ window.addEventListener("veloxbot:open-position-details", async (event) => {
 // Global Manual-Management Toggle Handler
 // ============================================================================
 // Single place that performs the toggle so it works from any page (the positions
-// context menu and this dialog both dispatch `veloxbot:toggle-position-management`).
-// On success it broadcasts `veloxbot:position-management-changed` so an open
+// context menu and this dialog both dispatch `dripline:toggle-position-management`).
+// On success it broadcasts `dripline:position-management-changed` so an open
 // positions table / dialog can refresh.
-window.addEventListener("veloxbot:toggle-position-management", async (event) => {
+window.addEventListener("dripline:toggle-position-management", async (event) => {
   const { id, management } = event.detail || {};
   if (id == null) return;
 
@@ -1061,7 +1061,7 @@ window.addEventListener("veloxbot:toggle-position-management", async (event) => 
     }
     Utils.showToast(data?.message || `Position management set to ${management}`, "success");
     window.dispatchEvent(
-      new CustomEvent("veloxbot:position-management-changed", {
+      new CustomEvent("dripline:position-management-changed", {
         detail: { id, management },
       })
     );

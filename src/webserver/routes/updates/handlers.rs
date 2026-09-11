@@ -102,7 +102,7 @@ pub(super) async fn download_update(Json(body): Json<DownloadRequest>) -> Respon
 }
 
 /// GET /api/updates/history
-/// The published release notes for every version, straight from veloxbot.io.
+/// The published release notes for every version, straight from dripline.io.
 pub(super) async fn get_history() -> Response {
     match version::release_history().await {
         Ok(releases) => success_response(ReleaseHistoryResponse {
@@ -166,7 +166,7 @@ pub(super) async fn apply_update() -> Response {
     match version::apply_now().await {
         Ok(()) => success_response(ApplyResponse {
             applying: true,
-            message: "Installing the update. VeloxBot restarts and reconnects automatically."
+            message: "Installing the update. DripLine restarts and reconnects automatically."
                 .to_owned(),
         }),
         Err(e) => update_error_response("APPLY_FAILED", &e),

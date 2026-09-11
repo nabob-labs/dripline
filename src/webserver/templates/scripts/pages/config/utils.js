@@ -36,7 +36,7 @@ export const SECTION_DISPLAY_ORDER = [
 
 export const SECTION_LABEL_OVERRIDES = {
   rpc: "RPC",
-  account: "VeloxBot Account",
+  account: "DripLine Account",
   trader: "Auto Trader",
   positions: "Positions",
   filtering: "Filtering",

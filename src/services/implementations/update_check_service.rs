@@ -1,6 +1,6 @@
 //! Update Check Service
 //!
-//! Periodically checks for application updates from the veloxbot.io API.
+//! Periodically checks for application updates from the dripline.io API.
 //! Runs in the background and notifies users when updates are available.
 
 use crate::services::{Service, ServiceHealth};

@@ -1,4 +1,4 @@
-// Shared VeloxBot account panel for setup and Settings.
+// Shared DripLine account panel for setup and Settings.
 (function () {
   "use strict";
 
@@ -6,7 +6,7 @@
     '<img class="account-google-mark" src="/assets/google-g.png" alt="" aria-hidden="true" />';
 
   const SCOPE_LABELS = {
-    "data:read": "VeloxBot market data",
+    "data:read": "DripLine market data",
     "rpc:submit": "Free signed-transaction submission",
     vote: "Token voting",
     "referral:read": "Referral earnings",
@@ -15,7 +15,7 @@
 
   // What signing in adds BEYOND the data service. The data block above the list
   // already states where market data comes from for this install, so repeating
-  // "VeloxBot market data" here would be the third sentence about the same
+  // "DripLine market data" here would be the third sentence about the same
   // thing rather than a reason to sign in.
   const UNLOCKS = [SCOPE_LABELS["rpc:submit"], SCOPE_LABELS.vote, SCOPE_LABELS["referral:read"]];
 
@@ -307,7 +307,7 @@
             ${walletOption}
           </div>
           <p class="account-note account-signup-note">
-            <span>New to VeloxBot?</span>
+            <span>New to DripLine?</span>
             <button type="button" class="account-link" data-action="signup">
               Create an account
             </button>
@@ -350,7 +350,7 @@
           <p class="account-note">
             Need an account or forgot your password?
             <button type="button" class="account-link" data-action="signup" ${disabled}>
-              Open veloxbot.io
+              Open dripline.io
             </button>
           </p>
           ${this.renderError()}
@@ -358,7 +358,7 @@
     }
 
     /**
-     * What VeloxBot data does for this install right now.
+     * What DripLine data does for this install right now.
      *
      * Rendered in BOTH the signed-out and signed-in states, because the honest
      * answer differs in both directions: signing out costs the shared cache, and

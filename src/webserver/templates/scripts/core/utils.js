@@ -787,7 +787,7 @@
     const security = data.security || {};
     const pos = data.position_data || {};
 
-    lines.push("VeloxBot Debug Info");
+    lines.push("DripLine Debug Info");
     lines.push(`Mint: ${data.mint || "N/A"}`);
     if (tokenInfo.symbol || tokenInfo.name) {
       lines.push(

@@ -398,7 +398,7 @@ pub fn login_template(title: &str, content: &str) -> String {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{} - VeloxBot</title>
+    <title>{} - DripLine</title>
     <style>{}</style>
 </head>
 <body>

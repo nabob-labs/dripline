@@ -3,7 +3,7 @@
 //!
 //! The human sees a pending external-agent request — client label, tool, a
 //! redacted argument summary, expiry — and approves or denies it here, inside
-//! VeloxBot. The external caller has no route to these handlers, so it can
+//! DripLine. The external caller has no route to these handlers, so it can
 //! never approve its own request. Approval executes the stored canonical
 //! request exactly once in the live process.
 

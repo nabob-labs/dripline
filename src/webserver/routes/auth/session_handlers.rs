@@ -161,7 +161,7 @@ pub async fn login(Json(req): Json<LoginRequest>) -> Response {
         header::SET_COOKIE,
         cookie_value
             .parse()
-            .unwrap_or_else(|_| HeaderValue::from_static("veloxbot_session=; Max-Age=0")),
+            .unwrap_or_else(|_| HeaderValue::from_static("dripline_session=; Max-Age=0")),
     );
 
     response

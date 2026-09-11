@@ -1,7 +1,7 @@
 /**
  * Exit Confirmation Dialog Component
  *
- * Modern, animated dialog shown when user tries to close the VeloxBot app.
+ * Modern, animated dialog shown when user tries to close the DripLine app.
  * Offers three options:
  * - Minimize to Tray: Hide window but keep app running
  * - Exit App: Fully close the application
@@ -81,7 +81,7 @@ class ExitDialog {
         <div class="exit-dialog__icon-wrapper">
           <i class="exit-dialog__icon icon-power"></i>
         </div>
-        <h2 class="exit-dialog__title" id="exit-dialog-title">Close VeloxBot?</h2>
+        <h2 class="exit-dialog__title" id="exit-dialog-title">Close DripLine?</h2>
         <p class="exit-dialog__description" id="exit-dialog-description">
           Choose how you'd like to close the application
         </p>

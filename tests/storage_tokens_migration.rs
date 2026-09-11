@@ -8,9 +8,9 @@
 mod common;
 
 use rusqlite::{Connection, OptionalExtension};
-use veloxbot::chains::ChainId;
-use veloxbot::tokens::schema::{CREATE_TABLES, SCHEMA_VERSION};
-use veloxbot::tokens::TokenDatabase;
+use dripline::chains::ChainId;
+use dripline::tokens::schema::{CREATE_TABLES, SCHEMA_VERSION};
+use dripline::tokens::TokenDatabase;
 
 /// Every `CREATE_TABLES` statement with `token_favorites.notes` stripped — a
 /// chain-scoped database written before that currently-declared nullable column.

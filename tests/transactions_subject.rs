@@ -2,11 +2,11 @@
 
 mod common;
 
-use veloxbot::chains::solana::solana_sdk::pubkey::Pubkey;
-use veloxbot::chains::solana::transactions::subject as solana_subject;
-use veloxbot::chains::{AccountId, ChainId, Error as ChainError};
-use veloxbot::transactions::deltas::{DeltaKind, SubjectAssetDelta, NATIVE_SOL_SENTINEL};
-use veloxbot::transactions::Subject;
+use dripline::chains::solana::solana_sdk::pubkey::Pubkey;
+use dripline::chains::solana::transactions::subject as solana_subject;
+use dripline::chains::{AccountId, ChainId, Error as ChainError};
+use dripline::transactions::deltas::{DeltaKind, SubjectAssetDelta, NATIVE_SOL_SENTINEL};
+use dripline::transactions::Subject;
 
 #[test]
 fn shared_subject_round_trips_chain_and_address_without_solana_sdk() {

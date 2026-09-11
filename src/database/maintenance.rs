@@ -1,4 +1,4 @@
-//! Centralized database maintenance for VeloxBot.
+//! Centralized database maintenance for DripLine.
 //!
 //! This module handles:
 //! - Auto-vacuum mode migration (one-time conversion from NONE to INCREMENTAL)
@@ -31,7 +31,7 @@ use crate::paths;
 // DATABASE PATH DISCOVERY
 // =============================================================================
 
-/// Returns all VeloxBot database name+path pairs that exist on disk.
+/// Returns all DripLine database name+path pairs that exist on disk.
 ///
 /// Uses `crate::paths` to resolve standard database paths and filters to only
 /// paths that currently exist. This ensures maintenance operations only run
@@ -424,7 +424,7 @@ pub fn run_wal_checkpoint(path: &Path) -> Result<(), DatabaseError> {
 /// ## Call this from startup sequence
 ///
 /// ```rust
-/// use veloxbot::database::start_db_maintenance_task;
+/// use dripline::database::start_db_maintenance_task;
 ///
 /// tokio::spawn(start_db_maintenance_task());
 /// ```

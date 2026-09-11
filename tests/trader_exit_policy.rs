@@ -17,8 +17,8 @@
 mod common;
 
 use common::config_guard;
-use veloxbot::trader::evaluators::DcaConfigSnapshot;
-use veloxbot::trader::policy::{
+use dripline::trader::evaluators::DcaConfigSnapshot;
+use dripline::trader::policy::{
     ExitPolicy, ExitPolicyOverrides, RoiPolicy, StopLossPolicy, TimePolicy, TrailingPolicy,
 };
 

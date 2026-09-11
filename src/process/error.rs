@@ -11,10 +11,10 @@ pub enum Error {
     #[error(transparent)]
     Io(#[from] IoError),
 
-    /// Another VeloxBot instance already holds the advisory lock. Named
+    /// Another DripLine instance already holds the advisory lock. Named
     /// rather than an invariant violation: it is the expected outcome of a
     /// second launch, and the boot path turns it into a specific remedy.
-    #[error("another VeloxBot instance holds the process lock at {path}")]
+    #[error("another DripLine instance holds the process lock at {path}")]
     LockHeld { path: String },
 }
 

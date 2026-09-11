@@ -35,7 +35,7 @@ pub struct FeaturedCard {
     pub name: String,
     pub symbol: String,
 
-    /// Active VeloxBot boosts on this mint. `0` for an organic discovery row —
+    /// Active DripLine boosts on this mint. `0` for an organic discovery row —
     /// this is the ONE field that decides whether a surface treats the token as
     /// paid, so it is always serialized, never skipped.
     pub boosts: u32,

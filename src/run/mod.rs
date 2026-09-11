@@ -38,13 +38,13 @@ pub async fn run_bot() -> Result<()> {
     let process_lock = ProcessLock::acquire().map_err(|error| match error {
         crate::process::Error::LockHeld { .. } => StartupError::new(
             crate::errors::StartupErrorCode::LockHeld,
-            "VeloxBot is already running",
-            "Another copy of VeloxBot is already running on this computer, so a second \
+            "DripLine is already running",
+            "Another copy of DripLine is already running on this computer, so a second \
              one cannot start.",
             "Switch to the window that's already open. If you don't see one, quit any \
-             background VeloxBot process and try again. If the problem persists after a \
+             background DripLine process and try again. If the problem persists after a \
              reboot, the lock file may be stale and can be removed from the data folder \
-             (.veloxbot.lock).",
+             (.dripline.lock).",
         ),
         error => StartupError::generic(error.to_string()),
     })?;
@@ -55,7 +55,7 @@ pub async fn run_bot() -> Result<()> {
 
 /// Internal bot execution with pre-acquired lock.
 async fn run_bot_internal(_process_lock: ProcessLock) -> Result<()> {
-    logger::info(LogTag::System, "VeloxBot starting up...");
+    logger::info(LogTag::System, "DripLine starting up...");
 
     // 1. Set GUI mode if --gui flag is present (must be done early for webserver security)
     if crate::arguments::is_gui_enabled() {
@@ -69,7 +69,7 @@ async fn run_bot_internal(_process_lock: ProcessLock) -> Result<()> {
             crate::errors::StartupErrorCode::ConfigInvalid,
             "Invalid startup option",
             e.to_string(),
-            "A command-line option is invalid. Start VeloxBot without that option, or \
+            "A command-line option is invalid. Start DripLine without that option, or \
              correct it and try again.",
         )));
     }
@@ -79,7 +79,7 @@ async fn run_bot_internal(_process_lock: ProcessLock) -> Result<()> {
             crate::errors::StartupErrorCode::ConfigInvalid,
             "Invalid startup option",
             e.to_string(),
-            "A command-line option is invalid. Start VeloxBot without that option, or \
+            "A command-line option is invalid. Start DripLine without that option, or \
              correct it and try again.",
         )));
     }
@@ -223,7 +223,7 @@ async fn run_bot_internal(_process_lock: ProcessLock) -> Result<()> {
 
             logger::info(
                 LogTag::System,
-                "All services started - VeloxBot is running",
+                "All services started - DripLine is running",
             );
         } // end normal (full) mode
     }
@@ -236,7 +236,7 @@ async fn run_bot_internal(_process_lock: ProcessLock) -> Result<()> {
 
     services::stop_all_services().await?;
 
-    logger::info(LogTag::System, "VeloxBot shut down successfully");
+    logger::info(LogTag::System, "DripLine shut down successfully");
 
     Ok(())
 }

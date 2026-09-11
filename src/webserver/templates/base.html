@@ -16,13 +16,13 @@
     <script>
       (function() {
         // Security credentials injected by server (empty in CLI mode)
-        window.__VELOXBOT_SECURITY_TOKEN = '{{SECURITY_TOKEN}}';
-        window.__VELOXBOT_PORT = {{WEBSERVER_PORT}};
-        window.__VELOXBOT_GUI_MODE = {{IS_GUI_MODE}};
+        window.__DRIPLINE_SECURITY_TOKEN = '{{SECURITY_TOKEN}}';
+        window.__DRIPLINE_PORT = {{WEBSERVER_PORT}};
+        window.__DRIPLINE_GUI_MODE = {{IS_GUI_MODE}};
 
         // Only patch fetch/XHR if we have a security token (GUI mode)
-        if (window.__VELOXBOT_SECURITY_TOKEN) {
-          const TOKEN_HEADER = 'X-VeloxBot-Token';
+        if (window.__DRIPLINE_SECURITY_TOKEN) {
+          const TOKEN_HEADER = 'X-DripLine-Token';
 
           // Patch fetch to include security header
           const originalFetch = window.fetch;
@@ -31,9 +31,9 @@
             options.headers = options.headers || {};
 
             if (options.headers instanceof Headers) {
-              options.headers.set(TOKEN_HEADER, window.__VELOXBOT_SECURITY_TOKEN);
+              options.headers.set(TOKEN_HEADER, window.__DRIPLINE_SECURITY_TOKEN);
             } else {
-              options.headers[TOKEN_HEADER] = window.__VELOXBOT_SECURITY_TOKEN;
+              options.headers[TOKEN_HEADER] = window.__DRIPLINE_SECURITY_TOKEN;
             }
 
             return originalFetch.call(this, url, options);
@@ -44,16 +44,16 @@
           const originalXHRSend = XMLHttpRequest.prototype.send;
 
           XMLHttpRequest.prototype.open = function() {
-            this._veloxbotBotUrl = arguments[1];
+            this._driplineBotUrl = arguments[1];
             return originalXHROpen.apply(this, arguments);
           };
 
           XMLHttpRequest.prototype.send = function() {
-            this.setRequestHeader(TOKEN_HEADER, window.__VELOXBOT_SECURITY_TOKEN);
+            this.setRequestHeader(TOKEN_HEADER, window.__DRIPLINE_SECURITY_TOKEN);
             return originalXHRSend.apply(this, arguments);
           };
 
-          console.log('[VeloxBot] Security token initialized for GUI mode');
+          console.log('[DripLine] Security token initialized for GUI mode');
         }
       })();
     </script>
@@ -105,7 +105,7 @@
       })();
     </script>
 
-    <title>{{TITLE}} - VeloxBot</title>
+    <title>{{TITLE}} - DripLine</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/assets/logo.svg" />
@@ -198,7 +198,7 @@
           title="Dashboard home"
         >
           <span class="brand-logo" aria-hidden="true"></span>
-          <span class="brand-text">VeloxBot</span>
+          <span class="brand-text">DripLine</span>
         </button>
 
         <!-- Trader status: primary control, always visible next to brand.

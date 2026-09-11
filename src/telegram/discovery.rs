@@ -255,7 +255,7 @@ async fn discovery_poll(bot: &Bot, offset: &Arc<AtomicI64>) {
                             ✅ <b>Chat detected!</b>\n\n\
                             Chat ID: <code>{}</code>\n\
                             Type: {}\n\n\
-                            Please go to the VeloxBot dashboard and click on this chat to select it.",
+                            Please go to the DripLine dashboard and click on this chat to select it.",
                             chat_name, chat_id.0, chat_type
                         );
 

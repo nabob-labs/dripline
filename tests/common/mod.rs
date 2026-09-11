@@ -1,4 +1,4 @@
-//! Shared harness for the VeloxBot integration suite (`tests/`).
+//! Shared harness for the DripLine integration suite (`tests/`).
 //!
 //! # How the suite is organised
 //!
@@ -27,17 +27,17 @@
 #![allow(dead_code)] // each test binary compiles only the part of this module it uses.
 
 use chrono::{DateTime, Duration, Utc};
-use veloxbot::ohlcvs::{Candle, TimeframeBundle};
-use veloxbot::positions::Position;
-use veloxbot::strategies::types::{Condition, EvaluationContext, Parameter};
-use veloxbot::tokens::types::{DataSource, SecurityRisk, Token, TokenHolder, WebsiteLink};
-use veloxbot::tokens::Priority;
+use dripline::ohlcvs::{Candle, TimeframeBundle};
+use dripline::positions::Position;
+use dripline::strategies::types::{Condition, EvaluationContext, Parameter};
+use dripline::tokens::types::{DataSource, SecurityRisk, Token, TokenHolder, WebsiteLink};
+use dripline::tokens::Priority;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard, OnceLock};
 use tempfile::TempDir;
 
-/// Point VeloxBot at an isolated temp data dir for the rest of THIS process and
+/// Point DripLine at an isolated temp data dir for the rest of THIS process and
 /// initialise config from defaults. Returns the `TempDir` guard — keep it bound for
 /// the test's lifetime; dropping it deletes the directory.
 ///
@@ -46,15 +46,15 @@ use tempfile::TempDir;
 pub fn isolated_env() -> TempDir {
     let dir = tempfile::tempdir().expect("create temp data dir");
     // SAFETY: single-threaded test setup, before any path/config access.
-    std::env::set_var("VELOXBOT_DATA_DIR", dir.path());
+    std::env::set_var("DRIPLINE_DATA_DIR", dir.path());
     ensure_config();
     dir
 }
 
 /// Initialise the global config to defaults WITHOUT touching disk. Idempotent.
 pub fn ensure_config() {
-    use veloxbot::config::schemas::Config;
-    use veloxbot::config::utils::CONFIG;
+    use dripline::config::schemas::Config;
+    use dripline::config::utils::CONFIG;
     let _ = CONFIG.get_or_init(|| std::sync::RwLock::new(Config::default()));
 }
 
@@ -73,7 +73,7 @@ pub struct MainnetCtx {
 impl MainnetCtx {
     /// The signer for this run: the keypair file when one was named, otherwise
     /// the app's own main wallet.
-    pub fn keypair(&self) -> veloxbot::chains::solana::solana_sdk::signature::Keypair {
+    pub fn keypair(&self) -> dripline::chains::solana::solana_sdk::signature::Keypair {
         match &self.wallet_path {
             Some(path) => load_keypair(path),
             None => app_main_wallet_keypair(),
@@ -117,10 +117,10 @@ pub fn require_mainnet() -> Option<MainnetCtx> {
 ///
 /// The real data directory is resolved DIRECTLY rather than through
 /// `crate::paths`, because a mainnet test still runs under `isolated_env()` and
-/// that points `VELOXBOT_DATA_DIR` at a throwaway directory. Only `wallets.db`
+/// that points `DRIPLINE_DATA_DIR` at a throwaway directory. Only `wallets.db`
 /// is opened, and only read.
-pub fn app_main_wallet_keypair() -> veloxbot::chains::solana::solana_sdk::signature::Keypair {
-    use veloxbot::secure_storage::{decrypt_private_key, EncryptedData};
+pub fn app_main_wallet_keypair() -> dripline::chains::solana::solana_sdk::signature::Keypair {
+    use dripline::secure_storage::{decrypt_private_key, EncryptedData};
 
     let base = std::env::var("SB_TEST_APP_DATA_DIR")
         .map(PathBuf::from)
@@ -151,7 +151,7 @@ pub fn app_main_wallet_keypair() -> veloxbot::chains::solana::solana_sdk::signat
     let bytes = bs58::decode(&secret)
         .into_vec()
         .unwrap_or_else(|e| panic!("the stored key is not base58: {e}"));
-    veloxbot::chains::solana::solana_sdk::signature::Keypair::try_from(bytes.as_slice())
+    dripline::chains::solana::solana_sdk::signature::Keypair::try_from(bytes.as_slice())
         .unwrap_or_else(|e| panic!("the stored key is not a usable keypair: {e}"))
 }
 
@@ -160,23 +160,23 @@ pub fn app_main_wallet_keypair() -> veloxbot::chains::solana::solana_sdk::signat
 fn app_support_data_dir() -> PathBuf {
     let home = dirs::home_dir().expect("a home directory");
     if cfg!(target_os = "macos") {
-        home.join("Library/Application Support/VeloxBot/data")
+        home.join("Library/Application Support/DripLine/data")
     } else if cfg!(target_os = "windows") {
-        home.join("AppData/Roaming/VeloxBot/data")
+        home.join("AppData/Roaming/DripLine/data")
     } else {
-        home.join(".local/share/VeloxBot/data")
+        home.join(".local/share/DripLine/data")
     }
 }
 
 /// Load a funded test keypair from a Solana CLI keypair JSON file (a 64-byte
 /// array). Only the mainnet tier calls this — the live tier simulates, which
 /// needs an address and no key at all.
-pub fn load_keypair(path: &str) -> veloxbot::chains::solana::solana_sdk::signature::Keypair {
+pub fn load_keypair(path: &str) -> dripline::chains::solana::solana_sdk::signature::Keypair {
     let raw = std::fs::read_to_string(path)
         .unwrap_or_else(|e| panic!("test wallet {path} could not be read: {e}"));
     let bytes: Vec<u8> = serde_json::from_str(&raw)
         .unwrap_or_else(|e| panic!("test wallet {path} is not a keypair JSON array: {e}"));
-    veloxbot::chains::solana::solana_sdk::signature::Keypair::try_from(bytes.as_slice())
+    dripline::chains::solana::solana_sdk::signature::Keypair::try_from(bytes.as_slice())
         .unwrap_or_else(|e| panic!("test wallet {path} is not a usable keypair: {e}"))
 }
 
@@ -207,8 +207,8 @@ pub fn config_guard() -> MutexGuard<'static, ()> {
 }
 
 fn reset_config_to_defaults() {
-    use veloxbot::config::schemas::Config;
-    use veloxbot::config::utils::CONFIG;
+    use dripline::config::schemas::Config;
+    use dripline::config::utils::CONFIG;
     if let Some(lock) = CONFIG.get() {
         let mut cfg = lock.write().unwrap_or_else(|p| p.into_inner());
         *cfg = Config::default();
@@ -216,8 +216,8 @@ fn reset_config_to_defaults() {
 }
 
 /// Mutate the global config in place. Only call while holding [`config_guard`].
-pub fn set_config<F: FnOnce(&mut veloxbot::config::schemas::Config)>(f: F) {
-    use veloxbot::config::utils::CONFIG;
+pub fn set_config<F: FnOnce(&mut dripline::config::schemas::Config)>(f: F) {
+    use dripline::config::utils::CONFIG;
     ensure_config();
     let lock = CONFIG.get().expect("config initialised");
     let mut cfg = lock.write().unwrap_or_else(|p| p.into_inner());
@@ -231,12 +231,12 @@ pub fn set_config<F: FnOnce(&mut veloxbot::config::schemas::Config)>(f: F) {
 /// Never touches a real key: the keypair is generated here and encrypted into the
 /// in-memory test config only.
 pub fn configure_own_wallet() -> String {
-    use veloxbot::chains::solana::solana_sdk::signature::{Keypair, Signer};
+    use dripline::chains::solana::solana_sdk::signature::{Keypair, Signer};
 
     let keypair = Keypair::new();
     let address = keypair.pubkey().to_string();
     let private_key = bs58::encode(keypair.to_bytes()).into_string();
-    let encrypted = veloxbot::secure_storage::encrypt_private_key(&private_key)
+    let encrypted = dripline::secure_storage::encrypt_private_key(&private_key)
         .expect("encrypt throwaway test keypair");
 
     set_config(|cfg| {
@@ -259,7 +259,7 @@ pub const TEST_MINT: &str = "TestMint1111111111111111111111111111111111";
 /// position whose decimals are unknown deliberately returns a ZERO P&L, so without this
 /// the interesting branches are never exercised.
 pub fn seed_decimals(mint: &str, decimals: u8) {
-    veloxbot::tokens::cache_decimals(veloxbot::chains::ChainId::Solana, mint, decimals);
+    dripline::tokens::cache_decimals(dripline::chains::ChainId::Solana, mint, decimals);
 }
 
 /// A minimal OPEN buy position: entry at `entry_price`, `size_sol` invested, no DCA,
@@ -312,8 +312,8 @@ pub fn test_position(entry_price: f64, size_sol: f64) -> Position {
         last_dca_time: None,
         archived: false,
         archived_at: None,
-        origin: veloxbot::positions::PositionOrigin::Auto { strategy_id: None },
-        management: veloxbot::positions::PositionManagement::AutoTrader,
+        origin: dripline::positions::PositionOrigin::Auto { strategy_id: None },
+        management: dripline::positions::PositionManagement::AutoTrader,
         round_key: None,
         basis_complete: true,
         history_complete: true,
@@ -555,8 +555,8 @@ pub fn security_risk(name: &str, value: &str, description: &str, level: &str) ->
 
 /// A filtering config with every source switched OFF — the "no filtering" baseline that
 /// must let literally anything through.
-pub fn filters_all_disabled() -> veloxbot::config::FilteringConfig {
-    let mut config = veloxbot::config::FilteringConfig {
+pub fn filters_all_disabled() -> dripline::config::FilteringConfig {
+    let mut config = dripline::config::FilteringConfig {
         age_enabled: false,
         cooldown_enabled: false,
         check_cooldown: false,
@@ -575,19 +575,19 @@ pub fn filters_all_disabled() -> veloxbot::config::FilteringConfig {
 /// This is for ISOLATING one market source, not for making the defaults satisfiable — the
 /// shipped defaults enable both sources and a token from either one passes them. See
 /// [`filter_token`].
-pub fn filters_default_dex_only() -> veloxbot::config::FilteringConfig {
-    let mut config = veloxbot::config::FilteringConfig::default();
+pub fn filters_default_dex_only() -> dripline::config::FilteringConfig {
+    let mut config = dripline::config::FilteringConfig::default();
     config.geckoterminal.enabled = false;
     config
 }
 
 // ==================== REAL DATABASE (ignored tier) ====================
 
-/// Where the owner's live databases live when `VELOXBOT_DATA_DIR` is unset.
+/// Where the owner's live databases live when `DRIPLINE_DATA_DIR` is unset.
 ///
-/// Resolved WITHOUT `veloxbot::paths`: that module memoises its base directory in a
+/// Resolved WITHOUT `dripline::paths`: that module memoises its base directory in a
 /// `LazyLock`, so asking it for the real location would pin the real location for the
-/// whole process and the `VELOXBOT_DATA_DIR` set a moment later would be ignored —
+/// whole process and the `DRIPLINE_DATA_DIR` set a moment later would be ignored —
 /// the test would then run against the owner's live database instead of the clone.
 /// Mirrors `paths::resolve_base_directory`'s platform defaults.
 fn real_data_dir() -> Option<PathBuf> {
@@ -611,7 +611,7 @@ fn real_data_dir() -> Option<PathBuf> {
         }
     };
 
-    let dir = base.join("VeloxBot").join("data");
+    let dir = base.join("DripLine").join("data");
     dir.is_dir().then_some(dir)
 }
 
@@ -630,7 +630,7 @@ fn real_data_dir() -> Option<PathBuf> {
 /// `pools.db`/`ohlcvs.db` are copied when present and merely enrich the derived flags.
 pub fn real_db_env() -> Option<TempDir> {
     let Some(source) = real_data_dir() else {
-        eprintln!("SKIP real-db: no VeloxBot data directory found");
+        eprintln!("SKIP real-db: no DripLine data directory found");
         return None;
     };
     if !source.join("tokens.db").is_file() {
@@ -655,7 +655,7 @@ pub fn real_db_env() -> Option<TempDir> {
     );
 
     // SAFETY: single-threaded test setup, before any path/config access.
-    std::env::set_var("VELOXBOT_DATA_DIR", dir.path());
+    std::env::set_var("DRIPLINE_DATA_DIR", dir.path());
     ensure_config();
     Some(dir)
 }
@@ -680,14 +680,14 @@ fn copy_db(source: &Path, target: &Path, name: &str) -> u64 {
 /// that misses the cache falls through to the DB, then the data server, then RPC. Loading
 /// it the same way the service does also means the tests measure the cache the running bot
 /// actually has, including its capacity limit.
-pub fn init_real_token_db() -> std::sync::Arc<veloxbot::tokens::TokenDatabase> {
-    use veloxbot::tokens::{cache_decimals, init_global_database, TokenDatabase};
+pub fn init_real_token_db() -> std::sync::Arc<dripline::tokens::TokenDatabase> {
+    use dripline::tokens::{cache_decimals, init_global_database, TokenDatabase};
 
-    let path = veloxbot::paths::get_tokens_db_path();
+    let path = dripline::paths::get_tokens_db_path();
     let db = std::sync::Arc::new(
         TokenDatabase::new(
             &path.to_string_lossy(),
-            veloxbot::chains::ChainId::Solana,
+            dripline::chains::ChainId::Solana,
         )
         .expect("open cloned tokens.db"),
     );
@@ -695,11 +695,11 @@ pub fn init_real_token_db() -> std::sync::Arc<veloxbot::tokens::TokenDatabase> {
 
     let started = std::time::Instant::now();
     let decimals = db
-        .get_tokens_with_decimals_for_preload(veloxbot::tokens::decimals::PRELOAD_CAPACITY)
+        .get_tokens_with_decimals_for_preload(dripline::tokens::decimals::PRELOAD_CAPACITY)
         .expect("preload decimals");
     let count = decimals.len();
     for (mint, value) in decimals {
-        cache_decimals(veloxbot::chains::ChainId::Solana, &mint, value);
+        cache_decimals(dripline::chains::ChainId::Solana, &mint, value);
     }
     eprintln!(
         "real-db: preloaded {count} decimals in {:?}",

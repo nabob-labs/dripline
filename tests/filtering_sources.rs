@@ -13,13 +13,13 @@
 mod common;
 
 use common::{filter_token, holder, security_risk};
-use veloxbot::config::schemas::{
+use dripline::config::schemas::{
     DexScreenerFilters, GeckoTerminalFilters, OnChainFilters, RugCheckFilters,
 };
-use veloxbot::filtering::sources::{
+use dripline::filtering::sources::{
     dexscreener, geckoterminal, onchain, rugcheck, FilterRejectionReason, FilterSource,
 };
-use veloxbot::tokens::types::{DataSource, Token};
+use dripline::tokens::types::{DataSource, Token};
 
 const MINT: &str = "FilterMint111111111111111111111111111111111";
 

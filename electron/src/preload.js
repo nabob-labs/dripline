@@ -75,7 +75,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
  * capture driver. A normal session never has `window.promoAPI`, so the dashboard's
  * capture runtime cannot be driven from a real install.
  */
-if (process.env.VELOXBOT_PROMO_CONTROL === '1') {
+if (process.env.DRIPLINE_PROMO_CONTROL === '1') {
   contextBridge.exposeInMainWorld('promoAPI', {
     onCommand: (callback) => {
       const handler = (event, payload) => callback(payload);

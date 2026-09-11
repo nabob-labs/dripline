@@ -1,9 +1,9 @@
 [package]
-name = "veloxbot"
+name = "dripline"
 version = "0.2.5"
 edition = "2021"
 license = "Apache-2.0"
-default-run = "veloxbot"
+default-run = "dripline"
 # Disable automatic binary discovery - only the main binary is bundled.
 autobins = false
 
@@ -35,7 +35,7 @@ debug-assertions = false # No debug assertions in release
 overflow-checks = false  # No overflow checks (performance)
 
 [lib]
-name = "veloxbot"
+name = "dripline"
 path = "src/lib.rs"
 doctest = false
 # Note: Default crate-type is "rlib" which is sufficient for desktop builds
@@ -43,7 +43,7 @@ doctest = false
 
 # Main binary - this is the only binary included in the app bundle
 [[bin]]
-name = "veloxbot"
+name = "dripline"
 path = "src/main.rs"
 
 # =============================================================================

@@ -4,7 +4,7 @@
 //! endpoints, so an https endpoint has to become wss, an http one ws, and an
 //! endpoint that is already a WebSocket URL has to pass through untouched.
 
-use veloxbot::chains::solana::rpc::{get_websocket_url_from_http, websocket_url_for_attempt};
+use dripline::chains::solana::rpc::{get_websocket_url_from_http, websocket_url_for_attempt};
 
 #[test]
 fn https_becomes_wss() {

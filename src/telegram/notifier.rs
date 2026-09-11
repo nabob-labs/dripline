@@ -329,7 +329,7 @@ impl TelegramNotifier {
                     UpdateStage::Staged => format!(
                         "\u{2705} <b>Update v{version} ready</b>\n\n{}",
                         if *silent {
-                            "Send /update to apply it now, or it installs the next time VeloxBot starts."
+                            "Send /update to apply it now, or it installs the next time DripLine starts."
                         } else {
                             "Open Settings \u{2192} Updates to run the installer."
                         }

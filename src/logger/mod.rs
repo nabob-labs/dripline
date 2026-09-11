@@ -1,4 +1,4 @@
-//! Modern structured logging system for VeloxBot
+//! Modern structured logging system for DripLine
 //!
 //! This module provides a clean, ergonomic logging API with:
 //! - Automatic debug mode filtering from command-line arguments
@@ -9,7 +9,7 @@
 //! ## Usage
 //!
 //! ```rust
-//! use veloxbot::logger::{self, LogTag};
+//! use dripline::logger::{self, LogTag};
 //!
 //! // Level-specific functions
 //! logger::error(LogTag::Api, "Connection failed");

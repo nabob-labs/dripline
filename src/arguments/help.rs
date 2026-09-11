@@ -5,12 +5,12 @@ use crate::logger::{self, LogTag};
 
 /// Displays the help menu with all available flags and their descriptions.
 pub fn print_help() {
-    println!("VeloxBot - Advanced Solana DeFi Trading Bot");
+    println!("DripLine - Advanced Solana DeFi Trading Bot");
     println!();
     println!("USAGE:");
-    println!("    veloxbot [OPTIONS]");
+    println!("    dripline [OPTIONS]");
     println!();
-    println!("    By default, VeloxBot starts the trading bot with webserver on http://localhost:8080");
+    println!("    By default, DripLine starts the trading bot with webserver on http://localhost:8080");
     println!();
     println!("SPECIAL MODES (execute and exit):");
     println!(
@@ -42,9 +42,9 @@ pub fn print_help() {
     println!("                                IPv4 addresses only. Use 0.0.0.0 for remote access");
     println!();
     println!("    Examples:");
-    println!("      veloxbot --port 9000");
-    println!("      veloxbot --host 0.0.0.0");
-    println!("      veloxbot --port 3000 --host 0.0.0.0");
+    println!("      dripline --port 9000");
+    println!("      dripline --host 0.0.0.0");
+    println!("      dripline --port 3000 --host 0.0.0.0");
     println!();
     println!("MODIFIERS:");
     println!("    --force                     Skip confirmation prompts (with --reset)");
@@ -68,17 +68,17 @@ pub fn print_help() {
     println!("      security, trader, transactions, webserver, websocket, wallet");
     println!();
     println!("EXAMPLES:");
-    println!("    veloxbot                                  # Start bot (headless, webserver on :8080)");
+    println!("    dripline                                  # Start bot (headless, webserver on :8080)");
     println!(
-        "    veloxbot --gui                            # Start bot with desktop GUI window"
+        "    dripline --gui                            # Start bot with desktop GUI window"
     );
-    println!("    veloxbot --gui --promo-fixtures           # Promo fixtures for media capture");
-    println!("    veloxbot --debug-trader                   # Start bot with trader debug logs");
-    println!("    veloxbot --reset                          # Reset with confirmation prompt");
-    println!("    veloxbot --reset --force                  # Reset without confirmation");
-    println!("    veloxbot --reset-default-configs          # Reset config to defaults");
+    println!("    dripline --gui --promo-fixtures           # Promo fixtures for media capture");
+    println!("    dripline --debug-trader                   # Start bot with trader debug logs");
+    println!("    dripline --reset                          # Reset with confirmation prompt");
+    println!("    dripline --reset --force                  # Reset without confirmation");
+    println!("    dripline --reset-default-configs          # Reset config to defaults");
     println!(
-        "    veloxbot --clean-wallet-data              # Clean databases when switching wallets"
+        "    dripline --clean-wallet-data              # Clean databases when switching wallets"
     );
     println!();
     println!("BUILDING:");
@@ -89,7 +89,7 @@ pub fn print_help() {
 /// Prints version information to stdout (for --version flag).
 /// This MUST print to stdout (not logger) so install scripts can parse it.
 pub fn print_version() {
-    println!("VeloxBot v{}", env!("CARGO_PKG_VERSION"));
+    println!("DripLine v{}", env!("CARGO_PKG_VERSION"));
 }
 
 /// Prints debug information about current arguments and enabled debug modes.

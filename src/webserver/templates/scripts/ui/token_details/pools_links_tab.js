@@ -262,7 +262,7 @@ function buildProfileSection(token, safeMint) {
         class="links-profile-action"
         type="button"
         data-profile-mint="${safeMint}"
-        title="${isPublished ? "Update this token profile" : "Create a token profile"} on veloxbot.io"
+        title="${isPublished ? "Update this token profile" : "Create a token profile"} on dripline.io"
       >
         <span>${isPublished ? "Update profile" : "Create profile"}</span>
         <i class="icon-external-link" aria-hidden="true"></i>

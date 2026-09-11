@@ -112,7 +112,7 @@ function computeShellRevision() {
     .sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
 
   const hash = crypto.createHash('sha256');
-  hash.update('veloxbot-shell\0');
+  hash.update('dripline-shell\0');
   hash.update(packageIdentity());
   hash.update('\0package-lock.json\0');
   hash.update(packageLockIdentity());

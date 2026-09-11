@@ -146,7 +146,7 @@ pub(super) fn create_chain_indexes(conn: &Connection) -> OhlcvResult<()> {
 #[cfg(test)]
 pub(super) fn test_path(label: &str) -> std::path::PathBuf {
     std::env::temp_dir().join(format!(
-        "veloxbot-ohlcv-{label}-{}.db",
+        "dripline-ohlcv-{label}-{}.db",
         std::process::id()
     ))
 }

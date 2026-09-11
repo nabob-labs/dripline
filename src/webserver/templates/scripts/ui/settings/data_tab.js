@@ -130,7 +130,7 @@ export function buildDataTab() {
             <div class="settings-field-info">
               <label>Open Data Folder</label>
               <span class="settings-field-hint">
-                Open the folder containing all VeloxBot data in your file manager.
+                Open the folder containing all DripLine data in your file manager.
               </span>
             </div>
             <div class="settings-field-control">
@@ -436,7 +436,7 @@ async function exportConfig() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `veloxbot-config-${new Date().toISOString().split("T")[0]}.json`;
+    a.download = `dripline-config-${new Date().toISOString().split("T")[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

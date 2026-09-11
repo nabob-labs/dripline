@@ -15,7 +15,7 @@ use std::path::{Path, PathBuf};
 pub async fn prepare_install() -> Result<String> {
     if !crate::arguments::is_gui_enabled() {
         return Err(Error::UnsupportedInstall {
-            detail: "headless updates must be installed with veloxbot-manager update".to_owned(),
+            detail: "headless updates must be installed with dripline-manager update".to_owned(),
         });
     }
 
@@ -152,8 +152,8 @@ mod tests {
     fn ready_state() -> UpdateState {
         let update = UpdateInfo {
             version: "99.0.0".to_owned(),
-            filename: "VeloxBot.pkg".to_owned(),
-            download_url: "https://example.com/VeloxBot.pkg".to_owned(),
+            filename: "DripLine.pkg".to_owned(),
+            download_url: "https://example.com/DripLine.pkg".to_owned(),
             file_size: 42,
             checksum: "a".repeat(64),
             manifest_checksum: None,
@@ -170,7 +170,7 @@ mod tests {
                 version: Some(update.version),
                 checksum: Some(update.checksum),
                 completed: true,
-                downloaded_path: Some("/tmp/VeloxBot.pkg".to_owned()),
+                downloaded_path: Some("/tmp/DripLine.pkg".to_owned()),
                 ..DownloadProgress::default()
             },
             ..UpdateState::default()
@@ -182,7 +182,7 @@ mod tests {
         let mut state = ready_state();
         let (update, path) = claim_install(&mut state).expect("first claim");
         assert_eq!(update.version, "99.0.0");
-        assert_eq!(path, PathBuf::from("/tmp/VeloxBot.pkg"));
+        assert_eq!(path, PathBuf::from("/tmp/DripLine.pkg"));
         assert_eq!(state.phase, UpdatePhase::Applying);
         assert!(matches!(
             claim_install(&mut state),

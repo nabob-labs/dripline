@@ -1,10 +1,10 @@
 //! Process Lock Module
 //!
-//! Prevents multiple instances of VeloxBot from running simultaneously using file-based locking.
+//! Prevents multiple instances of DripLine from running simultaneously using file-based locking.
 //!
 //! **Implementation:**
 //! - Uses fslock for advisory file locking (cross-platform)
-//! - Lock file: `data/.veloxbot.lock`
+//! - Lock file: `data/.dripline.lock`
 //! - RAII pattern: Lock held for entire bot lifetime, automatically released on drop
 //! - OS automatically releases lock if process crashes (no stale locks)
 //!
@@ -34,7 +34,7 @@ impl ProcessLock {
     ///
     /// Returns error if another instance is already running or if lock file cannot be created.
     ///
-    /// **Lock file location:** `data/.veloxbot.lock`
+    /// **Lock file location:** `data/.dripline.lock`
     ///
     /// **Error cases:**
     /// - Another instance is running (lock is held)

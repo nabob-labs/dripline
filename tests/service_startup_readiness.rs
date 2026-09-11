@@ -15,7 +15,7 @@
 //! `set_runtime_factory` —
 //! both one-shot `OnceLock`-backed globals. Every test in this file therefore
 //! shares process-global state (the swap router registry, the wallet-watch
-//! runtime factory, the readiness flags in `veloxbot::global`) with every
+//! runtime factory, the readiness flags in `dripline::global`) with every
 //! OTHER test in this file and must not assume isolation from them. In
 //! practice there is exactly one boot test below for that reason.
 //!
@@ -28,8 +28,8 @@ mod common;
 
 use std::time::Duration;
 
-use veloxbot::services::implementations::{AccountService, WebserverService};
-use veloxbot::services::{Service, ServiceManager};
+use dripline::services::implementations::{AccountService, WebserverService};
+use dripline::services::{Service, ServiceManager};
 
 /// The one boot: an isolated env, no config.toml, no network — the same shape
 /// Explore Mode/pre-init boot in `src/run/mod.rs` uses before the wallet/RPC
@@ -38,7 +38,7 @@ use veloxbot::services::{Service, ServiceManager};
 async fn the_service_layer_boots_offline_inside_a_startup_budget() {
     let _dir = common::isolated_env();
 
-    veloxbot::account::store::save(&veloxbot::account::store::StoredSession {
+    dripline::account::store::save(&dripline::account::store::StoredSession {
         refresh_token: "persisted-refresh-token".to_owned(),
         device_id: "persisted-device".to_owned(),
         scopes: vec!["account:read".to_owned(), "data:read".to_owned()],
@@ -59,7 +59,7 @@ async fn the_service_layer_boots_offline_inside_a_startup_budget() {
     let mut service_manager = ServiceManager::new()
         .await
         .expect("ServiceManager::new must not fail offline");
-    veloxbot::run::services::register_all_services(&mut service_manager);
+    dripline::run::services::register_all_services(&mut service_manager);
 
     let registered_names = service_manager.get_all_service_names();
     assert!(
@@ -97,7 +97,7 @@ async fn the_service_layer_boots_offline_inside_a_startup_budget() {
         "account persistence must run in pre-setup mode"
     );
 
-    let account = veloxbot::account::status();
+    let account = dripline::account::status();
     assert!(
         account.signed_in,
         "the stored account must be restored during service startup"
@@ -106,18 +106,18 @@ async fn the_service_layer_boots_offline_inside_a_startup_budget() {
     assert_eq!(account.email.as_deref(), Some("persisted@example.test"));
 
     // (c) Process-global accessors resolve without panicking after boot.
-    veloxbot::swaps::registry::get_registry()
+    dripline::swaps::registry::get_registry()
         .expect("router registry must resolve once set_router_factory has run");
     assert!(
-        veloxbot::swaps::registry::try_get_registry().is_some(),
+        dripline::swaps::registry::try_get_registry().is_some(),
         "try_get_registry must be Some once the registry has been built"
     );
     // Answers `false` here (no wallet database was opened offline) — this is
     // exactly the "reported absent, not fatal" contract `dashboard_launch_readiness`
     // pins for the same accessor; the point of this assertion is that reading it
     // does not panic before any writer has run.
-    let _ = veloxbot::wallet::is_wallet_database_ready();
-    let _ = veloxbot::pools::service::is_pool_service_running();
+    let _ = dripline::wallet::is_wallet_database_ready();
+    let _ = dripline::pools::service::is_pool_service_running();
 
     // (d) A OnceLock read before its writer ran: `set_router_factory` is a
     // one-shot OnceLock set unconditionally at the top of

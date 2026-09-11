@@ -1,4 +1,4 @@
-//! Whether VeloxBot data is available to this install, and what to say if not.
+//! Whether DripLine data is available to this install, and what to say if not.
 //!
 //! ============================================================================
 //! WHY THE SENTENCE LIVES IN RUST
@@ -12,7 +12,7 @@
 //! ============================================================================
 //! WHY THIS IS NEVER AN ERROR
 //! ============================================================================
-//! Signing in ADDS. Every consumer of VeloxBot data keeps its direct-provider
+//! Signing in ADDS. Every consumer of DripLine data keeps its direct-provider
 //! fallback, so "unavailable" costs a shared cache and nothing else — no trade
 //! is blocked, no chart is empty that would otherwise have filled. The UI says
 //! what is missing and what to do about it; it does not raise an alarm.
@@ -23,18 +23,18 @@ use std::time::{Duration, Instant};
 use arc_swap::ArcSwap;
 use serde::Serialize;
 
-/// Where this install stands with the VeloxBot data service.
+/// Where this install stands with the DripLine data service.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DataAccess {
     /// Working.
     Ready,
-    /// The user turned the VeloxBot source off in config.
+    /// The user turned the DripLine source off in config.
     Disabled,
     /// No network. Says nothing about the account.
     Offline,
     /// No account on this machine, so there is nothing to authenticate with.
     SignedOut,
-    /// Signed in, but this device's grant predates VeloxBot data access.
+    /// Signed in, but this device's grant predates DripLine data access.
     ReauthorizationRequired,
     /// This build is older than the service will answer.
     VersionUnsupported { minimum: String },
@@ -65,14 +65,14 @@ impl DataAccess {
     /// The short line, written as a statement of fact.
     pub fn headline(&self) -> &'static str {
         match self {
-            DataAccess::Ready => "VeloxBot data is active",
-            DataAccess::Disabled => "VeloxBot data is switched off",
-            DataAccess::Offline => "VeloxBot data is offline",
-            DataAccess::SignedOut => "VeloxBot data needs an account",
-            DataAccess::ReauthorizationRequired => "VeloxBot data needs you to sign in again",
-            DataAccess::VersionUnsupported { .. } => "VeloxBot data needs a newer version",
-            DataAccess::Unreachable => "VeloxBot data is not responding",
-            DataAccess::Unknown => "VeloxBot data has not been checked yet",
+            DataAccess::Ready => "DripLine data is active",
+            DataAccess::Disabled => "DripLine data is switched off",
+            DataAccess::Offline => "DripLine data is offline",
+            DataAccess::SignedOut => "DripLine data needs an account",
+            DataAccess::ReauthorizationRequired => "DripLine data needs you to sign in again",
+            DataAccess::VersionUnsupported { .. } => "DripLine data needs a newer version",
+            DataAccess::Unreachable => "DripLine data is not responding",
+            DataAccess::Unknown => "DripLine data has not been checked yet",
         }
     }
 
@@ -80,9 +80,9 @@ impl DataAccess {
     pub fn detail(&self) -> String {
         match self {
             DataAccess::Ready => "Shared candles, pool registry, security reports and token \
-                                  identity are being served from veloxbot.io."
+                                  identity are being served from dripline.io."
                 .to_string(),
-            DataAccess::Disabled => "The VeloxBot source is turned off in your settings, so \
+            DataAccess::Disabled => "The DripLine source is turned off in your settings, so \
                                      data comes from the public providers only."
                 .to_string(),
             DataAccess::Offline => "There is no network connection. Data will resume on its own \
@@ -91,22 +91,22 @@ impl DataAccess {
             DataAccess::SignedOut => "Charts, pools, security reports and token identity come \
                                       from the public providers instead. They are slower, rate \
                                       limited, and thinner on history. Signing in is free and \
-                                      changes nothing else about how VeloxBot runs."
+                                      changes nothing else about how DripLine runs."
                 .to_string(),
             DataAccess::ReauthorizationRequired => {
-                "This device was authorised before VeloxBot data existed. Sign in again to \
+                "This device was authorised before DripLine data existed. Sign in again to \
                  restore it — the public providers are being used until then."
                     .to_string()
             }
             DataAccess::VersionUnsupported { minimum } => format!(
                 "This version is no longer served. Update to {minimum} or newer to use \
-                 VeloxBot data again; the public providers are being used until then."
+                 DripLine data again; the public providers are being used until then."
             ),
             DataAccess::Unreachable => "The service did not answer. The public providers are \
-                                        being used, and VeloxBot will keep retrying."
+                                        being used, and DripLine will keep retrying."
                 .to_string(),
             DataAccess::Unknown => {
-                "VeloxBot has not yet needed shared data this session.".to_string()
+                "DripLine has not yet needed shared data this session.".to_string()
             }
         }
     }

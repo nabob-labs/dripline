@@ -67,9 +67,9 @@ function eventDescription(event, ctx) {
       if (submitted) return "Submitted full position exit";
       return solText ? `Closed with ${amountText} sold for ${solText}` : "Closed the position";
     case "buy":
-      return `Wallet acquired ${amountText} outside VeloxBot`;
+      return `Wallet acquired ${amountText} outside DripLine`;
     case "sell":
-      return `Wallet sold ${amountText} outside VeloxBot`;
+      return `Wallet sold ${amountText} outside DripLine`;
     case "transfer":
       if (event.direction === "Incoming") return `Received ${amountText}`;
       if (event.direction === "Outgoing") return `Sent ${amountText}`;

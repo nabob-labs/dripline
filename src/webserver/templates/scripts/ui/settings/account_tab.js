@@ -6,19 +6,19 @@
 //
 // Deliberately thin. Anything that can be changed from the website is LINKED to
 // rather than reimplemented here — password, email, connected devices and
-// referral payouts all live at veloxbot.io/dashboard, and a second
+// referral payouts all live at dripline.io/dashboard, and a second
 // implementation in the app would be a second thing to keep correct.
 
-const DASHBOARD_URL = "https://veloxbot.io/dashboard";
+const DASHBOARD_URL = "https://dripline.io/dashboard";
 
 let instance = null;
 
 export function buildAccountTab() {
   return `
     <div class="settings-section">
-      <h3 class="settings-section-title">VeloxBot account</h3>
+      <h3 class="settings-section-title">DripLine account</h3>
       <p class="settings-section-description">
-        Free, and optional. VeloxBot trades, discovers and charts without an account — it
+        Free, and optional. DripLine trades, discovers and charts without an account — it
         just does it against the public providers. The panel below lists what signing in adds.
       </p>
 
@@ -26,16 +26,16 @@ export function buildAccountTab() {
     </div>
 
     <div class="settings-section">
-      <h3 class="settings-section-title">VeloxBot data</h3>
+      <h3 class="settings-section-title">DripLine data</h3>
       <p class="settings-section-description">
-        We run a shared market-data service at veloxbot.io: pooled candles across seven
+        We run a shared market-data service at dripline.io: pooled candles across seven
         timeframes, a resolved pool registry, cached security reports and normalised token
         identity. It exists so every install is not separately rate limited by the public
         providers, and using it needs an account so that shared cost has a name against it.
       </p>
       <div class="settings-data-access" id="settingsDataAccess" aria-live="polite"></div>
       <p class="settings-section-description">
-        When it is unavailable VeloxBot falls back to the public providers automatically.
+        When it is unavailable DripLine falls back to the public providers automatically.
         Nothing stops; charts fill more slowly and carry less history.
       </p>
     </div>
@@ -43,7 +43,7 @@ export function buildAccountTab() {
     <div class="settings-section">
       <h3 class="settings-section-title">Sending transactions</h3>
       <p class="settings-section-description">
-        When you are signed in, VeloxBot can broadcast your swaps through veloxbot.io
+        When you are signed in, DripLine can broadcast your swaps through dripline.io
         instead of your own RPC. Your bot still builds and signs every transaction on this
         machine — the server only relays it, and cannot change a signed transaction without
         invalidating its signature.
@@ -52,7 +52,7 @@ export function buildAccountTab() {
       <label class="settings-toggle-row">
         <input type="checkbox" id="settingsUseGateway" />
         <span class="settings-toggle-copy">
-          <span class="settings-toggle-title">Use VeloxBot RPC for sending transactions</span>
+          <span class="settings-toggle-title">Use DripLine RPC for sending transactions</span>
           <span class="settings-toggle-hint">
             Submission only. Price data always comes from your own RPC — pool polling is far too
             heavy for a shared endpoint, so it is never sent there.
@@ -77,7 +77,7 @@ export function attachAccountHandlers() {
   const container = document.getElementById("settingsAccountPanel");
   if (container && window.AccountPanel) {
     instance = window.AccountPanel.mount(container, {
-      // Settings has a "VeloxBot data" section of its own below, so the panel
+      // Settings has a "DripLine data" section of its own below, so the panel
       // must not paint the same availability block a second time here.
       showDataAccess: false,
       // The panel already fetched the status this section renders, so it hands

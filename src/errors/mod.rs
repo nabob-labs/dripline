@@ -1,4 +1,4 @@
-//! Structured error types used throughout VeloxBot.
+//! Structured error types used throughout DripLine.
 //!
 //! Public surface:
 //! - `crate::Error` / `crate::errors::Error`

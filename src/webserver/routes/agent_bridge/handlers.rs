@@ -17,8 +17,8 @@ use crate::webserver::routes::agent_control::error_code;
 use crate::webserver::state::AppState;
 use crate::webserver::utils::{error_response, status_for, success_response};
 
-const CLIENT_HEADER: &str = "x-veloxbot-client";
-const SECRET_HEADER: &str = "x-veloxbot-pairing-secret";
+const CLIENT_HEADER: &str = "x-dripline-client";
+const SECRET_HEADER: &str = "x-dripline-pairing-secret";
 
 /// Pull the pairing credential out of the request headers. A missing or
 /// non-ASCII header is treated exactly like a wrong secret — one opaque 401,

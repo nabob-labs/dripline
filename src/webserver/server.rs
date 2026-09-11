@@ -132,7 +132,7 @@ async fn find_available_port() -> Result<u16> {
 /// In GUI mode:
 /// - Uses a random available port (49152-65535)
 /// - Generates a security token for request validation
-/// - Only accepts requests with valid X-VeloxBot-Token header
+/// - Only accepts requests with valid X-DripLine-Token header
 /// - Always binds to 127.0.0.1 (localhost only) for security
 ///
 /// In CLI/Headless mode:
@@ -370,7 +370,7 @@ pub(crate) fn announce_gui_ready() {
     let Some(token) = global::get_security_token() else {
         return;
     };
-    println!("VELOXBOT_READY:{port}:{token}");
+    println!("DRIPLINE_READY:{port}:{token}");
 }
 
 /// Build the Axum application with all routes and middleware
@@ -536,13 +536,13 @@ pub async fn test_port_binding(
                     detail: format!(
                         "address already in use\n\
              \n\
-             This usually means another instance of VeloxBot is running.\n\
+             This usually means another instance of DripLine is running.\n\
              The process lock should have prevented this - please report this issue.\n\
              \n\
              To verify and stop other instances:\n\
-              1. Check: ps aux | grep veloxbot | grep -v grep\n\
-              2. Stop: pkill -f veloxbot\n\
-              3. Verify: ps aux | grep veloxbot | grep -v grep"
+              1. Check: ps aux | grep dripline | grep -v grep\n\
+              2. Stop: pkill -f dripline\n\
+              3. Verify: ps aux | grep dripline | grep -v grep"
                     ),
                 },
                 std::io::ErrorKind::PermissionDenied => Error::Bind {

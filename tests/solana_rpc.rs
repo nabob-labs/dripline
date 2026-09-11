@@ -8,7 +8,7 @@
 
 mod common;
 
-use veloxbot::chains::solana::rpc::{get_rpc_client, RpcClientMethods};
+use dripline::chains::solana::rpc::{get_rpc_client, RpcClientMethods};
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 #[ignore = "live network"]

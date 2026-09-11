@@ -1,4 +1,4 @@
-//! Feature flags for VeloxBot tools and trading features.
+//! Feature flags for DripLine tools and trading features.
 //!
 //! Provides compile-time feature flags that control which tools and trading
 //! features are available, coming soon, in beta, or disabled.

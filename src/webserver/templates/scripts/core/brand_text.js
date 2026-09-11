@@ -1,12 +1,12 @@
-// Apply the product typeface to the VeloxBot name wherever visible copy is rendered.
+// Apply the product typeface to the DripLine name wherever visible copy is rendered.
 (function () {
   "use strict";
 
-  const BRAND_NAME = "VeloxBot";
+  const BRAND_NAME = "DripLine";
   const BRAND_CLASS = "brand-name";
   // Headings and wordmarks are display type that is already set deliberately:
   // restyling the product name inside them splits one line across two
-  // typefaces ("VeloxBot Data") or overrides the wordmark's own tracking.
+  // typefaces ("DripLine Data") or overrides the wordmark's own tracking.
   const SKIP_SELECTOR = [
     `.${BRAND_CLASS}`,
     "script",

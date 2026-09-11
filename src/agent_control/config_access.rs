@@ -1,6 +1,6 @@
 //! Canonical config access for every agent-facing surface.
 //!
-//! An agent is allowed to read and change *all* of VeloxBot's configuration
+//! An agent is allowed to read and change *all* of DripLine's configuration
 //! — RPC endpoints, trading parameters, filters, provider credentials — with
 //! exactly one carve-out: the wallet private key material (`wallet_encrypted`
 //! and its nonce). That material is never returned and never writable through

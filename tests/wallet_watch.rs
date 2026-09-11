@@ -1,6 +1,6 @@
 //! Pure wallet-watch pagination and cadence contracts.
 
-use veloxbot::wallets::watch::{cadence_secs, needs_gap_fill, CatchUpState};
+use dripline::wallets::watch::{cadence_secs, needs_gap_fill, CatchUpState};
 
 fn full_page(prefix: &str) -> Vec<String> {
     (0..100).map(|n| format!("{prefix}-{n:03}")).collect()

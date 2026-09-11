@@ -59,7 +59,7 @@ pub(super) fn validate_rpc_url_list(urls: &[String]) -> Vec<String> {
         let host = parsed.host_str().unwrap_or_default().to_lowercase();
         if host == "api.mainnet-beta.solana.com" {
             errors.push(
-                "The public Solana RPC is not supported for continuous VeloxBot polling"
+                "The public Solana RPC is not supported for continuous DripLine polling"
                     .to_owned(),
             );
         }

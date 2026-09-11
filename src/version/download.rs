@@ -43,7 +43,7 @@ impl Default for TransferPolicy {
 pub async fn start_download(update: UpdateInfo) -> Result<()> {
     if update.kind == UpdateKind::Full && !crate::arguments::is_gui_enabled() {
         return Err(Error::UnsupportedInstall {
-            detail: "headless updates must be installed with veloxbot-manager update".to_owned(),
+            detail: "headless updates must be installed with dripline-manager update".to_owned(),
         });
     }
     mutate_state_with_result(|state| claim_download(state, &update)).await?;
@@ -353,7 +353,7 @@ where
     let endpoint = url.to_string();
     let mut request = client
         .get(url)
-        .header("User-Agent", format!("VeloxBot/{}", super::VERSION));
+        .header("User-Agent", format!("DripLine/{}", super::VERSION));
     if requested_offset > 0 {
         request = request.header(reqwest::header::RANGE, format!("bytes={requested_offset}-"));
     }
@@ -655,7 +655,7 @@ pub(super) fn build_update_client() -> Result<reqwest::Client> {
 
 pub(super) fn resolve_download_url(download_url: &str) -> Result<reqwest::Url> {
     if download_url.starts_with('/') {
-        return reqwest::Url::parse("https://veloxbot.io")
+        return reqwest::Url::parse("https://dripline.io")
             .and_then(|base| base.join(download_url))
             .map_err(|error| Error::InvalidUpdateUrl {
                 url: download_url.to_owned(),
@@ -682,7 +682,7 @@ pub(super) fn is_allowed_update_url(url: &reqwest::Url) -> bool {
     }
     matches!(
         url.host_str(),
-        Some("veloxbot.io" | "api.github.com" | "github.com")
+        Some("dripline.io" | "api.github.com" | "github.com")
     ) || url
         .host_str()
         .is_some_and(|host| host.ends_with(".githubusercontent.com"))
@@ -852,7 +852,7 @@ mod tests {
     fn update() -> UpdateInfo {
         UpdateInfo {
             version: "0.1.122".to_owned(),
-            filename: "VeloxBot-v0.1.122-Linux-x64-headless.tar.gz".to_owned(),
+            filename: "DripLine-v0.1.122-Linux-x64-headless.tar.gz".to_owned(),
             download_url: "/api/releases/download?version=0.1.122&platform=linux-x64-headless"
                 .to_owned(),
             file_size: 4,
@@ -893,7 +893,7 @@ mod tests {
         candidate.kind = UpdateKind::Core;
         candidate.file_size = 200_000_000;
         candidate.core = Some(CoreArtifact {
-            filename: "VeloxBot-v0.1.122-Linux-x64-core.gz".to_owned(),
+            filename: "DripLine-v0.1.122-Linux-x64-core.gz".to_owned(),
             size: 20_000_000,
             sha256: "b".repeat(64),
             binary_size: 80_000_000,
@@ -910,7 +910,7 @@ mod tests {
 
     #[test]
     fn download_urls_and_sizes_fail_closed() {
-        assert!(resolve_download_url("http://veloxbot.io/update").is_err());
+        assert!(resolve_download_url("http://dripline.io/update").is_err());
         assert!(resolve_download_url("https://evil.example/update").is_err());
         assert!(resolve_download_url("/api/releases/download?x=1").is_ok());
         assert!(

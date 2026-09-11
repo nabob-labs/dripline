@@ -1,6 +1,6 @@
 //! The GitHub release record: asset digests and the per-release update manifest.
 //!
-//! veloxbot.io decides *which* version is offered; this module reads what
+//! dripline.io decides *which* version is offered; this module reads what
 //! that version actually consists of. Both halves have to agree before a byte is
 //! written to disk, so a compromise of either one alone cannot ship a binary.
 
@@ -76,7 +76,7 @@ async fn fetch_release_once(
         .get(&url)
         .header("Accept", "application/vnd.github+json")
         .header("X-GitHub-Api-Version", "2022-11-28")
-        .header("User-Agent", format!("VeloxBot/{VERSION}"))
+        .header("User-Agent", format!("DripLine/{VERSION}"))
         .timeout(Duration::from_secs(15))
         .send()
         .await
@@ -190,7 +190,7 @@ async fn fetch_manifest_body(client: &reqwest::Client, asset: &GithubAsset) -> R
     let url = super::download::resolve_download_url(&asset.browser_download_url)?;
     let response = client
         .get(url)
-        .header("User-Agent", format!("VeloxBot/{VERSION}"))
+        .header("User-Agent", format!("DripLine/{VERSION}"))
         .timeout(Duration::from_secs(20))
         .send()
         .await
@@ -325,7 +325,7 @@ mod tests {
             "shellRevision": revision,
             "core": {
                 "macos-arm64": {
-                    "filename": format!("VeloxBot-v{version}-macOS-arm64-core.gz"),
+                    "filename": format!("DripLine-v{version}-macOS-arm64-core.gz"),
                     "size": 24_000_000,
                     "sha256": "a".repeat(64),
                     "binarySize": 80_000_000,
@@ -393,7 +393,7 @@ mod tests {
     fn release_assets_must_match_name_size_and_digest() {
         let release = GithubRelease {
             assets: vec![GithubAsset {
-                name: "VeloxBot-v0.2.2-macOS-arm64.dmg".to_owned(),
+                name: "DripLine-v0.2.2-macOS-arm64.dmg".to_owned(),
                 digest: Some(format!("sha256:{}", "a".repeat(64))),
                 size: 42,
                 browser_download_url: String::new(),
@@ -401,21 +401,21 @@ mod tests {
         };
         assert!(verify_release_asset(
             &release,
-            "VeloxBot-v0.2.2-macOS-arm64.dmg",
+            "DripLine-v0.2.2-macOS-arm64.dmg",
             42,
             &"a".repeat(64)
         )
         .is_ok());
         assert!(verify_release_asset(
             &release,
-            "VeloxBot-v0.2.2-macOS-arm64.dmg",
+            "DripLine-v0.2.2-macOS-arm64.dmg",
             43,
             &"a".repeat(64)
         )
         .is_err());
         assert!(verify_release_asset(
             &release,
-            "VeloxBot-v0.2.2-macOS-arm64.dmg",
+            "DripLine-v0.2.2-macOS-arm64.dmg",
             42,
             &"b".repeat(64)
         )
@@ -428,13 +428,13 @@ mod tests {
         let release = GithubRelease {
             assets: vec![
                 GithubAsset {
-                    name: "VeloxBot-v0.2.2-macOS-arm64.dmg".to_owned(),
+                    name: "DripLine-v0.2.2-macOS-arm64.dmg".to_owned(),
                     digest: None,
                     size: 1,
                     browser_download_url: String::new(),
                 },
                 GithubAsset {
-                    name: "VeloxBot-v0.2.2-update-manifest.json".to_owned(),
+                    name: "DripLine-v0.2.2-update-manifest.json".to_owned(),
                     digest: Some(format!("sha256:{}", "c".repeat(64))),
                     size: 300,
                     browser_download_url: String::new(),

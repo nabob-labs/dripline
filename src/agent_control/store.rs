@@ -38,7 +38,7 @@ static INITIALIZED: LazyLock<AtomicBool> = LazyLock::new(|| AtomicBool::new(fals
 
 static POOL: LazyLock<Pool<SqliteConnectionManager>> = LazyLock::new(|| {
     // Tests point this at a temp file so they never touch a real install's DB.
-    let path = std::env::var("VELOXBOT_AGENT_CONTROL_DB")
+    let path = std::env::var("DRIPLINE_AGENT_CONTROL_DB")
         .ok()
         .filter(|s| !s.is_empty())
         .map(std::path::PathBuf::from)

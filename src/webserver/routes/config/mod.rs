@@ -1,7 +1,7 @@
 //! Configuration API Routes
 //!
 //! Provides REST API endpoints for viewing and managing bot configuration.
-//! All responses follow the standard VeloxBot API format.
+//! All responses follow the standard DripLine API format.
 
 use axum::{
     routing::{get, patch, post},

@@ -210,7 +210,7 @@ fn json_len(value: &Value) -> usize {
 
 /// Whole-segment match against known secret-bearing field names. Segments are
 /// split on any non-alphanumeric character so `api_key`, `api-key`,
-/// `X-VeloxBot-Pairing-Secret` and `pairingSecret` all match.
+/// `X-DripLine-Pairing-Secret` and `pairingSecret` all match.
 fn is_sensitive_key(key: &str) -> bool {
     let lower = key.to_ascii_lowercase();
     if lower.contains("secret") || lower.contains("mnemonic") || lower.contains("passphrase") {
@@ -282,7 +282,7 @@ mod tests {
         let v = json!({
             "pairing_secret": "abc",
             "apiKey": "xyz",
-            "X-VeloxBot-Pairing-Secret": "s",
+            "X-DripLine-Pairing-Secret": "s",
             "token_mint": "So11111111111111111111111111111111111111112",
             "amount_sol": 1.5
         });

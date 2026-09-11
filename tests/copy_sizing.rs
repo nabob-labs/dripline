@@ -1,12 +1,12 @@
 //! Pure copy sizing and risk-cap contracts.
 
 use chrono::Utc;
-use veloxbot::chains::ChainId;
-use veloxbot::trader::copy::{
+use dripline::chains::ChainId;
+use dripline::trader::copy::{
     precheck, size_for, CopyMode, CopySkip, CopyTask, CopyTaskInput, ExitMode, PipelinePolicy,
     RiskContext, SizingMode, SpendState,
 };
-use veloxbot::trader::{MAX_MANUAL_SLIPPAGE_PCT, MAX_TRADE_SIZE_MULTIPLIER};
+use dripline::trader::{MAX_MANUAL_SLIPPAGE_PCT, MAX_TRADE_SIZE_MULTIPLIER};
 
 fn task(sizing: SizingMode) -> CopyTask {
     CopyTask {

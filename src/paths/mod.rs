@@ -1,4 +1,4 @@
-//! Centralized path resolution for VeloxBot.
+//! Centralized path resolution for DripLine.
 //!
 //! All file and directory paths are resolved through this module to ensure consistent
 //! behavior across different execution contexts (terminal vs bundle) and platforms.
@@ -7,9 +7,9 @@
 //!
 //! Both terminal and bundle execution use the same base directory following
 //! platform standards:
-//! - **macOS**: `~/Library/Application Support/VeloxBot/`
-//! - **Windows**: `%LOCALAPPDATA%\VeloxBot\`
-//! - **Linux**: `$XDG_DATA_HOME/VeloxBot/` (fallback `~/.local/share/VeloxBot/`)
+//! - **macOS**: `~/Library/Application Support/DripLine/`
+//! - **Windows**: `%LOCALAPPDATA%\DripLine\`
+//! - **Linux**: `$XDG_DATA_HOME/DripLine/` (fallback `~/.local/share/DripLine/`)
 
 mod database;
 mod files;
@@ -39,21 +39,21 @@ static BASE_DIRECTORY: LazyLock<PathBuf> = LazyLock::new(|| {
     base_dir
 });
 
-/// Resolves the base directory for all VeloxBot data.
+/// Resolves the base directory for all DripLine data.
 ///
 /// Uses platform-specific application data locations:
-/// - macOS: ~/Library/Application Support/VeloxBot
-/// - Windows: %LOCALAPPDATA%\VeloxBot
-/// - Linux: $XDG_DATA_HOME/VeloxBot (fallback ~/.local/share/VeloxBot)
+/// - macOS: ~/Library/Application Support/DripLine
+/// - Windows: %LOCALAPPDATA%\DripLine
+/// - Linux: $XDG_DATA_HOME/DripLine (fallback ~/.local/share/DripLine)
 fn resolve_base_directory() -> PathBuf {
-    const APP_DIR: &str = "VeloxBot";
+    const APP_DIR: &str = "DripLine";
 
     // Test/dev override: pin ALL data (config.toml, *.db, logs, exports) to an
     // arbitrary directory. The test harness sets this to an isolated tempdir so
     // integration/live tests never read or write the owner's real data, and it is
     // also handy for fresh-run testing. Empty/unset falls through to the platform
     // default below, so normal runs are unaffected.
-    if let Ok(dir) = std::env::var("VELOXBOT_DATA_DIR") {
+    if let Ok(dir) = std::env::var("DRIPLINE_DATA_DIR") {
         let trimmed = dir.trim();
         if !trimmed.is_empty() {
             return PathBuf::from(trimmed);
@@ -79,7 +79,7 @@ fn resolve_base_directory() -> PathBuf {
 // PRIMARY DIRECTORY ACCESSORS
 // =============================================================================
 
-/// Returns the base directory for all VeloxBot data.
+/// Returns the base directory for all DripLine data.
 ///
 /// This is the root directory where all data, logs, and exports are stored.
 pub fn get_base_directory() -> PathBuf {
@@ -235,6 +235,6 @@ mod tests {
         let data = get_data_directory();
         let lock = get_process_lock_path();
         assert!(lock.starts_with(&data));
-        assert_eq!(lock.file_name().unwrap(), ".veloxbot.lock");
+        assert_eq!(lock.file_name().unwrap(), ".dripline.lock");
     }
 }

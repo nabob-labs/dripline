@@ -23,7 +23,7 @@
 //!
 //! Filtering WRITES (rejection status, priorities, stats), so this never touches the live
 //! files: [`common::real_db_env`] clones the databases into a temp directory and repoints
-//! `VELOXBOT_DATA_DIR` at the clone. The bot may be running throughout.
+//! `DRIPLINE_DATA_DIR` at the clone. The bot may be running throughout.
 //!
 //! # Tier
 //!
@@ -70,17 +70,17 @@ async fn candidate_load_is_index_driven() {
 
     // Warm pass first: the first touch of a freshly cloned file pays page-cache faults
     // that have nothing to do with the query plan.
-    let _ = veloxbot::tokens::get_all_tokens_for_filtering_async()
+    let _ = dripline::tokens::get_all_tokens_for_filtering_async()
         .await
         .expect("warm candidate load");
 
     let started = Instant::now();
-    let tokens = veloxbot::tokens::get_all_tokens_for_filtering_async()
+    let tokens = dripline::tokens::get_all_tokens_for_filtering_async()
         .await
         .expect("candidate load");
     let elapsed = started.elapsed();
 
-    let total = veloxbot::tokens::count_tokens_async()
+    let total = dripline::tokens::count_tokens_async()
         .await
         .expect("count tokens");
 
@@ -111,12 +111,12 @@ async fn first_snapshot_fits_refresh_interval() {
     let Some(_env) = setup() else { return };
 
     let started = Instant::now();
-    veloxbot::filtering::refresh()
+    dripline::filtering::refresh()
         .await
         .expect("build first snapshot");
     let elapsed = started.elapsed();
 
-    let stats = veloxbot::filtering::try_fetch_stats()
+    let stats = dripline::filtering::try_fetch_stats()
         .await
         .expect("stats present after an explicit refresh");
 
@@ -140,7 +140,7 @@ async fn header_stats_do_not_block_on_first_snapshot() {
     // Deliberately do NOT build a snapshot first. This is the state a freshly launched
     // app is in, and the state in which the header used to hang for its full 30s timeout.
     let started = Instant::now();
-    let stats = veloxbot::filtering::try_fetch_stats().await;
+    let stats = dripline::filtering::try_fetch_stats().await;
     let elapsed = started.elapsed();
 
     eprintln!(
@@ -163,13 +163,13 @@ async fn token_count_is_cheap_under_snapshot_load() {
 
     // Kick off a real snapshot build and, while it is running, ask for the count the home
     // dashboard's token panel needs. On launch these two genuinely do overlap.
-    let build = tokio::spawn(async { veloxbot::filtering::refresh().await });
+    let build = tokio::spawn(async { dripline::filtering::refresh().await });
 
     // Give the build long enough to be inside its batch load, holding the connection.
     tokio::time::sleep(Duration::from_millis(150)).await;
 
     let started = Instant::now();
-    let count = veloxbot::tokens::count_tokens_async()
+    let count = dripline::tokens::count_tokens_async()
         .await
         .expect("count tokens under load");
     let elapsed = started.elapsed();

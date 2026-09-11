@@ -13,7 +13,7 @@
 mod common;
 
 use common::{config_guard, set_config};
-use veloxbot::trader::safety::loss_limit::{
+use dripline::trader::safety::loss_limit::{
     get_loss_limit_status, is_entry_blocked_by_loss_limit, record_realized_loss,
     reset_loss_limit_state, resume_from_loss_limit,
 };
