@@ -5,7 +5,6 @@ pub fn print_banner() {
     println!("\x1b[36;1;3m");
     println!(
         r#"
-        
    ██████╗ ██████╗ ██╗██████╗ ██╗     ██╗███╗   ██╗███████╗
    ██╔══██╗██╔══██╗██║██╔══██╗██║     ██║████╗  ██║██╔════╝
    ██║  ██║██████╔╝██║██████╔╝██║     ██║██╔██╗ ██║█████╗
@@ -19,7 +18,6 @@ pub fn print_banner() {
                   Website: dripline.io           Channel: t.me/driplineio
                   Docs:    dripline.io/docs      Group:   t.me/driplineio_talk
                   X:       x.com/driplineio      Support: t.me/driplineio_support
-   s
 "#
     );
     println!("\x1b[0m");
