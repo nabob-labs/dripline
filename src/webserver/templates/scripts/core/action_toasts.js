@@ -21,6 +21,8 @@
 
 import { notificationManager } from "./notifications.js";
 import { toastManager } from "./toast.js";
+// The wording lives in its own module so it can be tested without a DOM.
+import { outcomeMessage, stepMessage, symbolOf } from "./action_message.js";
 
 /** Actions whose terminal state has already been announced. */
 const resolved = new Set();
@@ -42,12 +44,6 @@ const SUBJECTS = {
 
 const FALLBACK_SUBJECT = { live: "Trade", done: "Trade done", failed: "Trade failed" };
 
-/** The backend writes the literal "Unknown" when it could not resolve a symbol. */
-function symbolOf(action) {
-  const symbol = action?.metadata?.symbol;
-  return symbol && symbol !== "Unknown" ? symbol : "";
-}
-
 /** A trade the user asked for, as opposed to one the auto-trader decided on. */
 function isUserInitiated(action) {
   return String(action?.metadata?.operation || "").startsWith("manual");
@@ -61,33 +57,6 @@ function titleFor(action, phase) {
   const symbol = symbolOf(action);
   const label = subjectOf(action)[phase];
   return symbol ? `${label} ${symbol}` : label;
-}
-
-/** "Executing Swap · 3/4" — what the trade is actually doing right now. */
-function stepMessage(action) {
-  const state = action?.state;
-  if (!state || state.status !== "in_progress") return null;
-
-  const step = state.current_step;
-  const total = Number(state.total_steps) || 0;
-  const index = Number(state.current_step_index) || 0;
-  if (!step) return null;
-
-  return total > 0 ? `${step} · ${index + 1}/${total}` : step;
-}
-
-/** What the trade committed, when the backend recorded it. */
-function outcomeMessage(action) {
-  const meta = action?.metadata || {};
-  const size = Number(meta.size_sol);
-  if (Number.isFinite(size) && size > 0) return `${size} SOL`;
-
-  const percentage = Number(meta.percentage);
-  if (Number.isFinite(percentage) && percentage > 0) {
-    return percentage >= 100 ? "Full exit" : `${percentage}% exit`;
-  }
-
-  return typeof meta.reason === "string" && meta.reason ? meta.reason : null;
 }
 
 function markResolved(actionId) {
@@ -124,6 +93,9 @@ function showLive(action) {
 
 function showResolved(action, status) {
   markResolved(action.id);
+  if (status === "completed" || status === "failed") {
+    window.dispatchEvent(new CustomEvent("dripline:trade-settled"));
+  }
 
   if (status === "completed") {
     toastManager.show({

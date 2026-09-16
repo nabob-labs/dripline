@@ -140,6 +140,29 @@ struct SwapInfo {
     label: Option<String>,
 }
 
+/// Nominal compute units used to ESTIMATE a Jupiter swap's priority fee before
+/// the transaction is built. Jupiter sizes the real limit when
+/// `dynamicComputeUnitLimit` is on; this only fills the advisory estimate the
+/// router comparison and the paper simulator use.
+const JUPITER_ESTIMATED_COMPUTE_UNITS: u64 = 300_000;
+
+impl JupiterRouter {
+    /// The priority fee a Jupiter swap is expected to pay, in lamports.
+    pub fn estimated_priority_fee_lamports() -> u64 {
+        JUPITER_ESTIMATED_COMPUTE_UNITS
+            .saturating_mul(with_config(|cfg| {
+                cfg.swaps.jupiter.priority_fee_micro_lamports
+            }))
+            .div_ceil(1_000_000)
+    }
+
+    /// One signature plus the expected priority fee.
+    pub fn estimated_network_fee_lamports() -> u64 {
+        crate::chains::solana::swaps::direct::compute::BASE_SIGNATURE_FEE_LAMPORTS
+            .saturating_add(Self::estimated_priority_fee_lamports())
+    }
+}
+
 #[derive(Debug, Serialize)]
 struct JupiterSwapRequest {
     #[serde(rename = "userPublicKey")]
@@ -152,10 +175,10 @@ struct JupiterSwapRequest {
     )]
     dynamic_compute_unit_limit: Option<bool>,
     #[serde(
-        rename = "prioritizationFeeLamports",
+        rename = "computeUnitPriceMicroLamports",
         skip_serializing_if = "Option::is_none"
     )]
-    prioritization_fee_lamports: Option<u64>,
+    compute_unit_price_micro_lamports: Option<u64>,
     #[serde(rename = "platformFeeBps", skip_serializing_if = "Option::is_none")]
     platform_fee_bps: Option<u16>,
     #[serde(rename = "feeAccount", skip_serializing_if = "Option::is_none")]
@@ -313,6 +336,61 @@ pub(crate) fn referral_fee_account(input_mint: &str, output_mint: &str) -> Optio
     get_referral_token_account_for_swap(input_mint, output_mint)
 }
 
+/// How long a fetched program-id-to-label map is trusted. Venues are added to
+/// the aggregator over time, so the map cannot be a one-shot constant, but it
+/// changes far too rarely to fetch per swap.
+const VENUE_LABEL_TTL: Duration = Duration::from_secs(6 * 60 * 60);
+
+/// Jupiter's own program-id-to-label map, fetched lazily and cached.
+static VENUE_LABELS: std::sync::LazyLock<
+    tokio::sync::RwLock<Option<(Instant, std::collections::HashMap<String, String>)>>,
+> = std::sync::LazyLock::new(|| tokio::sync::RwLock::new(None));
+
+/// The label `excludeDexes` uses for the venue running at `program_id`.
+///
+/// Exclusion speaks the aggregator's vocabulary, not ours, and the vocabulary
+/// is the aggregator's to define — so it is ASKED for, never hardcoded. That is
+/// what lets a refusal name a venue this code has never heard of (any venue the
+/// route picked) and still be answerable by a re-quote that avoids it.
+/// A map we cannot fetch simply yields `None`: the caller then falls back to
+/// another router instead of retrying blind.
+pub(crate) async fn venue_label_for_program(program_id: &str) -> Option<String> {
+    if let Some((fetched, labels)) = VENUE_LABELS.read().await.as_ref() {
+        if fetched.elapsed() < VENUE_LABEL_TTL {
+            return labels.get(program_id).cloned();
+        }
+    }
+
+    let url = format!("{}/swap/v1/program-id-to-label", get_api_base());
+    let mut request = crate::net::client().get(&url).timeout(JUPITER_HTTP_TIMEOUT);
+    if let Some(key) = get_api_key() {
+        request = request.header("x-api-key", key);
+    }
+    let labels: std::collections::HashMap<String, String> = match request.send().await {
+        Ok(response) => match response.json().await {
+            Ok(labels) => labels,
+            Err(e) => {
+                logger::warning(
+                    LogTag::Swap,
+                    &format!("Jupiter venue label map could not be read: {e}"),
+                );
+                return None;
+            }
+        },
+        Err(e) => {
+            logger::warning(
+                LogTag::Swap,
+                &format!("Jupiter venue label map unavailable: {e}"),
+            );
+            return None;
+        }
+    };
+
+    let label = labels.get(program_id).cloned();
+    *VENUE_LABELS.write().await = Some((Instant::now(), labels));
+    label
+}
+
 /// Build, sign and submit a Jupiter swap transaction with a caller-supplied
 /// keypair (rather than the main wallet). Used by
 /// [`JupiterRouter::execute_swap_for_wallet`] so a Jupiter quote is executed
@@ -331,9 +409,11 @@ pub(crate) async fn execute_with_keypair(
     let swap_req = JupiterSwapRequest {
         user_public_key: keypair.pubkey().to_string(),
         quote_response,
-        dynamic_compute_unit_limit: Some(true),
-        prioritization_fee_lamports: Some(with_config(|cfg| {
-            cfg.swaps.jupiter.default_priority_fee
+        dynamic_compute_unit_limit: Some(with_config(|cfg| {
+            cfg.swaps.jupiter.dynamic_compute_unit_limit
+        })),
+        compute_unit_price_micro_lamports: Some(with_config(|cfg| {
+            cfg.swaps.jupiter.priority_fee_micro_lamports
         })),
         platform_fee_bps: None, // Already set in quote request
         fee_account,
@@ -360,6 +440,16 @@ pub(crate) async fn execute_with_keypair(
 
     let swap_response: JupiterSwapResponse = serde_json::from_str(&response_text)
         .map_err(|e| Error::parse_error(format!("Jupiter swap response parse failed: {e}")))?;
+
+    // Jupiter builds this transaction on its own host and can route through a
+    // venue that funds an account out of this wallet mid-swap; neither the quote
+    // nor the slippage floor says anything about that. Price it before signing.
+    crate::chains::solana::swaps::cost_guard::preflight(
+        "Jupiter",
+        &swap_response.swap_transaction,
+        quote,
+    )
+    .await?;
 
     let rpc_client = crate::chains::solana::rpc::get_rpc_client();
     // Propagate the send/confirm error unchanged so an unconfirmed signature
@@ -576,10 +666,7 @@ impl SwapRouter for JupiterRouter {
             platform_fee_lamports: Self::platform_fee_lamports(&quote_response),
             // One signature plus the prioritization fee this router asks for at
             // swap-build time -- the two components the wallet actually pays.
-            estimated_network_fee_lamports: Some(
-                crate::chains::solana::swaps::direct::compute::BASE_SIGNATURE_FEE_LAMPORTS
-                    .saturating_add(with_config(|cfg| cfg.swaps.jupiter.default_priority_fee)),
-            ),
+            estimated_network_fee_lamports: Some(Self::estimated_network_fee_lamports()),
             slippage_bps,
             route_plan,
             swap_mode: request.swap_mode,
@@ -611,8 +698,8 @@ impl SwapRouter for JupiterRouter {
             dynamic_compute_unit_limit: Some(with_config(|cfg| {
                 cfg.swaps.jupiter.dynamic_compute_unit_limit
             })),
-            prioritization_fee_lamports: Some(with_config(|cfg| {
-                cfg.swaps.jupiter.default_priority_fee
+            compute_unit_price_micro_lamports: Some(with_config(|cfg| {
+                cfg.swaps.jupiter.priority_fee_micro_lamports
             })),
             platform_fee_bps: None, // Already set in quote request
             fee_account: fee_account.clone(),
@@ -647,6 +734,16 @@ impl SwapRouter for JupiterRouter {
 
         let swap_response: JupiterSwapResponse = serde_json::from_str(&response_text)
             .map_err(|e| Error::parse_error(format!("Jupiter swap response parse failed: {e}")))?;
+
+        // Same preflight as the wallet path: a route that would park the
+        // wallet's SOL in somebody else's account is refused here, for free,
+        // and the fallback chain is free to try another router.
+        crate::chains::solana::swaps::cost_guard::preflight(
+            "Jupiter",
+            &swap_response.swap_transaction,
+            quote,
+        )
+        .await?;
 
         // Transaction is already base64 encoded, send it directly
         let rpc_client = crate::chains::solana::rpc::get_rpc_client();

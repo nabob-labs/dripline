@@ -41,7 +41,7 @@ ensure_root() {
         if command -v sudo &>/dev/null; then
             echo "This script requires root privileges."
             echo "Please enter your password if prompted."
-            
+
             # Update sudo timestamp
             if sudo -v; then
                 # Re-run script with sudo
@@ -183,10 +183,10 @@ spinner() {
     local message="${2:-Processing...}"
     local spinchars='|/-\'
     local i=0
-    
+
     # Hide cursor if possible
     tput civis >&2 2>/dev/null || true
-    
+
     while kill -0 "$pid" 2>/dev/null; do
         local char="${spinchars:$i:1}"
         printf "\r${CYAN}%s${RESET} %s" "$char" "$message" >&2
@@ -194,7 +194,7 @@ spinner() {
         sleep 0.1
     done
     printf "\r\033[K" >&2  # Clear line
-    
+
     # Show cursor
     tput cnorm >&2 2>/dev/null || true
 }
@@ -213,7 +213,7 @@ progress_bar() {
     local percent=$((current * 100 / total))
     local filled=$((current * width / total))
     local empty=$((width - filled))
-    
+
     printf "\r  [" >&2
     repeat_char '█' "$filled" >&2
     repeat_char '░' "$empty" >&2
@@ -226,14 +226,14 @@ progress_bar() {
 select_menu() {
     local options=("$@")
     local count=${#options[@]}
-    
+
     # Ensure we have a terminal for input
     if [ ! -r /dev/tty ]; then
         echo "Error: No terminal available for interactive menu" >&2
         MENU_RESULT=0
         return 1
     fi
-    
+
     # Print options (1-based for user-friendly display)
     echo ""
     for i in "${!options[@]}"; do
@@ -241,37 +241,37 @@ select_menu() {
     done
     echo "  [${CYAN}Q${RESET}] Quit"
     echo ""
-    
+
     while true; do
         local selection
         printf "  Select option [1-%d]: " "$count"
-        
+
         # Read input from /dev/tty
         if ! read -r selection < /dev/tty; then
             # If read fails (EOF), exit loop
             MENU_RESULT=-1
             return 1
         fi
-        
+
         # Handle Quit
         if [[ "$selection" =~ ^[qQ]$ ]]; then
             MENU_RESULT=-1
             return 0
         fi
-        
+
         # Validate number (1-based input, convert to 0-based internally)
         if [[ "$selection" =~ ^[0-9]+$ ]] && [ "$selection" -ge 1 ] && [ "$selection" -le "$count" ]; then
             MENU_RESULT=$((selection - 1))
             return 0
         fi
-        
+
         echo "  ${YELLOW}Invalid selection. Please try again.${RESET}"
     done
 }
 
 print_banner() {
     # Single source of truth for banner - call this function everywhere.
-    
+
     # Cyan + Bold + Italic
     echo -e "${CYAN}${BOLD}${ITALIC}"
 
@@ -290,7 +290,7 @@ print_banner() {
     # Subtitle (37 chars)
     printf "   %29s%s\n" "" "◆ Automated Solana DeFi Trading Bot ◆"
     echo ""
-    
+
     # Social Links - Minimal Design
     # Left column: Website & Docs & X
     # Right column: Telegram Channel, Group & Support
@@ -309,21 +309,21 @@ print_separator() {
 confirm() {
     local prompt="${1:-Are you sure?}"
     local default="${2:-n}"
-    
+
     local yn_prompt
     if [ "$default" = "y" ]; then
         yn_prompt="[Y/n]"
     else
         yn_prompt="[y/N]"
     fi
-    
+
     echo -en "${YELLOW}${ICON_WARN}${RESET} ${prompt} ${yn_prompt}: "
     read -r response < /dev/tty
-    
+
     if [ -z "$response" ]; then
         response="$default"
     fi
-    
+
     case "$response" in
         [yY][eE][sS]|[yY]) return 0 ;;
         *) return 1 ;;
@@ -373,7 +373,7 @@ install_dependencies() {
     local pkgs=("$@")
     local pkg_manager=""
     local install_cmd=""
-    
+
     if command -v apt-get &>/dev/null; then
         pkg_manager="apt-get"
         install_cmd="apt-get install -y"
@@ -392,9 +392,9 @@ install_dependencies() {
         log_error "Unsupported package manager. Please install dependencies manually."
         return 1
     fi
-    
+
     log_info "Using package manager: ${pkg_manager}"
-    
+
     for pkg in "${pkgs[@]}"; do
         # Map command names to package names if needed
         local pkg_name="$pkg"
@@ -402,7 +402,7 @@ install_dependencies() {
             "systemctl") pkg_name="systemd" ;;
             # Add other mappings if necessary
         esac
-        
+
         log_info "Installing ${pkg_name}..."
         if $install_cmd "$pkg_name" >/dev/null 2>&1; then
             log_success "Installed ${pkg_name}"
@@ -411,7 +411,7 @@ install_dependencies() {
             return 1
         fi
     done
-    
+
     return 0
 }
 
@@ -425,9 +425,9 @@ get_glibc_version() {
 
 check_requirements() {
     log_step "Checking System Requirements"
-    
+
     local errors=0
-    
+
     # Check if running as root or with sudo
     if [ "$EUID" -ne 0 ]; then
         log_warn "This script requires root privileges for installation"
@@ -437,7 +437,7 @@ check_requirements() {
             exit 1
         fi
     fi
-    
+
     # Check architecture
     local arch
     arch=$(detect_arch)
@@ -448,7 +448,7 @@ check_requirements() {
     else
         log_success "Architecture: ${BOLD}$(uname -m)${RESET} (${arch})"
     fi
-    
+
     # Check GLIBC version
     local glibc_version
     glibc_version=$(get_glibc_version)
@@ -462,7 +462,7 @@ check_requirements() {
             errors=$((errors + 1))
         fi
     fi
-    
+
     # Check available memory
     local total_mem_kb
     total_mem_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
@@ -472,7 +472,7 @@ check_requirements() {
     else
         log_success "RAM: ${BOLD}${total_mem_gb}GB${RESET}"
     fi
-    
+
     # Check CPU cores
     local cpu_cores
     cpu_cores=$(nproc)
@@ -481,7 +481,7 @@ check_requirements() {
     else
         log_success "CPU cores: ${BOLD}${cpu_cores}${RESET}"
     fi
-    
+
     # Check disk space
     local free_space_gb
     free_space_gb=$(df -BG "${INSTALL_DIR%/*}" 2>/dev/null | tail -1 | awk '{print $4}' | tr -d 'G')
@@ -490,11 +490,11 @@ check_requirements() {
     elif [ -n "$free_space_gb" ]; then
         log_success "Free disk space: ${BOLD}${free_space_gb}GB${RESET}"
     fi
-    
+
     # Check required commands
     local required_cmds=("curl" "tar" "systemctl" "jq")
     local missing_cmds=()
-    
+
     for cmd in "${required_cmds[@]}"; do
         if command -v "$cmd" &>/dev/null; then
             log_success "Required command: ${BOLD}${cmd}${RESET}"
@@ -503,7 +503,7 @@ check_requirements() {
             missing_cmds+=("$cmd")
         fi
     done
-    
+
     # Check optional commands
     local optional_cmds=()
     for cmd in "${optional_cmds[@]}"; do
@@ -514,7 +514,7 @@ check_requirements() {
             missing_cmds+=("$cmd")
         fi
     done
-    
+
     # Attempt to install missing commands
     if [ ${#missing_cmds[@]} -gt 0 ]; then
         log_info "Attempting to install missing dependencies: ${missing_cmds[*]}"
@@ -533,7 +533,7 @@ check_requirements() {
             errors=$((errors + 1))
         fi
     fi
-    
+
     echo ""
     if [ $errors -gt 0 ]; then
         log_error "System check failed with $errors error(s)"
@@ -555,19 +555,19 @@ api_fetch() {
     local response
     local temp_file
     temp_file=$(mktemp)
-    
+
     # Run curl in background with spinner
     curl -fsSL --connect-timeout 10 --max-time 30 "$url" > "$temp_file" &
     local curl_pid=$!
     spinner "$curl_pid" "Connecting to API..."
     wait "$curl_pid"
     local exit_code=$?
-    
+
     if [ $exit_code -ne 0 ]; then
         rm -f "$temp_file"
         return 1
     fi
-    
+
     response=$(cat "$temp_file")
     rm -f "$temp_file"
     echo "$response"
@@ -578,7 +578,7 @@ api_fetch() {
 json_get() {
     local json="$1"
     local key="$2"
-    
+
     if command -v jq &>/dev/null; then
         # Add . prefix for jq path syntax
         echo "$json" | jq -r ".$key" 2>/dev/null
@@ -602,13 +602,13 @@ get_latest_release() {
     if ! response=$(api_fetch "/releases/latest"); then
         return 1
     fi
-    
+
     if command -v jq &>/dev/null; then
         local success
         success=$(echo "$response" | jq -r '.success' 2>/dev/null)
         # Trim whitespace
         success=$(echo "$success" | tr -d '[:space:]')
-        
+
         if [ "$success" != "true" ]; then
             log_error "API returned error. Response:"
             echo "$response" | head -n 5 >&2
@@ -622,7 +622,7 @@ get_latest_release() {
              return 1
         fi
     fi
-    
+
     echo "$response"
 }
 
@@ -630,12 +630,12 @@ get_latest_release() {
 check_update_available() {
     local current_version="$1"
     local platform="$2"
-    
+
     local response
     if ! response=$(api_fetch "/releases/check?version=${current_version}&platform=${platform}"); then
         return 1
     fi
-    
+
     echo "$response"
 }
 
@@ -643,7 +643,7 @@ check_update_available() {
 get_download_url() {
     local version="$1"
     local platform="$2"
-    
+
     echo "${API_BASE}/releases/download?version=${version}&platform=${platform}&mode=update"
 }
 
@@ -659,16 +659,16 @@ get_remote_script_version() {
 check_script_update() {
     local remote_version
     remote_version=$(get_remote_script_version)
-    
+
     if [ -z "$remote_version" ]; then
         return 1  # Couldn't check
     fi
-    
+
     if [ "$remote_version" != "$SCRIPT_VERSION" ]; then
         echo "$remote_version"
         return 0  # Update available
     fi
-    
+
     return 1  # No update
 }
 
@@ -678,10 +678,10 @@ auto_check_script_update() {
     if [ -n "${1:-}" ] || [ ! -t 0 ]; then
         return
     fi
-    
+
     local remote_version
     remote_version=$(check_script_update)
-    
+
     if [ -n "$remote_version" ]; then
         echo ""
         echo -e "${YELLOW}${ICON_WARN} Management script update available: v${SCRIPT_VERSION} → v${remote_version}${RESET}"
@@ -694,22 +694,22 @@ auto_check_script_update() {
 # Install manager script to system
 install_manager_script() {
     log_step "Installing Management Script"
-    
+
     local current_script
     current_script=$(readlink -f "$0")
-    
+
     # Skip if already installed at the correct location
     if [ "$current_script" = "$MANAGER_PATH" ]; then
         log_success "Manager already installed at ${MANAGER_PATH}"
         return 0
     fi
-    
+
     log_info "Installing to ${MANAGER_PATH}..."
-    
+
     # Download fresh copy to ensure we have latest
     local temp_script
     temp_script=$(mktemp)
-    
+
     if curl -fsSL "${INSTALL_SCRIPT_URL}" -o "$temp_script"; then
         if head -n 1 "$temp_script" | grep -q "^#!/bin/bash"; then
             chmod +x "$temp_script"
@@ -719,7 +719,7 @@ install_manager_script() {
             return 0
         fi
     fi
-    
+
     rm -f "$temp_script"
     log_error "Failed to install manager script"
     return 1
@@ -728,12 +728,12 @@ install_manager_script() {
 # Self-update function
 self_update() {
     log_step "Updating Management Script"
-    
+
     local current_script
     current_script=$(readlink -f "$0")
     local temp_script
     temp_script=$(mktemp)
-    
+
     log_info "Downloading latest script..."
     if curl -fsSL "${INSTALL_SCRIPT_URL}" -o "$temp_script"; then
         # Check if file is valid bash script
@@ -742,30 +742,30 @@ self_update() {
             rm -f "$temp_script"
             return 1
         fi
-        
+
         # Get version from downloaded script
         local new_version
         new_version=$(grep -m1 'SCRIPT_VERSION=' "$temp_script" | sed 's/.*SCRIPT_VERSION="\([^"]*\)".*/\1/')
-        
+
         # Compare versions
         if [ "$new_version" = "$SCRIPT_VERSION" ]; then
             log_success "Script is already up to date (v${SCRIPT_VERSION})"
             rm -f "$temp_script"
             return 0
         fi
-        
+
         log_info "Updating: v${SCRIPT_VERSION} → v${new_version}"
-        
+
         # Update current script
         chmod +x "$temp_script"
         mv "$temp_script" "$current_script"
-        
+
         # Also update manager path if different
         if [ "$current_script" != "$MANAGER_PATH" ] && [ -f "$MANAGER_PATH" ]; then
             curl -fsSL "${INSTALL_SCRIPT_URL}" -o "$MANAGER_PATH" 2>/dev/null
             chmod +x "$MANAGER_PATH" 2>/dev/null
         fi
-        
+
         log_success "Script updated to v${new_version}!"
         echo ""
         log_info "Restarting script..."
@@ -797,27 +797,27 @@ get_installed_version() {
 compare_versions() {
     local v1="$1"
     local v2="$2"
-    
+
     # Returns: 0 if v1 == v2, 1 if v1 > v2, 2 if v1 < v2
     if [ "$v1" = "$v2" ]; then
         return 0
     fi
-    
+
     local IFS='.'
     read -ra v1_parts <<< "$v1"
     read -ra v2_parts <<< "$v2"
-    
+
     for i in 0 1 2; do
         local p1="${v1_parts[$i]:-0}"
         local p2="${v2_parts[$i]:-0}"
-        
+
         if [ "$p1" -gt "$p2" ]; then
             return 1
         elif [ "$p1" -lt "$p2" ]; then
             return 2
         fi
     done
-    
+
     return 0
 }
 
@@ -829,36 +829,36 @@ download_and_install() {
     local version="$1"
     local arch
     arch=$(detect_arch)
-    
+
     if [ -z "$arch" ]; then
         log_error "Could not detect system architecture"
         return 1
     fi
-    
+
     local platform="linux-${arch}-headless"
-    
+
     log_step "Installing DripLine v${version}"
-    
+
     log_info "Platform: ${BOLD}${platform}${RESET}"
     log_info "Target directory: ${BOLD}${INSTALL_DIR}${RESET}"
-    
+
     # Create install directory
     if ! mkdir -p "${INSTALL_DIR}"; then
         log_error "Failed to create installation directory"
         return 1
     fi
-    
+
     # Create temp directory for download
     local temp_dir
     temp_dir=$(mktemp -d)
     trap '[ -n "${temp_dir}" ] && rm -rf "${temp_dir}"' EXIT
-    
+
     local download_url
     download_url=$(get_download_url "$version" "$platform")
     local tarball="${temp_dir}/dripline.tar.gz"
-    
+
     log_info "Downloading from: ${DIM}${download_url}${RESET}"
-    
+
     # Download with progress
     echo ""
     if ! curl -fSL --connect-timeout 30 --max-time 300 \
@@ -869,19 +869,19 @@ download_and_install() {
         return 1
     fi
     echo ""
-    
+
     log_success "Download complete"
-    
+
     # Verify tarball
     if [ ! -f "$tarball" ] || [ ! -s "$tarball" ]; then
         log_error "Downloaded file is empty or missing"
         return 1
     fi
-    
+
     local file_size
     file_size=$(du -h "$tarball" | cut -f1)
     log_info "Downloaded: ${BOLD}${file_size}${RESET}"
-    
+
     # Backup existing installation
     if [ -x "${INSTALL_DIR}/dripline" ]; then
         local old_version
@@ -889,7 +889,7 @@ download_and_install() {
         log_info "Backing up existing installation (v${old_version})..."
         cp "${INSTALL_DIR}/dripline" "${INSTALL_DIR}/dripline.backup.${old_version}" 2>/dev/null || true
     fi
-    
+
     # Extract (suppress Docker xattr warnings)
     log_info "Extracting..."
     local tar_output
@@ -904,16 +904,16 @@ download_and_install() {
     if [ -n "$tar_output" ]; then
         echo "$tar_output" | grep -v "LIBARCHIVE.xattr" || true
     fi
-    
+
     # Make executable
     chmod +x "${INSTALL_DIR}/dripline"
-    
+
     # Create symlink
     if [ ! -L "${SYMLINK_PATH}" ] || [ "$(readlink -f "${SYMLINK_PATH}")" != "${INSTALL_DIR}/dripline" ]; then
         log_info "Creating symlink: ${SYMLINK_PATH} -> ${INSTALL_DIR}/dripline"
         ln -snf "${INSTALL_DIR}/dripline" "${SYMLINK_PATH}"
     fi
-    
+
     # Verify installation
     local installed_version
     installed_version=$(get_installed_version)
@@ -921,68 +921,68 @@ download_and_install() {
         log_error "Installation verification failed"
         return 1
     fi
-    
+
     log_success "DripLine v${installed_version} installed successfully!"
-    
+
     # Clean up temp dir and trap
     rm -rf "${temp_dir}" 2>/dev/null
     trap - EXIT
-    
+
     # Install manager script if not already installed
     if [ ! -x "$MANAGER_PATH" ]; then
         echo ""
         log_info "Installing management script..."
         install_manager_script
     fi
-    
+
     return 0
 }
 
 uninstall() {
     log_step "Uninstalling DripLine"
-    
+
     # Stop service if running
     if systemctl is-active --quiet "${SERVICE_NAME}" 2>/dev/null; then
         log_info "Stopping service..."
         systemctl stop "${SERVICE_NAME}"
     fi
-    
+
     # Disable service
     if systemctl is-enabled --quiet "${SERVICE_NAME}" 2>/dev/null; then
         log_info "Disabling service..."
         systemctl disable "${SERVICE_NAME}"
     fi
-    
+
     # Remove service files
     if [ -f "${SERVICE_FILE}" ]; then
         log_info "Removing service file..."
         rm -f "${SERVICE_FILE}"
     fi
-    
+
     if [ -f "${UPDATE_TIMER_FILE}" ]; then
         rm -f "${UPDATE_TIMER_FILE}"
     fi
-    
+
     if [ -f "${UPDATE_SERVICE_FILE}" ]; then
         rm -f "${UPDATE_SERVICE_FILE}"
     fi
-    
+
     systemctl daemon-reload 2>/dev/null || true
-    
+
     # Remove symlink
     if [ -L "${SYMLINK_PATH}" ]; then
         log_info "Removing symlink..."
         rm -f "${SYMLINK_PATH}"
     fi
-    
+
     # Remove installation directory
     if [ -n "${INSTALL_DIR}" ] && [ -d "${INSTALL_DIR}" ]; then
         log_info "Removing installation directory..."
         rm -rf "${INSTALL_DIR}"
     fi
-    
+
     log_success "DripLine uninstalled successfully!"
-    
+
     # Data directory protection — NEVER delete wallet data
     local data_dir
     data_dir=$(get_data_dir)
@@ -1001,14 +1001,14 @@ uninstall() {
 create_backup() {
     local data_dir
     data_dir=$(get_data_dir)
-    
+
     if [ ! -d "$data_dir" ]; then
         log_error "Data directory not found: $data_dir"
         return 1
     fi
-    
+
     log_step "Create Backup"
-    
+
     # Get the actual user's home directory (not root if using sudo)
     local user_home
     if [ -n "$SUDO_USER" ]; then
@@ -1016,40 +1016,40 @@ create_backup() {
     else
         user_home="$HOME"
     fi
-    
+
     # Show what will be backed up
     local data_size
     data_size=$(du -sh "$data_dir" 2>/dev/null | cut -f1)
     local file_count
     file_count=$(find "$data_dir" -type f 2>/dev/null | wc -l | tr -d ' ')
-    
+
     echo ""
     echo "  ${BOLD}Source Data:${RESET}"
     echo "    Directory: ${data_dir}"
     echo "    Size: ${data_size}"
     echo "    Files: ${file_count}"
     echo ""
-    
+
     local backup_name="dripline-backup-$(date +%Y%m%d-%H%M%S).tar.gz"
     local backup_path="${user_home}/${backup_name}"
-    
+
     echo "  ${BOLD}Backup will be saved to:${RESET}"
     echo "    ${backup_path}"
     echo ""
-    
+
     if ! confirm "Create backup now?"; then
         log_info "Backup cancelled"
         return 0
     fi
-    
+
     echo ""
     log_info "Creating backup: ${backup_name}"
-    
+
     # Create backup with progress indicator
     if tar -czf "$backup_path" -C "$(dirname "$data_dir")" "$(basename "$data_dir")"; then
         local backup_size
         backup_size=$(du -h "$backup_path" | cut -f1)
-        
+
         # Verify the backup
         if tar -tzf "$backup_path" >/dev/null 2>&1; then
             log_success "Backup created and verified!"
@@ -1058,7 +1058,7 @@ create_backup() {
             echo "    File: ${backup_path}"
             echo "    Size: ${backup_size}"
             echo ""
-            
+
             # Fix ownership if created as root
             if [ -n "$SUDO_USER" ]; then
                 chown "$SUDO_USER:$SUDO_USER" "$backup_path" 2>/dev/null || true
@@ -1071,13 +1071,13 @@ create_backup() {
         log_error "Failed to create backup"
         return 1
     fi
-    
+
     return 0
 }
 
 restore_backup() {
     log_step "Restore Backup"
-    
+
     # Get the actual user's home directory (not root if using sudo)
     local user_home
     if [ -n "$SUDO_USER" ]; then
@@ -1085,27 +1085,27 @@ restore_backup() {
     else
         user_home="$HOME"
     fi
-    
+
     # List available backups (include pre-restore backups too)
     local backups=()
     while IFS= read -r -d '' file; do
         backups+=("$file")
     done < <(find "${user_home}" -maxdepth 1 \( -name "dripline-backup-*.tar.gz" -o -name "dripline-pre-restore-*.tar.gz" \) -print0 2>/dev/null | sort -rz)
-    
+
     local backup_path=""
-    
+
     if [ ${#backups[@]} -eq 0 ]; then
         log_warn "No backup files found in ${user_home}"
         echo ""
         echo -n "Enter path to backup file (or Q to cancel): "
         read -r backup_path < /dev/tty
-        
+
         # Handle quit/cancel
         if [[ "$backup_path" =~ ^[qQcC]$ ]] || [ -z "$backup_path" ]; then
             log_info "Restore cancelled"
             return 0
         fi
-        
+
         if [ ! -f "$backup_path" ]; then
             log_error "File not found: $backup_path"
             return 1
@@ -1139,29 +1139,29 @@ restore_backup() {
         echo ""
         echo -n "Select backup [1-${#backups[@]}] or Q to cancel: "
         read -r selection < /dev/tty
-        
+
         # Handle quit/cancel
         if [[ "$selection" =~ ^[qQcC]$ ]] || [ -z "$selection" ]; then
             log_info "Restore cancelled"
             return 0
         fi
-        
+
         # Validate number
         if ! [[ "$selection" =~ ^[0-9]+$ ]] || [ "$selection" -lt 1 ] || [ "$selection" -gt ${#backups[@]} ]; then
             log_error "Invalid selection"
             return 1
         fi
-        
+
         backup_path="${backups[$((selection-1))]}"
     fi
-    
+
     # Verify backup integrity
     log_info "Verifying backup integrity..."
     if ! tar -tzf "$backup_path" >/dev/null 2>&1; then
         log_error "Backup file is corrupted or invalid"
         return 1
     fi
-    
+
     # Show backup summary
     local file_count
     file_count=$(tar -tzf "$backup_path" 2>/dev/null | wc -l | tr -d ' ')
@@ -1173,17 +1173,17 @@ restore_backup() {
     echo "    Size: ${backup_size}"
     echo "    Files: ${file_count} entries"
     echo ""
-    
+
     local data_dir
     data_dir=$(get_data_dir)
-    
+
     # Check if service is running (don't stop yet)
     local service_was_running=false
     if systemctl is-active --quiet "${SERVICE_NAME}" 2>/dev/null; then
         service_was_running=true
         log_warn "Service is currently running and will be stopped"
     fi
-    
+
     # Backup current data if exists
     if [ -d "$data_dir" ]; then
         log_warn "Current data directory will be replaced"
@@ -1194,13 +1194,13 @@ restore_backup() {
             log_info "Restore cancelled"
             return 0
         fi
-        
+
         # Now stop the service
         if [ "$service_was_running" = true ]; then
             log_info "Stopping service before restore..."
             systemctl stop "${SERVICE_NAME}"
         fi
-        
+
         local current_backup="${user_home}/dripline-pre-restore-$(date +%Y%m%d-%H%M%S).tar.gz"
         log_info "Backing up current data to: $(basename "$current_backup")"
         if tar -czf "$current_backup" -C "$(dirname "$data_dir")" "$(basename "$data_dir")"; then
@@ -1236,17 +1236,17 @@ restore_backup() {
             return 0
         fi
     fi
-    
+
     # Restore (suppress Docker xattr warnings)
     log_info "Restoring from backup..."
     mkdir -p "$(dirname "$data_dir")"
-    
+
     # Check for path traversal in backup archive
     if tar -tzf "$backup_path" 2>/dev/null | grep -qE '(^|/)\.\.(/|$)'; then
         log_error "Backup contains suspicious path traversal entries — aborting"
         return 1
     fi
-    
+
     local tar_output
     if tar_output=$(tar -xzf "$backup_path" -C "$(dirname "$data_dir")" 2>&1); then
         # Filter out Docker xattr warnings for display if any
@@ -1255,7 +1255,7 @@ restore_backup() {
         fi
         log_success "Backup restored successfully!"
         echo ""
-        
+
         # Offer to restart service
         if systemctl is-enabled --quiet "${SERVICE_NAME}" 2>/dev/null; then
             if confirm "Start DripLine service now?"; then
@@ -1278,7 +1278,7 @@ restore_backup() {
         log_error "Failed to restore backup"
         return 1
     fi
-    
+
     return 0
 }
 
@@ -1288,7 +1288,7 @@ restore_backup() {
 
 create_service() {
     log_step "Creating Systemd Service"
-    
+
     local user="${SUDO_USER:-$USER}"
     local group="${SUDO_USER:-$USER}"
     local home_dir
@@ -1297,10 +1297,10 @@ create_service() {
     else
         home_dir="$HOME"
     fi
-    
+
     log_info "Service will run as user: ${BOLD}${user}${RESET}"
     log_info "Working directory: ${BOLD}${home_dir}${RESET}"
-    
+
     if [ "$user" = "root" ]; then
         echo ""
         log_warn "Service will run as ROOT user!"
@@ -1310,7 +1310,7 @@ create_service() {
             return 1
         fi
     fi
-    
+
     # Validate username and home directory before embedding in unit file
     if ! echo "$user" | grep -qE '^[a-zA-Z_][a-zA-Z0-9_-]*$'; then
         log_error "Invalid username for service: ${user}"
@@ -1320,7 +1320,7 @@ create_service() {
         log_error "Invalid home directory for service: ${home_dir}"
         return 1
     fi
-    
+
     cat > "${SERVICE_FILE}" << EOF
 [Unit]
 Description=DripLine - Automated Solana Trading Bot
@@ -1352,15 +1352,15 @@ WantedBy=multi-user.target
 EOF
 
     systemctl daemon-reload
-    
+
     log_success "Service file created: ${SERVICE_FILE}"
-    
+
     echo ""
     if confirm "Enable service to start on boot?" "y"; then
         systemctl enable "${SERVICE_NAME}"
         log_success "Service enabled for auto-start"
     fi
-    
+
     if confirm "Start service now?" "y"; then
         systemctl start "${SERVICE_NAME}"
         sleep 2
@@ -1383,17 +1383,17 @@ service_status() {
     echo ""
     echo "${BOLD}Service Status:${RESET}"
     echo ""
-    
+
     if ! systemctl list-unit-files | grep -q "${SERVICE_NAME}"; then
         echo "  ${DIM}Service not installed${RESET}"
         return
     fi
-    
+
     local status
     status=$(systemctl is-active "${SERVICE_NAME}" 2>/dev/null || echo "inactive")
     local enabled
     enabled=$(systemctl is-enabled "${SERVICE_NAME}" 2>/dev/null || echo "disabled")
-    
+
     local status_color
     case "$status" in
         active)
@@ -1409,10 +1409,10 @@ service_status() {
             status_color="${DIM}"
             ;;
     esac
-    
+
     printf "  %-13s %b\n" "Status:" "${status_color}${BOLD}${status}${RESET}"
     printf "  %-13s %s\n" "Auto-start:" "${enabled}"
-    
+
     if [ "$status" = "active" ]; then
         local pid
         pid=$(systemctl show "${SERVICE_NAME}" --property=MainPID --value)
@@ -1420,7 +1420,7 @@ service_status() {
         uptime=$(systemctl show "${SERVICE_NAME}" --property=ActiveEnterTimestamp --value)
         local mem
         mem=$(ps -o rss= -p "$pid" 2>/dev/null | awk '{print int($1/1024)"MB"}')
-        
+
         printf "  %-13s %s\n" "PID:" "${pid}"
         printf "  %-13s %s\n" "Memory:" "${mem:-unknown}"
         printf "  %-13s %s\n" "Started:" "${uptime:-unknown}"
@@ -1433,9 +1433,9 @@ service_menu() {
         print_banner
         echo "${BOLD}  ${ICON_SERVICE}  Service Management${RESET}"
         echo ""
-        
+
         service_status
-        
+
         local options=(
             "${ICON_START} Start Service"
             "${ICON_STOP} Stop Service"
@@ -1446,10 +1446,10 @@ service_menu() {
             "${ICON_SERVICE} Create/Recreate Service"
             "${ICON_BACK} Back to Main Menu"
         )
-        
+
         select_menu "${options[@]}"
         local choice=$MENU_RESULT
-        
+
         case "$choice" in
             0)
                 if systemctl start "${SERVICE_NAME}" 2>/dev/null; then
@@ -1516,24 +1516,24 @@ get_telegram_config() {
     local data_dir
     data_dir=$(get_data_dir)
     local config_file="${data_dir}/data/config.toml"
-    
+
     if [ ! -f "$config_file" ]; then
         echo ""
         return 1
     fi
-    
+
     local bot_token
     local chat_id
-    
+
     # Parse TOML for telegram settings
     bot_token=$(grep -A 20 '^\[telegram\]' "$config_file" 2>/dev/null | grep '^bot_token' | head -1 | sed 's/.*= *"\([^"]*\)".*/\1/')
     chat_id=$(grep -A 20 '^\[telegram\]' "$config_file" 2>/dev/null | grep '^chat_id' | head -1 | sed 's/.*= *"\([^"]*\)".*/\1/')
-    
+
     if [ -n "$bot_token" ] && [ -n "$chat_id" ]; then
         echo "${bot_token}:${chat_id}"
         return 0
     fi
-    
+
     echo ""
     return 1
 }
@@ -1542,14 +1542,14 @@ send_telegram_message() {
     local message="$1"
     local config
     config=$(get_telegram_config)
-    
+
     if [ -z "$config" ]; then
         return 1
     fi
-    
+
     local bot_token="${config%%:*}"
     local chat_id="${config#*:}"
-    
+
     curl -fsSL -X POST \
         "https://api.telegram.org/bot${bot_token}/sendMessage" \
         -d "chat_id=${chat_id}" \
@@ -1560,10 +1560,10 @@ send_telegram_message() {
 
 setup_update_notifications() {
     log_step "Setup Auto-Update Notifications"
-    
+
     local config
     config=$(get_telegram_config)
-    
+
     if [ -z "$config" ]; then
         log_warn "Telegram not configured in DripLine"
         log_info "Please configure Telegram in the DripLine dashboard first:"
@@ -1571,9 +1571,9 @@ setup_update_notifications() {
         press_enter
         return 1
     fi
-    
+
     log_success "Telegram configuration found"
-    
+
     # Test notification
     if confirm "Send test notification?"; then
         if send_telegram_message "🤖 <b>DripLine VPS Manager</b>%0A%0ATest notification from your VPS! Auto-update notifications are working."; then
@@ -1583,14 +1583,14 @@ setup_update_notifications() {
             return 1
         fi
     fi
-    
+
     # Create update check service
     log_info "Creating update check timer..."
-    
+
     local arch
     arch=$(detect_arch)
     local platform="linux-${arch}-headless"
-    
+
     # Resolve home directory for the actual user (not root if using sudo)
     local user="${SUDO_USER:-$USER}"
     local user_home
@@ -1600,7 +1600,7 @@ setup_update_notifications() {
         user_home="$HOME"
     fi
     local config_path="${user_home}/.local/share/DripLine/data/config.toml"
-    
+
     # Use non-quoted heredoc to allow variable substitution for config path
     cat > "${UPDATE_SERVICE_FILE}" << EOF
 [Unit]
@@ -1644,11 +1644,11 @@ EOF
     systemctl daemon-reload
     systemctl enable "${SERVICE_NAME}-update.timer"
     systemctl start "${SERVICE_NAME}-update.timer"
-    
+
     log_success "Update notifications configured!"
     log_info "Checks for updates every 6 hours"
     log_info "Sends Telegram notification when update available"
-    
+
     press_enter
 }
 
@@ -1662,22 +1662,22 @@ get_auth_status() {
         echo ""
         return 1
     fi
-    
+
     local response
     response=$(curl -fsSL "http://127.0.0.1:8080/api/auth/status" 2>/dev/null)
-    
+
     if [ -n "$response" ]; then
         echo "$response"
         return 0
     fi
-    
+
     echo ""
     return 1
 }
 
 set_dashboard_password() {
     log_step "Set Dashboard Password"
-    
+
     # Check if service is running
     if ! systemctl is-active --quiet "${SERVICE_NAME}" 2>/dev/null; then
         log_error "DripLine service is not running"
@@ -1685,25 +1685,25 @@ set_dashboard_password() {
         press_enter
         return 1
     fi
-    
+
     # Get current auth status
     local auth_status
     auth_status=$(get_auth_status)
-    
+
     if [ -z "$auth_status" ]; then
         log_error "Could not connect to DripLine dashboard"
         log_info "Make sure the service is running and healthy"
         press_enter
         return 1
     fi
-    
+
     local has_password
     has_password=$(json_get "$auth_status" "has_password")
     local auth_enabled
     auth_enabled=$(json_get "$auth_status" "auth_enabled")
     local totp_enabled
     totp_enabled=$(json_get "$auth_status" "totp_enabled")
-    
+
     echo ""
     echo "  ${BOLD}Current Status:${RESET}"
     if [ "$auth_enabled" = "true" ]; then
@@ -1722,43 +1722,43 @@ set_dashboard_password() {
         echo "    2FA (TOTP): ${DIM}Not enabled${RESET}"
     fi
     echo ""
-    
+
     # Ask for current password if one exists
     local current_password=""
     if [ "$has_password" = "true" ]; then
         echo -n "Enter current password (or Q to cancel): "
         read -rs current_password < /dev/tty
         echo ""
-        
+
         if [[ "$current_password" =~ ^[qQcC]$ ]]; then
             log_info "Cancelled"
             return 0
         fi
     fi
-    
+
     # Ask for new password
     echo -n "Enter new password (min 4 chars, empty to disable): "
     read -rs new_password < /dev/tty
     echo ""
-    
+
     if [ -n "$new_password" ]; then
         echo -n "Confirm new password: "
         read -rs confirm_password < /dev/tty
         echo ""
-        
+
         if [ "$new_password" != "$confirm_password" ]; then
             log_error "Passwords do not match"
             press_enter
             return 1
         fi
-        
+
         if [ ${#new_password} -lt 4 ]; then
             log_error "Password must be at least 4 characters"
             press_enter
             return 1
         fi
     fi
-    
+
     # Build JSON payload safely (escape special characters to prevent injection)
     json_escape_val() {
         local s="$1"
@@ -1780,14 +1780,14 @@ set_dashboard_password() {
     else
         json_payload="{\"new_password\":\"$escaped_new\"}"
     fi
-    
+
     # Send request
     log_info "Updating password..."
     local response
     response=$(curl -fsSL -X POST "http://127.0.0.1:8080/api/auth/set-password" \
         -H "Content-Type: application/json" \
         -d "$json_payload" 2>/dev/null)
-    
+
     if echo "$response" | grep -q '"success":\s*true'; then
         if [ -z "$new_password" ]; then
             log_success "Password cleared and authentication disabled"
@@ -1802,7 +1802,7 @@ set_dashboard_password() {
         error=$(json_get "$response" "message")
         log_error "Failed to set password: ${error:-Unknown error}"
     fi
-    
+
     press_enter
 }
 
@@ -1812,11 +1812,11 @@ manage_dashboard_security() {
         echo "${BOLD}  ${ICON_LOCK}  Dashboard Security${RESET}"
         echo ""
         print_separator
-        
+
         # Get auth status
         local auth_status
         auth_status=$(get_auth_status)
-        
+
         if [ -z "$auth_status" ]; then
             echo ""
             log_warn "Cannot connect to DripLine dashboard"
@@ -1827,7 +1827,7 @@ manage_dashboard_security() {
             echo ""
             echo -n "  Select option: "
             read -r opt < /dev/tty
-            
+
             case "$opt" in
                 1)
                     systemctl start "${SERVICE_NAME}" 2>/dev/null
@@ -1839,14 +1839,14 @@ manage_dashboard_security() {
             esac
             continue
         fi
-        
+
         local has_password
         has_password=$(json_get "$auth_status" "has_password")
         local auth_enabled
         auth_enabled=$(json_get "$auth_status" "auth_enabled")
         local totp_enabled
         totp_enabled=$(json_get "$auth_status" "totp_enabled")
-        
+
         echo ""
         echo "  ${BOLD}Current Status:${RESET}"
         echo ""
@@ -1868,7 +1868,7 @@ manage_dashboard_security() {
         echo ""
         print_separator
         echo ""
-        
+
         if [ "$has_password" = "true" ]; then
             echo "  ${CYAN}[1]${RESET} Change Password"
             echo "  ${CYAN}[2]${RESET} ${RED}Remove Password${RESET} (disable auth)"
@@ -1882,7 +1882,7 @@ manage_dashboard_security() {
         echo ""
         echo -n "  Select option: "
         read -r opt < /dev/tty
-        
+
         case "$opt" in
             1)
                 set_dashboard_password
@@ -1896,12 +1896,12 @@ manage_dashboard_security() {
                         echo -n "Enter current password: "
                         read -rs current_password < /dev/tty
                         echo ""
-                        
+
                         local response
                         response=$(curl -fsSL -X POST "http://127.0.0.1:8080/api/auth/set-password" \
                             -H "Content-Type: application/json" \
                             -d "{\"current_password\":\"$current_password\",\"new_password\":\"\"}" 2>/dev/null)
-                        
+
                         if echo "$response" | grep -q '"success":\s*true'; then
                             log_success "Password removed, authentication disabled"
                         else
@@ -1996,12 +1996,12 @@ get_network_io() {
     if [ -z "$iface" ]; then
         iface=$(ip link 2>/dev/null | awk -F: '$0!~"lo|vir|docker|br-"{print $2;exit}' | tr -d ' ')
     fi
-    
+
     if [ -n "$iface" ] && [ -f "/sys/class/net/${iface}/statistics/rx_bytes" ]; then
         local rx tx
         rx=$(cat "/sys/class/net/${iface}/statistics/rx_bytes" 2>/dev/null)
         tx=$(cat "/sys/class/net/${iface}/statistics/tx_bytes" 2>/dev/null)
-        
+
         # Convert to human readable
         local rx_h tx_h
         rx_h=$(numfmt --to=iec-i --suffix=B "$rx" 2>/dev/null || echo "${rx}B")
@@ -2049,7 +2049,7 @@ get_public_ip() {
             return
         fi
     fi
-    
+
     local ip
     ip=$(curl -fsSL --connect-timeout 2 https://api.ipify.org 2>/dev/null)
     if [ -n "$ip" ]; then
@@ -2065,7 +2065,7 @@ draw_bar() {
     local width=${2:-30}
     local filled=$((percent * width / 100))
     local empty=$((width - filled))
-    
+
     # Determine color based on percentage
     local color="$GREEN"
     if [ "$percent" -ge 80 ]; then
@@ -2073,7 +2073,7 @@ draw_bar() {
     elif [ "$percent" -ge 60 ]; then
         color="$YELLOW"
     fi
-    
+
     printf "["
     printf "${color}%${filled}s" '' | tr ' ' '#'
     printf "${RESET}%${empty}s" '' | tr ' ' '-'
@@ -2083,33 +2083,33 @@ draw_bar() {
 # Live system monitor display
 system_monitor() {
     local refresh_interval=2
-    
+
     # Hide cursor
     tput civis 2>/dev/null || true
-    
+
     # Cleanup on exit
     trap 'tput cnorm 2>/dev/null; return' INT TERM
-    
+
     while true; do
         clear
-        
+
         # Compact header
         echo -e "${CYAN}${BOLD}"
         echo "  ============================================================================"
         echo "  |               DRIPLINE SYSTEM MONITOR                                |"
         echo "  ============================================================================${RESET}"
         echo ""
-        
+
         local now
         now=$(date '+%Y-%m-%d %H:%M:%S')
         echo -e "  ${DIM}Last update: ${now}  |  Refresh: ${refresh_interval}s  |  Press Q to exit${RESET}"
         echo ""
         echo -e "  ${CYAN}----------------------------------------------------------------------------${RESET}"
-        
+
         # === SYSTEM SECTION ===
         echo -e "  ${BOLD}SYSTEM${RESET}"
         echo -e "  ${CYAN}----------------------------------------------------------------------------${RESET}"
-        
+
         # CPU
         local cpu_pct
         cpu_pct=$(get_cpu_usage)
@@ -2121,7 +2121,7 @@ system_monitor() {
         else
             echo "  CPU:         N/A"
         fi
-        
+
         # Memory
         local mem_info
         mem_info=$(get_memory_info)
@@ -2134,7 +2134,7 @@ system_monitor() {
         else
             echo "$mem_info"
         fi
-        
+
         # Swap
         local swap_info
         swap_info=$(get_swap_info)
@@ -2151,7 +2151,7 @@ system_monitor() {
         else
             echo "  Swap:        ${DIM}Not configured${RESET}"
         fi
-        
+
         # Disk
         local disk_info
         disk_info=$(get_disk_info)
@@ -2164,33 +2164,33 @@ system_monitor() {
         else
             echo "$disk_info"
         fi
-        
+
         echo ""
-        
+
         # Load & Uptime
         local load_avg uptime_info proc_count
         load_avg=$(get_load_avg)
         uptime_info=$(get_uptime_info)
         proc_count=$(get_process_count)
-        
+
         echo "  Load Avg:    ${load_avg}"
         echo "  Uptime:      ${uptime_info}"
         echo "  Processes:   ${proc_count}"
-        
+
         # Network
         local net_info public_ip
         net_info=$(get_network_io)
         public_ip=$(get_public_ip)
         echo "  Network:     ${net_info}"
         echo "  Public IP:   ${public_ip}"
-        
+
         echo ""
         echo -e "  ${CYAN}----------------------------------------------------------------------------${RESET}"
-        
+
         # === DRIPLINE SECTION ===
         echo -e "  ${BOLD}DRIPLINE${RESET}"
         echo -e "  ${CYAN}----------------------------------------------------------------------------${RESET}"
-        
+
         # Service status
         local service_status_text service_pid service_mem
         if systemctl is-active --quiet "${SERVICE_NAME}" 2>/dev/null; then
@@ -2205,10 +2205,10 @@ system_monitor() {
         else
             service_status_text="${DIM}NOT INSTALLED${RESET}"
         fi
-        
+
         local installed_version
         installed_version=$(get_installed_version)
-        
+
         echo "  Status:      ${service_status_text}"
         if [ -n "$installed_version" ]; then
             echo "  Version:     v${installed_version}"
@@ -2219,11 +2219,11 @@ system_monitor() {
         if [ -n "$service_mem" ]; then
             echo "  Memory:      ${service_mem}"
         fi
-        
+
         # Try to get bot stats from API
         local bot_stats
         bot_stats=$(get_bot_stats)
-        
+
         if [ -n "$bot_stats" ]; then
             # Parse wallet balance if available
             local wallet_sol
@@ -2231,14 +2231,14 @@ system_monitor() {
             if [ -n "$wallet_sol" ]; then
                 echo "  Wallet:      ${GREEN}${wallet_sol} SOL${RESET}"
             fi
-            
+
             # Parse positions count
             local positions_count
             positions_count=$(json_get "$bot_stats" "open_positions")
             if [ -n "$positions_count" ]; then
                 echo "  Positions:   ${positions_count} open"
             fi
-            
+
             # Parse trader status
             local trading_enabled
             trading_enabled=$(json_get "$bot_stats" "trading_enabled")
@@ -2252,7 +2252,7 @@ system_monitor() {
                 echo "  Dashboard:   ${DIM}Waiting for API...${RESET}"
             fi
         fi
-        
+
         # Data directory info
         local data_dir
         data_dir=$(get_data_dir)
@@ -2261,16 +2261,16 @@ system_monitor() {
             data_size=$(du -sh "$data_dir" 2>/dev/null | cut -f1)
             echo "  Data Size:   ${data_size:-N/A}"
         fi
-        
+
         echo ""
         echo -e "  ${CYAN}----------------------------------------------------------------------------${RESET}"
         echo ""
         echo "  ${DIM}[Q] Quit  |  [R] Refresh now  |  [+] Faster  |  [-] Slower${RESET}"
-        
+
         # Check for key press (non-blocking)
         local key=""
         read -rsn1 -t "$refresh_interval" key 2>/dev/null || true
-        
+
         case "$key" in
             q|Q)
                 tput cnorm 2>/dev/null || true
@@ -2293,7 +2293,7 @@ system_monitor() {
                 ;;
         esac
     done
-    
+
     # Restore cursor
     tput cnorm 2>/dev/null || true
     trap - INT TERM
@@ -2308,15 +2308,15 @@ show_status() {
     echo "${BOLD}  ${ICON_STATUS}  DripLine Status${RESET}"
     echo ""
     print_separator
-    
+
     # Installation status
     echo ""
     echo "${BOLD}Installation:${RESET}"
     echo ""
-    
+
     local installed_version
     installed_version=$(get_installed_version)
-    
+
     if [ -n "$installed_version" ]; then
         echo "  Version:     ${GREEN}${BOLD}v${installed_version}${RESET}"
         echo "  Binary:      ${INSTALL_DIR}/dripline"
@@ -2324,7 +2324,7 @@ show_status() {
     else
         echo "  ${DIM}DripLine is not installed${RESET}"
     fi
-    
+
     # Data directory
     local data_dir
     data_dir=$(get_data_dir)
@@ -2336,7 +2336,7 @@ show_status() {
         data_size=$(du -sh "$data_dir" 2>/dev/null | cut -f1)
         echo "  Path:        ${data_dir}"
         echo "  Size:        ${data_size:-unknown}"
-        
+
         if [ -f "${data_dir}/data/config.toml" ]; then
             echo "  Config:      ${GREEN}${ICON_CHECK} Found${RESET}"
         else
@@ -2345,10 +2345,10 @@ show_status() {
     else
         echo "  ${DIM}Data directory not created yet${RESET}"
     fi
-    
+
     # Service status
     service_status
-    
+
     # Latest version check
     echo "${BOLD}Latest Version:${RESET}"
     echo ""
@@ -2361,10 +2361,10 @@ show_status() {
         else
             latest_version=$(echo "$latest_response" | sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\?\([^,\"]*\)"\?.*/\1/p' | head -1)
         fi
-        
+
         if [ -n "$latest_version" ]; then
             echo "  Available:   v${latest_version}"
-            
+
             if [ -n "$installed_version" ]; then
                 compare_versions "$installed_version" "$latest_version"
                 local cmp_result=$?
@@ -2377,7 +2377,7 @@ show_status() {
     else
         echo "  ${DIM}Could not fetch latest version${RESET}"
     fi
-    
+
     echo ""
     print_separator
     press_enter
@@ -2393,7 +2393,7 @@ show_help() {
     echo ""
     print_separator
     echo ""
-    
+
     echo "${BOLD}${CYAN}Quick Start:${RESET}"
     echo ""
     echo "  1. Install DripLine using option [1]"
@@ -2401,7 +2401,7 @@ show_help() {
     echo "  3. Access dashboard at http://localhost:8080"
     echo "  4. Enable auto-start via option [6] Manage Service"
     echo ""
-    
+
     echo "${BOLD}${CYAN}Remote Dashboard Access:${RESET}"
     echo ""
     echo "  The safest way to access your dashboard remotely is via SSH tunnel:"
@@ -2410,7 +2410,7 @@ show_help() {
     echo ""
     echo "  Then open http://localhost:8080 in your local browser."
     echo ""
-    
+
     echo "${BOLD}${CYAN}Useful Commands:${RESET}"
     echo ""
     echo "  View logs:          ${DIM}journalctl -u dripline -f${RESET}"
@@ -2418,7 +2418,7 @@ show_help() {
     echo "  Check status:       ${DIM}sudo systemctl status dripline${RESET}"
     echo "  Edit config:        ${DIM}nano ~/.local/share/DripLine/data/config.toml${RESET}"
     echo ""
-    
+
     echo "${BOLD}${CYAN}Security Tips:${RESET}"
     echo ""
     echo "  • Never expose port 8080 to the public internet"
@@ -2427,7 +2427,7 @@ show_help() {
     echo "  • Enable Telegram notifications for monitoring"
     echo "  • Regularly backup your data directory"
     echo ""
-    
+
     echo "${BOLD}${CYAN}Resources:${RESET}"
     echo ""
     echo "  Documentation:      ${CYAN}https://dripline.io/docs${RESET}"
@@ -2436,7 +2436,7 @@ show_help() {
     echo "  Telegram Support:   ${CYAN}https://t.me/driplineio_support${RESET}"
     echo "  Twitter/X:          ${CYAN}https://x.com/driplineio${RESET}"
     echo ""
-    
+
     print_separator
     press_enter
 }
@@ -2451,14 +2451,14 @@ get_quick_cpu() {
         local user nice sys idle iow irq sirq
         read -r _ user nice sys idle iow irq sirq _ < /proc/stat
         local total=$((user + nice + sys + idle + iow + irq + sirq))
-        
+
         if [ -f /tmp/.dripline_cpu_stat ]; then
             local prev_total prev_idle
             read -r prev_total prev_idle < /tmp/.dripline_cpu_stat
-            
+
             local diff_total=$((total - prev_total))
             local diff_idle=$((idle - prev_idle))
-            
+
             if [ "$diff_total" -gt 0 ]; then
                 local cpu=$((100 * (diff_total - diff_idle) / diff_total))
                 echo "$cpu"
@@ -2469,7 +2469,7 @@ get_quick_cpu() {
             # First run, return 0 and establish baseline
             echo "0"
         fi
-        
+
         echo "$total $idle" > /tmp/.dripline_cpu_stat
     else
         echo "N/A"
@@ -2533,15 +2533,15 @@ get_bot_quick_stats() {
 draw_modern_bar() {
     local percent=$1
     local width=${2:-12}
-    
+
     if [ "$percent" = "N/A" ]; then
         printf "%-${width}s %s" "" "N/A"
         return
     fi
-    
+
     local filled=$((percent * width / 100))
     local empty=$((width - filled))
-    
+
     # Color based on percentage
     local color="$GREEN"
     if [ "$percent" -ge 80 ]; then
@@ -2549,7 +2549,7 @@ draw_modern_bar() {
     elif [ "$percent" -ge 60 ]; then
         color="$YELLOW"
     fi
-    
+
     printf "${color}"
     repeat_char '▰' "$filled"
     printf "${RESET}${DIM}"
@@ -2563,7 +2563,7 @@ print_dashboard_status() {
     echo ""
     echo -e "  ${BOLD}SYSTEM${RESET}                                 ${BOLD}DRIPLINE${RESET}"
     echo ""
-    
+
     # Get system stats (fast)
     local cpu_pct mem_info disk_info load_avg uptime_info
     cpu_pct=$(get_quick_cpu)
@@ -2571,16 +2571,16 @@ print_dashboard_status() {
     disk_info=$(get_quick_disk)
     load_avg=$(get_quick_load)
     uptime_info=$(get_quick_uptime)
-    
+
     local mem_pct disk_pct
     mem_pct=$(echo "$mem_info" | cut -d'|' -f1)
     disk_pct=$(echo "$disk_info" | cut -d'|' -f1)
-    
+
     # Get bot status (fast - cache systemctl result)
     local installed_version service_status_text service_pid bot_mem
     local service_running=false
     installed_version=$(get_installed_version)
-    
+
     if systemctl is-active --quiet "${SERVICE_NAME}" 2>/dev/null; then
         service_running=true
         service_status_text="${GREEN}● RUNNING${RESET}"
@@ -2593,12 +2593,12 @@ print_dashboard_status() {
     else
         service_status_text="${DIM}○ NOT INSTALLED${RESET}"
     fi
-    
+
     # CPU | Status
     printf "  CPU    "
     draw_modern_bar "$cpu_pct" 12
     printf "             Status   %b\n" "$service_status_text"
-    
+
     # Memory | Version
     printf "  Memory "
     draw_modern_bar "$mem_pct" 12
@@ -2607,7 +2607,7 @@ print_dashboard_status() {
     else
         printf "             Version  ${DIM}---${RESET}\n"
     fi
-    
+
     # Disk | PID
     printf "  Disk   "
     draw_modern_bar "$disk_pct" 12
@@ -2616,7 +2616,7 @@ print_dashboard_status() {
     else
         printf "             PID      ${DIM}---${RESET}\n"
     fi
-    
+
     # Load | Wallet (get bot stats only if running)
     local wallet_sol positions_count trader_status
     if [ "$service_running" = true ]; then
@@ -2628,14 +2628,14 @@ print_dashboard_status() {
             trader_status=$(json_get "$bot_stats" "trading_enabled")
         fi
     fi
-    
+
     printf "  Load   %-22s" "$load_avg"
     if [ -n "$wallet_sol" ]; then
         printf "             Wallet   ${GREEN}◆ %.4f SOL${RESET}\n" "$wallet_sol"
     else
         printf "             Wallet   ${DIM}---${RESET}\n"
     fi
-    
+
     # Uptime | Trading
     printf "  Uptime %-22s" "$uptime_info"
     if [ -n "$positions_count" ]; then
@@ -2647,7 +2647,7 @@ print_dashboard_status() {
     else
         printf "             Trading  ${DIM}---${RESET}\n"
     fi
-    
+
     echo ""
     echo -e "  ${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
     echo ""
@@ -2658,13 +2658,13 @@ main_menu() {
         local choice=-1
         local input_buffer=""
         local installed_version
-        
+
         # Inner loop: Live Dashboard & Input
         while true; do
             clear
             print_banner
             print_dashboard_status
-            
+
             # Build menu options based on installation state
             installed_version=$(get_installed_version)
             local options=()
@@ -2688,27 +2688,27 @@ main_menu() {
                 "${ICON_HELP} Help & Tips"
                 "${ICON_EXIT} Exit"
             )
-            
+
             # Print options
             for i in "${!options[@]}"; do
                 printf "  [${CYAN}%d${RESET}] %s\n" "$((i + 1))" "${options[$i]}"
             done
             echo "  [${CYAN}Q${RESET}] Quit"
             echo ""
-            
+
             # Prompt
             printf "  Select option [1-%d]: %s" "${#options[@]}" "$input_buffer"
-            
+
             # Read input with timeout
             local key
             read -rsn1 -t 10 key < /dev/tty
             local exit_code=$?
-            
+
             if [ $exit_code -gt 128 ]; then
                 # Timeout - loop to refresh
                 continue
             fi
-            
+
             if [[ "$key" == "" ]]; then
                 # Enter pressed
                 if [[ -n "$input_buffer" ]]; then
@@ -2730,10 +2730,10 @@ main_menu() {
                 input_buffer="${input_buffer%?}"
             fi
         done
-        
+
         # Re-fetch version for case context
         installed_version=$(get_installed_version)
-        
+
         case "$choice" in
             0)
                 # Install/Reinstall
@@ -2743,50 +2743,50 @@ main_menu() {
                         continue
                     fi
                 fi
-                
+
                 if check_requirements; then
                     echo ""
                     # Get latest version
                     local latest_response
                     latest_response=$(get_latest_release)
                     local latest_version
-                    
+
                     if [ -n "$latest_response" ] && command -v jq &>/dev/null; then
                         latest_version=$(echo "$latest_response" | jq -r '.data.version' 2>/dev/null)
                     elif [ -n "$latest_response" ]; then
                         latest_version=$(echo "$latest_response" | sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\?\([^,\"]*\)"\?.*/\1/p' | head -1)
                     fi
-                    
+
                     if [ -z "$latest_version" ]; then
                         log_error "Failed to get latest version"
                         press_enter
                         continue
                     fi
-                    
+
                     echo ""
                     log_info "Latest version: ${BOLD}v${latest_version}${RESET}"
                     echo ""
                     echo -n "Install version [${latest_version}] or Q to cancel: "
                     read -r user_version < /dev/tty
-                    
+
                     # Handle quit/cancel
                     if [[ "$user_version" =~ ^[qQcC]$ ]]; then
                         log_info "Installation cancelled"
                         press_enter
                         continue
                     fi
-                    
+
                     if [ -z "$user_version" ]; then
                         user_version="$latest_version"
                     fi
-                    
+
                     # Validate version format (x.y.z)
                     if ! [[ "$user_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
                         log_error "Invalid version format. Expected: x.y.z (e.g., 0.1.107)"
                         press_enter
                         continue
                     fi
-                    
+
                     if download_and_install "$user_version"; then
                         echo ""
                         # Check if service already exists
@@ -2821,18 +2821,18 @@ main_menu() {
                     press_enter
                     continue
                 fi
-                
+
                 local arch
                 arch=$(detect_arch)
                 local platform="linux-${arch}-headless"
-                
+
                 log_info "Checking for updates..."
                 local check_response
                 check_response=$(check_update_available "$installed_version" "$platform")
-                
+
                 local update_available="false"
                 local latest_version=""
-                
+
                 if [ -n "$check_response" ]; then
                     if command -v jq &>/dev/null; then
                         update_available=$(echo "$check_response" | jq -r '.data.updateAvailable' 2>/dev/null)
@@ -2844,7 +2844,7 @@ main_menu() {
                         latest_version=$(echo "$check_response" | sed -n 's/.*"latestVersion"[[:space:]]*:[[:space:]]*"\?\([^,\"]*\)"\?.*/\1/p' | head -1)
                     fi
                 fi
-                
+
                 if [ "$update_available" = "true" ] && [ -n "$latest_version" ]; then
                     echo ""
                     log_success "Update available!"
@@ -2852,7 +2852,7 @@ main_menu() {
                     echo "  Current: v${installed_version}"
                     echo "  Latest:  v${latest_version}"
                     echo ""
-                    
+
                     if confirm "Download and install update?"; then
                         if download_and_install "$latest_version"; then
                             if systemctl is-active --quiet "${SERVICE_NAME}" 2>/dev/null; then
@@ -2874,7 +2874,7 @@ main_menu() {
                     press_enter
                     continue
                 fi
-                
+
                 echo ""
                 log_warn "This will remove DripLine from your system"
                 if confirm "Are you sure you want to uninstall?"; then
@@ -3004,15 +3004,15 @@ main() {
                 log_error "DripLine is not installed"
                 exit 1
             fi
-            
+
             local arch
             arch=$(detect_arch)
             local check_response
             check_response=$(check_update_available "$installed_version" "linux-${arch}-headless")
-            
+
             local update_available="false"
             local latest_version=""
-            
+
             if command -v jq &>/dev/null; then
                 update_available=$(echo "$check_response" | jq -r '.data.updateAvailable' 2>/dev/null)
                 latest_version=$(echo "$check_response" | jq -r '.data.latestVersion' 2>/dev/null)
@@ -3022,7 +3022,7 @@ main() {
                 fi
                 latest_version=$(echo "$check_response" | sed -n 's/.*"latestVersion"[[:space:]]*:[[:space:]]*"\?\([^,\"]*\)"\?.*/\1/p' | head -1)
             fi
-            
+
             if [ "$update_available" = "true" ] && [ -n "$latest_version" ]; then
                 log_info "Update available: v${installed_version} → v${latest_version}"
                 download_and_install "$latest_version"
@@ -3046,7 +3046,7 @@ main() {
             else
                 echo "Not installed"
             fi
-            
+
             if systemctl is-active --quiet "${SERVICE_NAME}" 2>/dev/null; then
                 echo "Service: running"
             elif systemctl list-unit-files | grep -q "${SERVICE_NAME}" 2>/dev/null; then

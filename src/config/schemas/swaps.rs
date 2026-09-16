@@ -12,29 +12,29 @@ config_struct! {
     pub struct JupiterConfig {
         #[metadata(field_metadata! {
             label: "Enabled",
-            hint: "Enable Jupiter router (finds best routes across DEXes)",
+            hint: "Jupiter routes through every major DEX. Turning it off leaves only Direct Pool and Raptor, which cannot trade every token.",
             impact: "high",
             category: "Router",
         })]
         enabled: bool = true,
         #[metadata(field_metadata! {
             label: "Dynamic CU Limit",
-            hint: "Let Jupiter calculate compute units",
+            hint: "Let Jupiter size the compute-unit limit by simulating the swap. The priority fee is charged on the limit, so a sized limit costs less.",
             impact: "medium",
             category: "Performance",
         })]
-        dynamic_compute_unit_limit: bool = false,
+        dynamic_compute_unit_limit: bool = true,
         #[metadata(field_metadata! {
-            label: "Default Priority Fee",
-            hint: "1000 lamports = 0.000001 SOL, higher = faster",
+            label: "Priority Fee",
+            hint: "Compute-unit price in micro-lamports, the same model Direct Pool and Raptor use. Higher lands faster in a busy block.",
             min: 0,
-            max: 1000000,
-            step: 100,
-            unit: "lamports",
+            max: 10000000,
+            step: 1000,
+            unit: "micro-lamports/CU",
             impact: "medium",
             category: "Fees",
         })]
-        default_priority_fee: u64 = 1000,
+        priority_fee_micro_lamports: u64 = 50_000,
         #[metadata(field_metadata! {
             label: "Default Swap Mode",
             hint: "ExactIn or ExactOut",
@@ -61,7 +61,7 @@ config_struct! {
     pub struct DirectSwapConfig {
         #[metadata(field_metadata! {
             label: "Enabled",
-            hint: "Quote the pool directly as well as through Jupiter, and take whichever returns more. Jupiter stays enabled.",
+            hint: "Quote the pool directly alongside the other enabled routers and take whichever returns the most after network fees.",
             impact: "high",
             category: "Router",
         })]
@@ -111,7 +111,7 @@ config_struct! {
     pub struct RaptorConfig {
         #[metadata(field_metadata! {
             label: "Enabled",
-            hint: "Quote Raptor alongside Jupiter and take whichever returns more. Jupiter stays enabled.",
+            hint: "Quote Raptor alongside the other enabled routers and take whichever returns the most after network fees.",
             impact: "high",
             category: "Router",
         })]
@@ -137,6 +137,55 @@ config_struct! {
             category: "Routing",
         })]
         max_hops: u8 = 4,
+    }
+}
+
+config_struct! {
+    /// Guard against a built swap spending SOL on anything but the trade.
+    ///
+    /// Slippage protects the OUTPUT: it guarantees a minimum number of tokens.
+    /// It says nothing about lamports that leave the wallet alongside the swap,
+    /// so a route through a venue that makes the trader pay rent for one of its
+    /// own accounts passes every slippage check ever written. This guard
+    /// simulates the built transaction and refuses it when that cost is out of
+    /// proportion to the trade.
+    pub struct SwapCostGuardConfig {
+        #[metadata(field_metadata! {
+            label: "Enabled",
+            hint: "Simulate every aggregator transaction before sending it and refuse one that parks SOL in an account the wallet cannot close. Off means a route may lock rent without warning.",
+            impact: "high",
+            category: "Safety",
+        })]
+        enabled: bool = true,
+        #[metadata(field_metadata! {
+            label: "Max Extra Cost",
+            hint: "Share of the trade that may be spent on accounts the wallet will never get back. A venue that charges a one-off deposit is accepted only when the trade is large enough to justify it.",
+            min: 0,
+            max: 100,
+            step: 0.1,
+            unit: "% of trade",
+            impact: "high",
+            category: "Safety",
+        })]
+        max_extra_cost_pct: f64 = 1.0,
+        #[metadata(field_metadata! {
+            label: "Always Allow Below",
+            hint: "Extra cost small enough to ignore whatever the trade size, so ordinary rounding and dust never block a swap.",
+            min: 0,
+            max: 100000000,
+            step: 10000,
+            unit: "lamports",
+            impact: "medium",
+            category: "Safety",
+        })]
+        always_allow_below_lamports: u64 = 100_000,
+        #[metadata(field_metadata! {
+            label: "Retry Without The Venue",
+            hint: "When a venue is refused, ask the same aggregator again with that venue excluded before falling back to another router.",
+            impact: "medium",
+            category: "Safety",
+        })]
+        retry_excluding_venue: bool = true,
     }
 }
 
@@ -211,18 +260,27 @@ config_struct! {
         /// Raptor router configuration
         #[metadata(field_metadata! {
             label: "Raptor",
-            hint: "Solana Tracker's aggregator, quoted alongside Jupiter",
+            hint: "Solana Tracker's aggregator, quoted alongside the other routers",
             impact: "high",
             category: "Routers",
         })]
         raptor: RaptorConfig = RaptorConfig::default(),
+
+        /// Cost guard configuration
+        #[metadata(field_metadata! {
+            label: "Cost Guard",
+            hint: "Refuse a swap that would spend SOL on accounts the wallet cannot reclaim, whichever router built it",
+            impact: "high",
+            category: "Safety",
+        })]
+        cost_guard: SwapCostGuardConfig = SwapCostGuardConfig::default(),
 
         /// Slippage configuration
         #[metadata(field_metadata! {
             label: "Slippage",
             hint: "Slippage tolerance settings",
             impact: "critical",
-            category: "Risk",
+            category: "Slippage",
         })]
         slippage: SlippageConfig = SlippageConfig::default(),
     }

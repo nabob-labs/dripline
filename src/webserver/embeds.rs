@@ -190,8 +190,8 @@ pub(super) const POSITION_DETAILS_HEADER_STYLES: &str =
     include_str!("templates/styles/ui/position_details/header.css");
 pub(super) const POSITION_DETAILS_BASE_STYLES: &str =
     include_str!("templates/styles/ui/position_details/base.css");
-pub(super) const POSITION_DETAILS_OVERVIEW_STYLES: &str =
-    include_str!("templates/styles/ui/position_details/overview.css");
+pub(super) const POSITION_DETAILS_SUMMARY_STYLES: &str =
+    include_str!("templates/styles/ui/position_details/summary.css");
 pub(super) const POSITION_DETAILS_CHART_STYLES: &str =
     include_str!("templates/styles/ui/position_details/chart.css");
 pub(super) const POSITION_DETAILS_ACTIVITY_STYLES: &str =
@@ -294,6 +294,7 @@ pub const CORE_HEADER_METRICS: &str = include_str!("templates/scripts/core/heade
 pub const CORE_NOTIFICATIONS: &str = include_str!("templates/scripts/core/notifications.js");
 pub const CORE_TOAST: &str = include_str!("templates/scripts/core/toast.js");
 pub const CORE_ACTION_TOASTS: &str = include_str!("templates/scripts/core/action_toasts.js");
+pub const CORE_ACTION_MESSAGE: &str = include_str!("templates/scripts/core/action_message.js");
 pub const CORE_AGENT_APPROVALS: &str = include_str!("templates/scripts/core/agent_approvals.js");
 pub const CORE_REQUEST_MANAGER: &str = include_str!("templates/scripts/core/request_manager.js");
 pub const CORE_CLIENT_READY: &str = include_str!("templates/scripts/core/client_ready.js");
@@ -379,14 +380,18 @@ pub const TRANSACTION_DETAILS_DIALOG_UI: &str =
     include_str!("templates/scripts/ui/transaction_details_dialog.js");
 pub const POSITION_DETAILS_DIALOG_UI: &str =
     include_str!("templates/scripts/ui/position_details_dialog.js");
-pub const POSITION_DETAILS_ACTIVITY_TAB_JS: &str =
-    include_str!("templates/scripts/ui/position_details/activity_tab.js");
+pub const POSITION_DETAILS_HEADER_JS: &str =
+    include_str!("templates/scripts/ui/position_details/header.js");
+pub const POSITION_DETAILS_SUMMARY_JS: &str =
+    include_str!("templates/scripts/ui/position_details/summary.js");
+pub const POSITION_DETAILS_CHART_JS: &str =
+    include_str!("templates/scripts/ui/position_details/chart.js");
+pub const POSITION_DETAILS_PANES_JS: &str =
+    include_str!("templates/scripts/ui/position_details/panes.js");
+pub const POSITION_DETAILS_ACTIVITY_JS: &str =
+    include_str!("templates/scripts/ui/position_details/activity.js");
 pub const POSITION_DETAILS_ACTIVITY_EVENT_JS: &str =
     include_str!("templates/scripts/ui/position_details/activity_event.js");
-pub const POSITION_DETAILS_OVERVIEW_TAB_JS: &str =
-    include_str!("templates/scripts/ui/position_details/overview_tab.js");
-pub const POSITION_DETAILS_CHART_TAB_JS: &str =
-    include_str!("templates/scripts/ui/position_details/chart_tab.js");
 pub const POSITION_DETAILS_UTILITIES_JS: &str =
     include_str!("templates/scripts/ui/position_details/utilities.js");
 pub const TOOL_FAVORITES_UI: &str = include_str!("templates/scripts/ui/tool_favorites.js");
@@ -400,6 +405,8 @@ pub const ADVANCED_CHART_INDICATORS_JS: &str =
     include_str!("templates/scripts/ui/advanced_chart/indicators.js");
 pub const ADVANCED_CHART_THEMES_JS: &str =
     include_str!("templates/scripts/ui/advanced_chart/themes.js");
+pub const ADVANCED_CHART_FRAMING_JS: &str =
+    include_str!("templates/scripts/ui/advanced_chart/framing.js");
 pub const CHART_DATA_JS: &str = include_str!("templates/scripts/ui/chart_data.js");
 pub const SETTINGS_DIALOG_UI: &str = include_str!("templates/scripts/ui/settings_dialog.js");
 pub const SETTINGS_SECURITY_TAB_UI: &str =

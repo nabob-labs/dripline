@@ -125,12 +125,12 @@ pub(crate) async fn best_quote_on(
         return Err(select_quote_failure(errors));
     }
 
-    // Select best quote (highest output)
+    // Select best quote: the most output the wallet keeps after network fees.
     let best = quotes
         .into_iter()
         .max_by(|(left_priority, left), (right_priority, right)| {
-            left.output_amount
-                .cmp(&right.output_amount)
+            output_after_network_fee(left)
+                .cmp(&output_after_network_fee(right))
                 // `max_by` wins a greater ordering; reverse priority so the
                 // lower configured priority deterministically wins a tie.
                 .then_with(|| right_priority.cmp(left_priority))
@@ -150,6 +150,31 @@ pub(crate) async fn best_quote_on(
     );
 
     Ok(best)
+}
+
+/// A quote's output with its estimated network fee taken out, so routers that
+/// ask for different priority fees are compared on what the wallet keeps.
+///
+/// The fee is lamports of the native asset. When the native asset is the output
+/// it is subtracted directly; when it is the input it is converted into output
+/// units at the quote's own rate. A pair with no native leg, or a quote with no
+/// estimate, compares on its raw output.
+fn output_after_network_fee(quote: &Quote) -> u64 {
+    let Some(fee) = quote.estimated_network_fee_lamports else {
+        return quote.output_amount;
+    };
+    let adapter = crate::chains::adapter();
+    if adapter.is_native_asset(&quote.output_mint) {
+        quote.output_amount.saturating_sub(fee)
+    } else if adapter.is_native_asset(&quote.input_mint) && quote.input_amount > 0 {
+        let fee_in_output =
+            u128::from(quote.output_amount) * u128::from(fee) / u128::from(quote.input_amount);
+        quote
+            .output_amount
+            .saturating_sub(u64::try_from(fee_in_output).unwrap_or(u64::MAX))
+    } else {
+        quote.output_amount
+    }
 }
 
 /// Reduce the per-router failures to the one verdict that best describes the
@@ -349,8 +374,13 @@ pub async fn execute_swap_with_fallback(token: &Token, quote: Quote) -> Result<S
     let start = Instant::now();
 
     // Try primary router
+    super::progress::report_swap_stage(super::progress::SwapStage::Submitting {
+        router: primary.name().to_owned(),
+    })
+    .await;
     match primary.execute_swap(token, &quote).await {
         Ok(mut result) => {
+            schedule_post_swap_cleanup(&quote);
             result.execution_time_ms = start.elapsed().as_millis() as u64;
             logger::info(
                 LogTag::Swap,
@@ -376,6 +406,18 @@ pub async fn execute_swap_with_fallback(token: &Token, quote: Quote) -> Result<S
                     ),
                 );
                 return Err(primary_error);
+            }
+
+            // A refusal that NAMES a venue is answerable without giving up on
+            // this router: the same aggregator can usually price the same trade
+            // through a different venue, and that is a better trade than the
+            // next router's quote. Bounded to one attempt by the exclusion
+            // itself — the retry carries the venue in `exclude_dexes`, so a
+            // second refusal for the same venue cannot recur.
+            if let Some(outcome) =
+                retry_excluding_venue(token, &quote, &primary_error, primary.as_ref(), start).await
+            {
+                return outcome;
             }
 
             // Check if error is retryable
@@ -466,8 +508,13 @@ pub async fn execute_swap_with_fallback(token: &Token, quote: Quote) -> Result<S
                 };
 
                 // Execute fallback swap
+                super::progress::report_swap_stage(super::progress::SwapStage::Submitting {
+                    router: fallback_router.name().to_owned(),
+                })
+                .await;
                 match fallback_router.execute_swap(token, &fallback_quote).await {
                     Ok(mut result) => {
+                        schedule_post_swap_cleanup(&fallback_quote);
                         result.execution_time_ms = start.elapsed().as_millis() as u64;
                         logger::info(
                             LogTag::Swap,
@@ -513,6 +560,128 @@ pub async fn execute_swap_with_fallback(token: &Token, quote: Quote) -> Result<S
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
+
+/// Re-quote and re-execute through `router` with the venue that just refused
+/// the trade excluded.
+///
+/// Returns `None` when there is nothing to retry — the failure named no venue,
+/// the caller turned the retry off, the aggregator has no label for that
+/// program, or the venue was already excluded — leaving the normal fallback
+/// chain to run. It returns `Some(Err)` only for a retry whose transaction
+/// reached the network, which must never be re-sent by anyone else.
+async fn retry_excluding_venue(
+    token: &Token,
+    quote: &Quote,
+    error: &Error,
+    router: &dyn crate::swaps::router::SwapRouter,
+    start: Instant,
+) -> Option<Result<SwapResult>> {
+    let Error::Solana(crate::chains::solana::Error::SwapCostRejected { venue_program, .. }) = error
+    else {
+        return None;
+    };
+    if !crate::chains::solana::swaps::cost_guard::CostGuardSettings::current().retry_excluding_venue
+    {
+        return None;
+    }
+
+    let label =
+        crate::chains::solana::swaps::routers::venue_label_for_program(venue_program).await?;
+    let already_excluded = quote
+        .exclude_dexes
+        .iter()
+        .flatten()
+        .any(|excluded| excluded.trim().eq_ignore_ascii_case(&label));
+    if already_excluded {
+        return None;
+    }
+
+    let mut exclude_dexes = quote.exclude_dexes.clone().unwrap_or_default();
+    exclude_dexes.push(label.clone());
+    let request = QuoteRequest {
+        chain: quote.chain,
+        input_mint: quote.input_mint.clone(),
+        output_mint: quote.output_mint.clone(),
+        input_amount: quote.input_amount,
+        wallet_address: quote.wallet_address.clone(),
+        slippage_pct: (quote.slippage_bps as f64) / 100.0,
+        swap_mode: quote.swap_mode,
+        exclude_dexes: Some(exclude_dexes),
+    };
+
+    logger::info(
+        LogTag::Swap,
+        &format!("Re-quoting on {} without {label}", router.name()),
+    );
+
+    let retry_quote = match router
+        .get_quote(&request)
+        .await
+        .and_then(|quote| validate_quote(router, &request, quote))
+    {
+        Ok(quote) => quote,
+        Err(e) => {
+            logger::warning(
+                LogTag::Swap,
+                &format!(
+                    "{} could not price the trade without {label}: {e}",
+                    router.name()
+                ),
+            );
+            return None;
+        }
+    };
+
+    super::progress::report_swap_stage(super::progress::SwapStage::Submitting {
+        router: router.name().to_owned(),
+    })
+    .await;
+    match router.execute_swap(token, &retry_quote).await {
+        Ok(mut result) => {
+            schedule_post_swap_cleanup(&retry_quote);
+            result.execution_time_ms = start.elapsed().as_millis() as u64;
+            logger::info(
+                LogTag::Swap,
+                &format!(
+                    "Swap succeeded via {} without {label} in {:.2}s - sig: {}",
+                    result.router_name,
+                    result.execution_time_ms as f64 / 1000.0,
+                    result.transaction_signature
+                ),
+            );
+            Some(Ok(result))
+        }
+        Err(e) => {
+            if let Some(signature) = unconfirmed_swap_signature(&e) {
+                logger::warning(
+                    LogTag::Swap,
+                    &format!(
+                        "Retry {signature} submitted via {} but not confirmed in time - NOT retrying further",
+                        router.name()
+                    ),
+                );
+                return Some(Err(e));
+            }
+            logger::warning(
+                LogTag::Swap,
+                &format!(
+                    "{} still could not execute without {label}: {e}",
+                    router.name()
+                ),
+            );
+            None
+        }
+    }
+}
+
+/// Hand a confirmed swap with a native-asset leg to the post-swap cleanup,
+/// which reclaims the wrapped-SOL account a router may have left open.
+fn schedule_post_swap_cleanup(quote: &Quote) {
+    let adapter = crate::chains::adapter();
+    if adapter.is_native_asset(&quote.input_mint) || adapter.is_native_asset(&quote.output_mint) {
+        crate::chains::solana::assets::ata::schedule_wsol_sweep();
+    }
+}
 
 /// The signature of a swap that WAS SUBMITTED but whose confirmation timed out.
 ///
@@ -644,6 +813,11 @@ fn is_retryable_error(error: &Error) -> bool {
         Error::Solana(crate::chains::solana::Error::DirectSwap(direct)) => {
             direct.safe_to_fallback()
         }
+        // A pre-send simulation failure proves nothing was submitted.
+        Error::Solana(crate::chains::solana::Error::SimulationRejected { .. }) => true,
+        // Likewise a transaction refused for what it would spend outside the
+        // trade: it was never signed, so another router may quote the same swap.
+        Error::Solana(crate::chains::solana::Error::SwapCostRejected { .. }) => true,
         _ => false,
     }
 }

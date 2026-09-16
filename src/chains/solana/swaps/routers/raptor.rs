@@ -242,14 +242,12 @@ impl RaptorRouter {
             .join(" → ")
     }
 
-    /// Raptor's price impact, refused when it cannot be traded on.
+    /// Raptor's price impact, refused only when it is missing or malformed.
     ///
-    /// Raptor returns an exact `0.0` for some large orders whose realised price
-    /// demonstrably moves — a false perfect fill. Price impact drives the
-    /// confirm-time gate and the dialog's warning, so a zero that the quote
-    /// cannot support must fail rather than present a flawless trade. Genuinely
-    /// small orders do NOT hit this: Raptor reports fractions of a basis point
-    /// for those, not a hard zero.
+    /// A reported `0.0` is accepted, exactly as Jupiter's is. Refusing it made
+    /// identical small orders flip between quotable and refused from one second
+    /// to the next, and applied a rule to one aggregator that the other is not
+    /// held to. The on-chain protection is `minAmountOut`, not this figure.
     fn usable_price_impact(response: &RaptorQuoteResponse, router: &str) -> QuoteResult<f64> {
         let impact = response
             .price_impact
@@ -261,14 +259,6 @@ impl RaptorRouter {
             return Err(QuoteError::RouterRejected {
                 router: router.to_owned(),
                 detail: format!("unusable price impact {impact}"),
-            });
-        }
-        if impact == 0.0 {
-            return Err(QuoteError::RouterRejected {
-                router: router.to_owned(),
-                detail: "reported a zero price impact, which this provider also \
-                         reports for orders that visibly move the price"
-                    .to_owned(),
             });
         }
         Ok(impact)
@@ -311,6 +301,19 @@ impl RaptorRouter {
         let swap_response: RaptorSwapResponse = serde_json::from_str(&response_text)
             .map_err(|e| Error::parse_error(format!("Raptor swap response parse failed: {e}")))?;
         Ok(swap_response.swap_transaction)
+    }
+
+    /// Check a built transaction before it is signed and sent.
+    ///
+    /// Raptor builds the transaction on its own host, so nothing on our side has
+    /// checked its instructions or what they do with the wallet's lamports. The
+    /// shared preflight in [`crate::chains::solana::swaps::cost_guard`] rejects
+    /// both a transaction that would fail on chain and one that would spend SOL
+    /// outside the trade — for free, before anything is signed.
+    async fn preflight(transaction_base64: &str, quote: &Quote) -> Result<()> {
+        crate::chains::solana::swaps::cost_guard::preflight("Raptor", transaction_base64, quote)
+            .await
+            .map_err(Into::into)
     }
 }
 
@@ -497,6 +500,7 @@ impl SwapRouter for RaptorRouter {
         let start = Instant::now();
 
         let transaction = self.build_transaction(quote, &quote.wallet_address).await?;
+        Self::preflight(&transaction, quote).await?;
 
         // Propagate the send/confirm error UNCHANGED so a submitted-but-
         // unconfirmed signature stays recoverable by
@@ -539,6 +543,7 @@ impl SwapRouter for RaptorRouter {
         let transaction = self
             .build_transaction(quote, &keypair.pubkey().to_string())
             .await?;
+        Self::preflight(&transaction, quote).await?;
         let signature = crate::chains::solana::rpc::get_rpc_client()
             .sign_send_and_confirm_with_keypair(&transaction, &keypair)
             .await?;
@@ -718,10 +723,10 @@ mod tests {
         );
     }
 
-    /// Raptor returns an exact `0.0` for some large orders whose price visibly
-    /// moves. Accepting it would show a perfect fill and then trade on it.
+    /// A missing or malformed impact is refused; a reported zero is accepted,
+    /// the same as Jupiter's, so identical small orders stop flapping.
     #[test]
-    fn a_zero_or_malformed_price_impact_is_refused() {
+    fn a_malformed_price_impact_is_refused_and_zero_is_accepted() {
         let quote = |impact: Option<f64>| RaptorQuoteResponse {
             input_mint: SOL_MINT.to_owned(),
             output_mint: TOKEN.to_owned(),
@@ -732,7 +737,12 @@ mod tests {
             route_plan: vec![],
         };
 
-        for bad in [Some(0.0), Some(-1.0), Some(f64::NAN), None] {
+        assert_eq!(
+            RaptorRouter::usable_price_impact(&quote(Some(0.0)), "Raptor").unwrap(),
+            0.0
+        );
+
+        for bad in [Some(-1.0), Some(f64::NAN), None] {
             assert!(
                 matches!(
                     RaptorRouter::usable_price_impact(&quote(bad), "Raptor"),
